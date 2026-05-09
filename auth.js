@@ -62,13 +62,14 @@ async function handleRegister(e) {
     }
 
     try {
+        // 第一步：注册
         const { data, error } = await supabase.auth.signUp({
             email: email,
             password: password,
         });
 
         if (error) {
-            if (error.message.includes('already registered')) {
+            if (error.message.includes('already registered') || error.message.includes('already been registered')) {
                 showMessage('registerMessage', '该邮箱已被注册，请直接登录', true);
             } else {
                 showMessage('registerMessage', '注册失败：' + error.message, true);
@@ -76,29 +77,31 @@ async function handleRegister(e) {
             return;
         }
 
-        // 注册后自动登录
-        if (data.user && !data.session) {
-            // 需要邮箱确认的情况 - 自动尝试登录
-            const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
-                email: email,
-                password: password,
-            });
+        // 第二步：无论是否需要邮箱确认，都尝试直接登录
+        showMessage('registerMessage', '注册成功，正在自动登录...');
 
-            if (loginError) {
-                showMessage('registerMessage', '注册成功！但需要邮箱确认，或请直接登录');
-                return;
-            }
+        // 等待一下让 Supabase 处理注册
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
-            showMessage('registerMessage', '注册成功！正在跳转...');
-            saveLoginState(email);
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-        } else if (data.session) {
-            // 直接获得了session，注册即登录
-            showMessage('registerMessage', '注册成功！正在跳转...');
-            saveLoginState(email);
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (loginError) {
+            showMessage('registerMessage', '注册成功！请返回登录页面手动登录', false);
+            setTimeout(() => { switchTab('login'); }, 2000);
+            return;
+        }
+
+        // 登录成功
+        showMessage('registerMessage', '登录成功！正在跳转...');
+        saveLoginState(email);
+
+        if (email === ADMIN_EMAIL) {
+            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
         } else {
-            showMessage('registerMessage', '注册成功！请使用账号密码登录');
+            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
         }
     } catch (err) {
         showMessage('registerMessage', '注册失败，请稍后重试', true);
@@ -118,10 +121,15 @@ async function handleLogin(e) {
         });
 
         if (error) {
-            if (error.message.includes('Invalid login')) {
+            if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
                 showMessage('loginMessage', '邮箱或密码错误！', true);
             } else if (error.message.includes('Email not confirmed')) {
-                showMessage('loginMessage', '请先确认邮箱后再登录', true);
+                showMessage('loginMessage', '邮箱未确认，正在尝试重新发送确认邮件...', false);
+                // 尝试重新发送确认邮件
+                await supabase.auth.resend({
+                    type: 'signup',
+                    email: email,
+                });
             } else {
                 showMessage('loginMessage', '登录失败：' + error.message, true);
             }
