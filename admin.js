@@ -24,7 +24,7 @@ async function loadUsers() {
 
     try {
         // 使用 Supabase Admin API 获取用户列表
-        const { data, error } = await supabase.auth.admin.listUsers();
+        const { data, error } = await supabaseClient.auth.admin.listUsers();
 
         if (error) {
             // 如果没有 admin 权限，显示提示
@@ -84,7 +84,7 @@ async function deleteUser(userId, email) {
     if (!confirm('确定要删除用户 ' + email + ' 吗？此操作不可恢复！')) return;
 
     try {
-        const { error } = await supabase.auth.admin.deleteUser(userId);
+        const { error } = await supabaseClient.auth.admin.deleteUser(userId);
         if (error) {
             alert('删除失败：' + error.message);
             return;

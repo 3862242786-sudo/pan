@@ -2,7 +2,7 @@
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 站长邮箱（管理员）
 const ADMIN_EMAIL = '3862242786@qq.com';
@@ -59,7 +59,7 @@ async function handleRegister(e) {
 
     try {
         // 第一步：注册
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
         });
@@ -79,7 +79,7 @@ async function handleRegister(e) {
         // 等待一下让 Supabase 处理注册
         await new Promise(resolve => setTimeout(resolve, 1500));
 
-        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
         });
@@ -111,7 +111,7 @@ async function handleLogin(e) {
     const password = document.getElementById('loginPassword').value;
 
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
         });
@@ -122,7 +122,7 @@ async function handleLogin(e) {
             } else if (error.message.includes('Email not confirmed')) {
                 showMessage('loginMessage', '邮箱未确认，正在尝试重新发送确认邮件...', false);
                 // 尝试重新发送确认邮件
-                await supabase.auth.resend({
+                await supabaseClient.auth.resend({
                     type: 'signup',
                     email: email,
                 });
@@ -160,7 +160,7 @@ async function handleResetPassword(e) {
     const email = document.getElementById('forgotEmail').value;
 
     try {
-        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { data, error } = await supabaseClient.auth.resetPasswordForEmail(email, {
             redirectTo: window.location.origin + '/auth.html',
         });
 
@@ -180,7 +180,7 @@ async function handleResetPassword(e) {
 
 // ===== 退出登录 =====
 async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabaseClient.auth.signOut();
     localStorage.removeItem('qn_logged_in');
     localStorage.removeItem('qn_user_email');
     localStorage.removeItem('qn_is_admin');
