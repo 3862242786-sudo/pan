@@ -33,12 +33,6 @@
                 <p>登录你的账户</p>
             </div>
 
-            <!-- 登录/注册切换 -->
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="switchTab('login')">登录</button>
-                <button class="auth-tab" onclick="switchTab('register')">注册</button>
-            </div>
-
             <!-- 登录表单 -->
             <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
                 <div class="form-group">
@@ -49,14 +43,12 @@
                     <label>🔒 密码</label>
                     <input type="password" id="loginPassword" placeholder="请输入密码" required>
                 </div>
-                <div class="form-options">
-                    <label class="remember-me">
-                        <input type="checkbox" id="rememberMe"> 记住我
-                    </label>
-                    <a href="javascript:void(0)" onclick="handleForgotPassword()" class="forgot-link">忘记密码？</a>
-                </div>
                 <button type="submit" class="auth-submit-btn">登 录</button>
                 <div id="loginMessage" class="auth-message"></div>
+                <div class="auth-links">
+                    <a href="javascript:void(0)" onclick="switchTab('register')">没有账号？注册</a>
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()">忘记密码？立即找回</a>
+                </div>
             </form>
 
             <!-- 注册表单 -->

@@ -839,6 +839,24 @@ body {
     box-shadow: 0 6px 20px rgba(101, 163, 13, 0.4);
 }
 
+/* 登录下方链接 */
+.auth-links {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.auth-links a {
+    color: #65a30d;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
 .auth-message {
     display: none;
     text-align: center;
