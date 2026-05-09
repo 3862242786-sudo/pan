@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 青柠网盘</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">🍋 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html#files">文件列表</a></li>
+                <li><a href="about.html">关于</a></li>
+                <li><a href="index.html#contact">联系我</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 认证页面 -->
+    <section class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <h1>🍋 青柠网盘</h1>
+                <p>登录你的账户</p>
+            </div>
+
+            <!-- 登录/注册切换 -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">登录</button>
+                <button class="auth-tab" onclick="switchTab('register')">注册</button>
+            </div>
+
+            <!-- 登录表单 -->
+            <form id="loginForm" class="auth-form" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label>📧 邮箱</label>
+                    <input type="email" id="loginEmail" placeholder="请输入邮箱" required>
+                </div>
+                <div class="form-group">
+                    <label>🔒 密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                </div>
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input type="checkbox" id="rememberMe"> 记住我
+                    </label>
+                    <a href="javascript:void(0)" onclick="handleForgotPassword()" class="forgot-link">忘记密码？</a>
+                </div>
+                <button type="submit" class="auth-submit-btn">登 录</button>
+                <div id="loginMessage" class="auth-message"></div>
+            </form>
+
+            <!-- 注册表单 -->
+            <form id="registerForm" class="auth-form" style="display:none" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label>📧 邮箱</label>
+                    <input type="email" id="regEmail" placeholder="请输入邮箱" required>
+                </div>
+                <div class="form-group">
+                    <label>🔒 密码</label>
+                    <input type="password" id="regPassword" placeholder="请设置密码（至少6位）" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>🔒 确认密码</label>
+                    <input type="password" id="regConfirmPassword" placeholder="请再次输入密码" required minlength="6">
+                </div>
+                <button type="submit" class="auth-submit-btn">注 册</button>
+                <div id="registerMessage" class="auth-message"></div>
+            </form>
+
+            <!-- 找回密码表单 -->
+            <form id="forgotForm" class="auth-form" style="display:none" onsubmit="handleResetPassword(event)">
+                <div class="form-group">
+                    <label>📧 邮箱</label>
+                    <input type="email" id="forgotEmail" placeholder="请输入注册时使用的邮箱" required>
+                </div>
+                <button type="submit" class="auth-submit-btn">发送重置链接</button>
+                <div id="forgotMessage" class="auth-message"></div>
+                <a href="javascript:void(0)" onclick="switchTab('login')" class="back-to-login">← 返回登录</a>
+            </form>
+
+            <!-- 返回首页 -->
+            <div class="auth-footer">
+                <a href="index.html">← 返回青柠网盘首页</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 青柠网盘. All rights reserved.</p>
+            <p class="credit">王梓豪制作</p>
+        </div>
+    </footer>
+
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+</body>
+</html>
