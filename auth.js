@@ -12,25 +12,21 @@ function switchTab(tab) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const forgotForm = document.getElementById('forgotForm');
-    const tabs = document.querySelectorAll('.auth-tab');
     const header = document.querySelector('.auth-header p');
 
+    // 隐藏所有表单
     loginForm.style.display = 'none';
     registerForm.style.display = 'none';
     forgotForm.style.display = 'none';
-    tabs.forEach(t => t.classList.remove('active'));
 
     if (tab === 'login') {
         loginForm.style.display = 'block';
-        tabs[0].classList.add('active');
         header.textContent = '登录你的账户';
     } else if (tab === 'register') {
         registerForm.style.display = 'block';
-        tabs[1].classList.add('active');
         header.textContent = '创建新账户';
     } else if (tab === 'forgot') {
         forgotForm.style.display = 'block';
-        tabs.forEach(t => t.classList.remove('active'));
         header.textContent = '找回密码';
     }
 }
