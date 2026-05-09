@@ -1,6 +1,7 @@
 // ===== Supabase 配置 =====
+// 请在下方填入你的 Supabase 项目信息
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 请替换为你的 anon public key
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
