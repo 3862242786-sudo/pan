@@ -48,7 +48,7 @@ body {
 .logo {
     font-size: 1.4rem;
     font-weight: 700;
-    color: #2563eb;
+    color: #65a30d;
     text-decoration: none;
     transition: opacity 0.3s;
 }
@@ -71,7 +71,7 @@ body {
 }
 
 .nav-links a:hover {
-    color: #2563eb;
+    color: #4d7c0f;
 }
 
 /* 移动端菜单按钮 */
@@ -99,7 +99,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+    background: linear-gradient(135deg, #65a30d 0%, #16a34a 100%);
     color: #fff;
     text-align: center;
     padding: 120px 24px 60px;
@@ -163,12 +163,12 @@ body {
 
 .search-box input:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #65a30d;
 }
 
 .search-box button {
     padding: 14px 28px;
-    background: #3b82f6;
+    background: #65a30d;
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -179,7 +179,7 @@ body {
 }
 
 .search-box button:hover {
-    background: #2563eb;
+    background: #4d7c0f;
 }
 
 /* ===== 通用区块 ===== */
@@ -219,13 +219,13 @@ body {
 }
 
 .category-tabs .tab:hover {
-    border-color: #3b82f6;
-    color: #3b82f6;
+    border-color: #65a30d;
+    color: #65a30d;
 }
 
 .category-tabs .tab.active {
-    background: #3b82f6;
-    border-color: #3b82f6;
+    background: #65a30d;
+    border-color: #65a30d;
     color: #fff;
 }
 
@@ -311,7 +311,7 @@ body {
 
 .download-btn {
     padding: 12px 24px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #65a30d, #16a34a);
     color: #fff;
     text-decoration: none;
     border-radius: 10px;
@@ -407,12 +407,12 @@ body {
 .contact-form input:focus,
 .contact-form textarea:focus {
     outline: none;
-    border-color: #3b82f6;
+    border-color: #65a30d;
 }
 
 .submit-btn {
     padding: 14px 40px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #65a30d, #16a34a);
     color: #fff;
     border: none;
     border-radius: 12px;
@@ -520,7 +520,7 @@ body {
 .avatar {
     width: 120px;
     height: 120px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #65a30d, #16a34a);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -615,7 +615,7 @@ body {
 }
 
 .social-card:hover .social-arrow {
-    color: #3b82f6;
+    color: #65a30d;
     transform: translateX(5px);
 }
 
@@ -664,7 +664,7 @@ body {
 .back-btn {
     display: inline-block;
     padding: 14px 32px;
-    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    background: linear-gradient(135deg, #65a30d, #16a34a);
     color: #fff;
     text-decoration: none;
     border-radius: 12px;
