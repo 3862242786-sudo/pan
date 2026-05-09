@@ -2,7 +2,8 @@
 // Supabase 配置和客户端已在 auth2.js 中初始化，直接使用 supabaseClient
 
 const BUCKET_NAME = 'files';
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+// 站长无限制，普通用户50MB
+const NORMAL_USER_MAX_SIZE = 50 * 1024 * 1024;
 
 let selectedFiles = [];
 
@@ -38,9 +39,10 @@ function handleFileSelect(event) {
 }
 
 function addFiles(files) {
+    const isAdmin = localStorage.getItem('qn_is_admin') === 'true';
     files.forEach(file => {
-        if (file.size > MAX_FILE_SIZE) {
-            alert('文件 ' + file.name + ' 超过 50MB 限制！');
+        if (!isAdmin && file.size > NORMAL_USER_MAX_SIZE) {
+            alert('文件 ' + file.name + ' 超过 50MB 限制！（站长账户无限制）');
             return;
         }
         selectedFiles.push(file);
