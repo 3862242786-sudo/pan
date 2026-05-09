@@ -5,7 +5,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 站长邮箱（管理员）
-const ADMIN_EMAIL = 'admin@qingningpan.com';
+const ADMIN_EMAIL = '3862242786@qq.com';
 
 // ===== 页面切换 =====
 function switchTab(tab) {

@@ -1,6 +1,6 @@
 // ===== 管理后台逻辑 =====
 
-const ADMIN_EMAIL = 'admin@qingningpan.com';
+const ADMIN_EMAIL = '3862242786@qq.com';
 
 // 检查管理员权限
 async function checkAdmin() {
