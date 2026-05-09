@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的网站</title>
+    <title>王梓豪的网盘</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
 </head>
@@ -11,12 +11,11 @@
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="#" class="logo">MySite</a>
+            <a href="#" class="logo">📁 王梓豪网盘</a>
             <ul class="nav-links">
-                <li><a href="#home">首页</a></li>
+                <li><a href="#files">文件列表</a></li>
                 <li><a href="#about">关于</a></li>
-                <li><a href="#services">服务</a></li>
-                <li><a href="#contact">联系</a></li>
+                <li><a href="#contact">联系我</a></li>
             </ul>
             <button class="mobile-menu-btn" aria-label="菜单">
                 <span></span>
@@ -27,89 +26,160 @@
     </nav>
 
     <!-- 主页横幅 -->
-    <section id="home" class="hero">
+    <section class="hero">
         <div class="hero-content">
-            <h1>欢迎来到我的网站</h1>
-            <p>简约设计，专注内容，为你提供最佳体验</p>
-            <a href="#contact" class="cta-button">开始探索</a>
-        </div>
-    </section>
-
-    <!-- 关于我们 -->
-    <section id="about" class="section">
-        <div class="container">
-            <h2 class="section-title">关于我们</h2>
-            <div class="about-content">
-                <div class="about-text">
-                    <p>我们致力于提供优质的服务和产品，以简约现代的设计理念，为用户创造卓越的体验。</p>
-                    <p>专注于细节，追求完美，让每一次交互都充满价值。</p>
+            <h1>📁 欢迎来到我的网盘</h1>
+            <p>简单、快速、免费的文件分享服务</p>
+            <div class="hero-stats">
+                <div class="stat">
+                    <span class="stat-num" id="fileCount">6</span>
+                    <span class="stat-label">个文件</span>
                 </div>
-                <div class="about-stats">
-                    <div class="stat-item">
-                        <span class="stat-number">100+</span>
-                        <span class="stat-label">项目完成</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">50+</span>
-                        <span class="stat-label">满意客户</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number">5+</span>
-                        <span class="stat-label">年经验</span>
-                    </div>
+                <div class="stat">
+                    <span class="stat-num">免费</span>
+                    <span class="stat-label">永久开放</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 服务 -->
-    <section id="services" class="section section-gray">
+    <!-- 搜索栏 -->
+    <section class="search-section">
         <div class="container">
-            <h2 class="section-title">我们的服务</h2>
-            <div class="services-grid">
-                <div class="service-card">
-                    <div class="service-icon">🎨</div>
-                    <h3>设计服务</h3>
-                    <p>专业的设计团队，打造独特的视觉体验</p>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="搜索文件...">
+                <button onclick="searchFiles()">🔍 搜索</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- 文件列表 -->
+    <section id="files" class="section">
+        <div class="container">
+            <h2 class="section-title">📂 文件列表</h2>
+            
+            <!-- 分类标签 -->
+            <div class="category-tabs">
+                <button class="tab active" onclick="filterFiles('all')">全部</button>
+                <button class="tab" onclick="filterFiles('document')">📄 文档</button>
+                <button class="tab" onclick="filterFiles('image')">🖼️ 图片</button>
+                <button class="tab" onclick="filterFiles('video')">🎬 视频</button>
+                <button class="tab" onclick="filterFiles('other')">📦 其他</button>
+            </div>
+
+            <!-- 文件列表 -->
+            <div class="file-list" id="fileList">
+                <!-- 文档类 -->
+                <div class="file-card" data-category="document" data-name="Python入门教程">
+                    <div class="file-icon">📄</div>
+                    <div class="file-info">
+                        <h3>Python入门教程.pdf</h3>
+                        <p class="file-desc">Python编程基础教程，适合初学者</p>
+                        <p class="file-meta">大小: 2.5 MB | 更新: 2024-01-15</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">💻</div>
-                    <h3>开发服务</h3>
-                    <p>高质量代码，稳定可靠的技术解决方案</p>
+
+                <div class="file-card" data-category="document" data-name="Java编程指南">
+                    <div class="file-icon">📄</div>
+                    <div class="file-info">
+                        <h3>Java编程指南.pdf</h3>
+                        <p class="file-desc">Java从入门到精通完整版</p>
+                        <p class="file-meta">大小: 5.8 MB | 更新: 2024-01-10</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
                 </div>
-                <div class="service-card">
-                    <div class="service-icon">📱</div>
-                    <h3>移动端适配</h3>
-                    <p>完美适配各种设备，随时随地访问</p>
+
+                <!-- 图片类 -->
+                <div class="file-card" data-category="image" data-name="风景壁纸">
+                    <div class="file-icon">🖼️</div>
+                    <div class="file-info">
+                        <h3>风景壁纸合集.zip</h3>
+                        <p class="file-desc">高清4K风景壁纸，共50张</p>
+                        <p class="file-meta">大小: 120 MB | 更新: 2024-01-12</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
+                </div>
+
+                <!-- 视频类 -->
+                <div class="file-card" data-category="video" data-name="编程教学视频">
+                    <div class="file-icon">🎬</div>
+                    <div class="file-info">
+                        <h3>Web开发教程.mp4</h3>
+                        <p class="file-desc">HTML/CSS/JavaScript基础教程视频</p>
+                        <p class="file-meta">大小: 500 MB | 更新: 2024-01-08</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
+                </div>
+
+                <div class="file-card" data-category="video" data-name="设计教程">
+                    <div class="file-icon">🎬</div>
+                    <div class="file-info">
+                        <h3>UI设计入门.mp4</h3>
+                        <p class="file-desc">UI设计基础教程，零基础可学</p>
+                        <p class="file-meta">大小: 350 MB | 更新: 2024-01-05</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
+                </div>
+
+                <!-- 其他 -->
+                <div class="file-card" data-category="other" data-name="开发工具">
+                    <div class="file-icon">📦</div>
+                    <div class="file-info">
+                        <h3>VSCode插件推荐.txt</h3>
+                        <p class="file-desc">精选VSCode插件列表及配置说明</p>
+                        <p class="file-meta">大小: 15 KB | 更新: 2024-01-14</p>
+                    </div>
+                    <a href="#" class="download-btn" onclick="alert('这是一个示例文件，请替换为真实下载链接')">⬇️ 下载</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 联系我们 -->
+    <!-- 关于 -->
+    <section id="about" class="section section-gray">
+        <div class="container">
+            <h2 class="section-title">关于网盘</h2>
+            <div class="about-grid">
+                <div class="about-card">
+                    <div class="about-icon">🚀</div>
+                    <h3>高速下载</h3>
+                    <p>基于GitHub Pages，全球CDN加速</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-icon">🔒</div>
+                    <h3>安全可靠</h3>
+                    <p>所有文件经过审核，安全无忧</p>
+                </div>
+                <div class="about-card">
+                    <div class="about-icon">💰</div>
+                    <h3>永久免费</h3>
+                    <p>无需注册，无需付费，直接下载</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 联系 -->
     <section id="contact" class="section">
         <div class="container">
-            <h2 class="section-title">联系我们</h2>
+            <h2 class="section-title">联系我</h2>
             <div class="contact-content">
                 <div class="contact-info">
                     <div class="contact-item">
                         <span class="contact-icon">📧</span>
-                        <span>hello@mysite.com</span>
+                        <span>有文件需求或问题欢迎联系</span>
                     </div>
                     <div class="contact-item">
-                        <span class="contact-icon">📍</span>
-                        <span>中国 · 北京</span>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-icon">📞</span>
-                        <span>+86 123 4567 8900</span>
+                        <span class="contact-icon">💬</span>
+                        <span>欢迎留言反馈</span>
                     </div>
                 </div>
-                <form class="contact-form">
-                    <input type="text" placeholder="您的姓名" required>
+                <form class="contact-form" onsubmit="handleSubmit(event)">
+                    <input type="text" placeholder="您的称呼" required>
                     <input type="email" placeholder="您的邮箱" required>
-                    <textarea placeholder="您的留言" rows="4" required></textarea>
-                    <button type="submit" class="submit-btn">发送消息</button>
+                    <textarea placeholder="留言内容（如需分享文件，请填写文件名和下载链接）" rows="4" required></textarea>
+                    <button type="submit" class="submit-btn">发送留言</button>
                 </form>
             </div>
         </div>
@@ -118,7 +188,7 @@
     <!-- 页脚 -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 MySite. All rights reserved.</p>
+            <p>&copy; 2024 王梓豪网盘. All rights reserved.</p>
             <p class="credit">王梓豪制作</p>
         </div>
     </footer>
