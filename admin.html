@@ -61,6 +61,28 @@
 
             <!-- 管理功能 -->
             <div class="admin-sections">
+                <!-- 文件管理 -->
+                <div class="admin-section">
+                    <h2>📂 文件管理</h2>
+                    <div class="admin-card">
+                        <div class="admin-toolbar">
+                            <input type="text" id="fileSearch" placeholder="搜索文件名..." oninput="searchAdminFiles()">
+                            <button class="admin-btn" onclick="loadAdminFiles()">🔄 刷新列表</button>
+                            <button class="admin-btn" style="background:#f59e0b" onclick="document.getElementById('adminFileInput').click()">📤 上传文件</button>
+                            <input type="file" id="adminFileInput" multiple style="display:none" onchange="adminUploadFiles(event)">
+                        </div>
+                        <div id="adminUploadProgress" style="display:none;margin-bottom:16px;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="adminProgressFill"></div>
+                            </div>
+                            <p id="adminProgressText" style="text-align:center;color:#666;font-size:0.9rem;">上传中...</p>
+                        </div>
+                        <div class="user-list" id="adminFileList">
+                            <div class="loading-text">加载中...</div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 用户管理 -->
                 <div class="admin-section">
                     <h2>👥 用户管理</h2>
