@@ -90,6 +90,22 @@ body {
     opacity: 1 !important;
 }
 
+/* 导航栏管理后台按钮 */
+.nav-admin-btn {
+    padding: 8px 20px !important;
+    background: #f59e0b !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s !important;
+}
+
+.nav-admin-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    opacity: 1 !important;
+}
+
 /* 移动端菜单按钮 */
 .mobile-menu-btn {
     display: none;

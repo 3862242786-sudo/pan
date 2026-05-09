@@ -16,7 +16,9 @@
                 <li><a href="#files">文件列表</a></li>
                 <li><a href="about.html">关于</a></li>
                 <li><a href="#contact">联系我</a></li>
-                <li><a href="auth.html" class="nav-login-btn">登录</a></li>
+                <li><a href="auth.html" class="nav-login-btn" id="navLoginBtn">登录</a></li>
+                <li><a href="admin.html" class="nav-admin-btn" id="navAdminBtn" style="display:none">管理后台</a></li>
+                <li><a href="javascript:void(0)" id="navLogoutBtn" style="display:none" onclick="handleLogout()">退出</a></li>
             </ul>
             <button class="mobile-menu-btn" aria-label="菜单">
                 <span></span>
@@ -136,6 +138,25 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
     <script src="script.js"></script>
+    <script>
+        // 检查登录状态，更新导航栏
+        (function() {
+            const isLoggedIn = localStorage.getItem('qn_logged_in');
+            const isAdmin = localStorage.getItem('qn_is_admin');
+            const loginBtn = document.getElementById('navLoginBtn');
+            const adminBtn = document.getElementById('navAdminBtn');
+            const logoutBtn = document.getElementById('navLogoutBtn');
+            if (isLoggedIn) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                if (isAdmin === 'true') {
+                    adminBtn.style.display = 'block';
+                }
+            }
+        })();
+    </script>
 </body>
 </html>

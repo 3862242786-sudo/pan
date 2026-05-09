@@ -2,19 +2,18 @@
 
 const ADMIN_EMAIL = '3862242786@qq.com';
 
-// 检查管理员权限
-async function checkAdmin() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
+// 检查管理员权限（通过 localStorage 检查，不依赖 Supabase session）
+function checkAdmin() {
+    const isLoggedIn = localStorage.getItem('qn_logged_in');
+    const isAdmin = localStorage.getItem('qn_is_admin');
+    const email = localStorage.getItem('qn_user_email');
+
+    if (!isLoggedIn || isAdmin !== 'true') {
+        alert('请先登录站长账号！');
         window.location.href = 'auth.html';
         return false;
     }
-    if (session.user.email !== ADMIN_EMAIL) {
-        alert('无权访问管理后台！');
-        window.location.href = 'index.html';
-        return false;
-    }
-    document.getElementById('adminEmail').textContent = '管理员：' + session.user.email;
+    document.getElementById('adminEmail').textContent = '管理员：' + email;
     return true;
 }
 

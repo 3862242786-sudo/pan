@@ -135,12 +135,8 @@ async function handleLogin(e) {
         showMessage('loginMessage', '登录成功！正在跳转...');
         saveLoginState(email);
 
-        // 站长跳转到管理后台
-        if (email === ADMIN_EMAIL) {
-            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
-        } else {
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-        }
+        // 所有用户都跳转到首页
+        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
     } catch (err) {
         showMessage('loginMessage', '登录失败，请稍后重试', true);
     }
