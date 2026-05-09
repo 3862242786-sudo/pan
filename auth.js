@@ -149,10 +149,9 @@ async function handleLogin(e) {
 // ===== 保存登录状态 =====
 function saveLoginState(email) {
     const isAdmin = email === ADMIN_EMAIL;
-    const storage = document.getElementById('rememberMe')?.checked ? localStorage : sessionStorage;
-    storage.setItem('qn_logged_in', 'true');
-    storage.setItem('qn_user_email', email);
-    storage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+    localStorage.setItem('qn_logged_in', 'true');
+    localStorage.setItem('qn_user_email', email);
+    localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
 }
 
 // ===== 找回密码 =====
@@ -180,26 +179,8 @@ async function handleResetPassword(e) {
     }
 }
 
-// ===== 检查登录状态 =====
-async function checkAuth() {
-    try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-            console.log('用户已登录:', session.user.email);
-            // 如果已登录且在auth页面，跳转走
-            const currentPath = window.location.pathname;
-            if (currentPath.includes('auth.html')) {
-                if (session.user.email === ADMIN_EMAIL) {
-                    window.location.href = 'admin.html';
-                } else {
-                    window.location.href = 'index.html';
-                }
-            }
-        }
-    } catch (err) {
-        console.log('未登录');
-    }
-}
+// ===== 检查登录状态（已禁用自动跳转） =====
+// checkAuth 暂时禁用，避免页面加载时被跳走
 
 // ===== 退出登录 =====
 async function handleLogout() {
@@ -213,5 +194,5 @@ async function handleLogout() {
     window.location.href = 'auth.html';
 }
 
-// 页面加载时检查
-checkAuth();
+// 页面加载时不再自动跳转
+// checkAuth();
