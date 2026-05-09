@@ -1,7 +1,7 @@
 // ===== Supabase 配置 =====
 // 请在下方填入你的 Supabase 项目信息
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY'; // 请替换为你的 anon public key
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
 
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
