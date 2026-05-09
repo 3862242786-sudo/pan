@@ -14,9 +14,10 @@
             <a href="#" class="logo">🍋 青柠网盘</a>
             <ul class="nav-links">
                 <li><a href="#files">文件列表</a></li>
+                <li><a href="upload.html" class="nav-login-btn">上传文件</a></li>
                 <li><a href="about.html">关于</a></li>
                 <li><a href="#contact">联系我</a></li>
-                <li><a href="auth.html" class="nav-login-btn" id="navLoginBtn">登录</a></li>
+                <li><a href="auth.html" id="navLoginBtn">登录</a></li>
                 <li><a href="admin.html" class="nav-admin-btn" id="navAdminBtn" style="display:none">管理后台</a></li>
                 <li><a href="javascript:void(0)" id="navLogoutBtn" style="display:none" onclick="handleLogout()">退出</a></li>
             </ul>
@@ -60,23 +61,14 @@
     <section id="files" class="section">
         <div class="container">
             <h2 class="section-title">📂 文件列表</h2>
-            
-            <!-- 分类标签 -->
-            <div class="category-tabs">
-                <button class="tab active" onclick="filterFiles('all')">全部</button>
-                <button class="tab" onclick="filterFiles('document')">📄 文档</button>
-                <button class="tab" onclick="filterFiles('image')">🖼️ 图片</button>
-                <button class="tab" onclick="filterFiles('video')">🎬 视频</button>
-                <button class="tab" onclick="filterFiles('other')">📦 其他</button>
+
+            <!-- 文件列表（动态加载） -->
+            <div class="file-list" id="fileList">
+                <div class="loading-text">加载中...</div>
             </div>
 
-            <!-- 文件列表 -->
-            <div class="file-list" id="fileList">
-                <div class="empty-state">
-                    <div class="empty-icon">📭</div>
-                    <h3>暂无文件</h3>
-                    <p>站长正在整理资源，敬请期待...</p>
-                </div>
+            <div style="text-align:center;margin-top:20px;">
+                <a href="upload.html" class="nav-login-btn" style="display:inline-block;padding:12px 32px;text-decoration:none;font-size:1rem;">📤 上传文件</a>
             </div>
         </div>
     </section>
@@ -157,6 +149,56 @@
                 }
             }
         })();
+
+        // 动态加载文件列表
+        (async function() {
+            const fileList = document.getElementById('fileList');
+            try {
+                const { data, error } = await supabaseClient.storage
+                    .from('files')
+                    .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+
+                if (error || !data || data.length === 0) {
+                    fileList.innerHTML = '<div class="empty-text">📭 暂无文件，快去上传吧！</div>';
+                    return;
+                }
+
+                let html = '';
+                data.forEach(file => {
+                    const { data: urlData } = supabaseClient.storage.from('files').getPublicUrl(file.name);
+                    const size = file.metadata?.size ? formatSize(file.metadata.size) : '';
+                    const date = new Date(file.created_at).toLocaleString('zh-CN');
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const icons = {
+                        'pdf':'📕','doc':'📘','docx':'📘','xls':'📗','xlsx':'📗',
+                        'ppt':'📙','pptx':'📙','txt':'📄','jpg':'🖼️','jpeg':'🖼️',
+                        'png':'🖼️','gif':'🖼️','mp4':'🎬','mp3':'🎵','zip':'📦','rar':'📦'
+                    };
+                    const icon = icons[ext] || '📄';
+
+                    html += '<div class="file-item">' +
+                        '<div class="file-info">' +
+                        '<span class="file-icon">' + icon + '</span>' +
+                        '<div class="file-detail">' +
+                        '<span class="file-name">' + file.name + '</span>' +
+                        '<span class="file-meta">' + size + ' · ' + date + '</span>' +
+                        '</div></div>' +
+                        '<a href="' + urlData.publicUrl + '" target="_blank" class="file-download-btn">下载</a>' +
+                        '</div>';
+                });
+                fileList.innerHTML = html;
+            } catch(err) {
+                fileList.innerHTML = '<div class="empty-text">📭 暂无文件</div>';
+            }
+        })();
+
+        function formatSize(bytes) {
+            if (!bytes) return '';
+            const k = 1024;
+            const sizes = ['B','KB','MB','GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
     </script>
 </body>
 </html>

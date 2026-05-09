@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传文件 - 青柠网盘</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">🍋 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html#files">文件列表</a></li>
+                <li><a href="about.html">关于</a></li>
+                <li><a href="upload.html" class="nav-login-btn">上传文件</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- 上传页面 -->
+    <section class="upload-page">
+        <div class="container">
+            <div class="upload-header">
+                <h1>📤 上传文件</h1>
+                <p>支持所有文件类型，单文件最大 50MB，总存储 1GB</p>
+            </div>
+
+            <!-- 上传区域 -->
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📁</div>
+                <p>点击或拖拽文件到此处上传</p>
+                <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
+                <button class="upload-select-btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
+            </div>
+
+            <!-- 文件列表（待上传） -->
+            <div id="pendingFiles" class="pending-files" style="display:none">
+                <h3>待上传文件</h3>
+                <div id="pendingList"></div>
+                <button class="auth-submit-btn" onclick="uploadAllFiles()" id="uploadBtn">开始上传</button>
+            </div>
+
+            <!-- 上传进度 -->
+            <div id="uploadProgress" class="upload-progress" style="display:none">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p id="progressText">上传中...</p>
+            </div>
+
+            <!-- 上传结果 -->
+            <div id="uploadResult" class="upload-result" style="display:none">
+                <h3>上传结果</h3>
+                <div id="resultList"></div>
+                <a href="index.html#files" class="back-to-login">← 查看所有文件</a>
+            </div>
+
+            <!-- 已上传文件列表 -->
+            <div class="uploaded-files">
+                <h2>📂 已上传文件</h2>
+                <div id="fileList" class="file-list">
+                    <div class="loading-text">加载中...</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 青柠网盘. All rights reserved.</p>
+            <p class="credit">王梓豪制作</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
+    <script src="upload.js"></script>
+</body>
+</html>
