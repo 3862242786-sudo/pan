@@ -1,7 +1,8 @@
 // ===== 文件上传逻辑 =====
 // Supabase 配置和客户端已在 auth2.js 中初始化，直接使用 supabaseClient
 
-// 站长无限制，普通用户50MB
+// 未注册用户20MB，普通用户50MB，站长无限制
+const GUEST_MAX_SIZE = 20 * 1024 * 1024;
 const NORMAL_USER_MAX_SIZE = 50 * 1024 * 1024;
 
 let selectedFiles = [];
@@ -38,13 +39,25 @@ function handleFileSelect(event) {
 }
 
 function addFiles(files) {
+    const isLoggedIn = localStorage.getItem('qn_logged_in');
     const isAdmin = localStorage.getItem('qn_is_admin') === 'true';
     files.forEach(file => {
-        if (!isAdmin && file.size > NORMAL_USER_MAX_SIZE) {
-            alert('文件 ' + file.name + ' 超过 50MB 限制！（站长账户无限制）');
+        if (isAdmin) {
+            // 站长无限制
+            selectedFiles.push(file);
+        } else if (!isLoggedIn && file.size > GUEST_MAX_SIZE) {
+            // 未登录用户超过20MB，跳转登录
+            if (confirm('文件 ' + file.name + ' 超过 20MB，未登录用户限制 20MB。\n登录后可上传 50MB 文件，是否立即登录？')) {
+                window.location.href = 'auth.html';
+            }
             return;
+        } else if (isLoggedIn && file.size > NORMAL_USER_MAX_SIZE) {
+            // 已登录普通用户超过50MB
+            alert('文件 ' + file.name + ' 超过 50MB 限制！');
+            return;
+        } else {
+            selectedFiles.push(file);
         }
-        selectedFiles.push(file);
     });
     renderPendingFiles();
 }
