@@ -1,6 +1,6 @@
 // ===== 管理后台逻辑 =====
+// ADMIN_EMAIL 已在 auth2.js 中定义
 
-const ADMIN_EMAIL = '3862242786@qq.com';
 const BUCKET_NAME = 'files';
 
 // 检查管理员权限

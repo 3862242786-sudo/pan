@@ -1,7 +1,6 @@
 // ===== 文件上传逻辑 =====
 // Supabase 配置和客户端已在 auth2.js 中初始化，直接使用 supabaseClient
 
-const BUCKET_NAME = 'files';
 // 站长无限制，普通用户50MB
 const NORMAL_USER_MAX_SIZE = 50 * 1024 * 1024;
 
@@ -113,7 +112,7 @@ async function uploadAllFiles() {
             const fileName = `${timestamp}_${random}.${ext}`;
 
             const { data, error } = await supabaseClient.storage
-                .from(BUCKET_NAME)
+                .from('files')
                 .upload(fileName, file, {
                     cacheControl: '3600',
                     upsert: false,
@@ -125,7 +124,7 @@ async function uploadAllFiles() {
             } else {
                 // 获取公开URL
                 const { data: urlData } = supabaseClient.storage
-                    .from(BUCKET_NAME)
+                    .from('files')
                     .getPublicUrl(fileName);
 
                 results.push({
@@ -184,7 +183,7 @@ async function loadFiles() {
 
     try {
         const { data, error } = await supabaseClient.storage
-            .from(BUCKET_NAME)
+            .from('files')
             .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
         if (error) {
@@ -200,7 +199,7 @@ async function loadFiles() {
         let html = '';
         data.forEach(file => {
             const { data: urlData } = supabaseClient.storage
-                .from(BUCKET_NAME)
+                .from('files')
                 .getPublicUrl(file.name);
 
             const size = formatFileSize(file.metadata?.size || 0);
