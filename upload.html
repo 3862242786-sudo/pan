@@ -11,7 +11,7 @@
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo">🍋 青柠网盘</a>
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
             <ul class="nav-links">
                 <li><a href="index.html#files">文件列表</a></li>
                 <li><a href="about.html">关于</a></li>
@@ -29,13 +29,13 @@
     <section class="upload-page">
         <div class="container">
             <div class="upload-header">
-                <h1>📤 上传文件</h1>
+                <h1><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 上传文件</h1>
                 <p>支持所有文件类型，单文件最大 50MB，总存储 1GB</p>
             </div>
 
             <!-- 上传区域 -->
             <div class="upload-area" id="uploadArea">
-                <div class="upload-icon">📁</div>
+                <div class="upload-icon"><svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
                 <p>点击或拖拽文件到此处上传</p>
                 <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileSelect(event)">
                 <button class="upload-select-btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
@@ -60,12 +60,12 @@
             <div id="uploadResult" class="upload-result" style="display:none">
                 <h3>上传结果</h3>
                 <div id="resultList"></div>
-                <a href="index.html#files" class="back-to-login">← 查看所有文件</a>
+                <a href="index.html#files" class="back-to-login"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg> 查看所有文件</a>
             </div>
 
             <!-- 已上传文件列表 -->
             <div class="uploaded-files">
-                <h2>📂 已上传文件</h2>
+                <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> 已上传文件</h2>
                 <div id="fileList" class="file-list">
                     <div class="loading-text">加载中...</div>
                 </div>

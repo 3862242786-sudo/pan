@@ -11,7 +11,7 @@
     <!-- 导航栏 -->
     <nav class="navbar">
         <div class="nav-container">
-            <a href="index.html" class="logo">🍋 青柠网盘</a>
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
             <ul class="nav-links">
                 <li><a href="index.html#files">文件列表</a></li>
                 <li><a href="about.html">关于</a></li>
@@ -30,28 +30,28 @@
     <section class="admin-page">
         <div class="container">
             <div class="admin-header">
-                <h1>🛡️ 站长管理后台</h1>
+                <h1><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> 站长管理后台</h1>
                 <p id="adminEmail">管理员：加载中...</p>
             </div>
 
             <!-- 统计卡片 -->
             <div class="admin-stats">
                 <div class="admin-stat-card">
-                    <div class="stat-icon">👥</div>
+                    <div class="stat-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                     <div class="stat-info">
                         <span class="stat-number" id="totalUsers">0</span>
                         <span class="stat-label">注册用户</span>
                     </div>
                 </div>
                 <div class="admin-stat-card">
-                    <div class="stat-icon">📂</div>
+                    <div class="stat-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
                     <div class="stat-info">
                         <span class="stat-number" id="totalFiles">0</span>
                         <span class="stat-label">文件数量</span>
                     </div>
                 </div>
                 <div class="admin-stat-card">
-                    <div class="stat-icon">📊</div>
+                    <div class="stat-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
                     <div class="stat-info">
                         <span class="stat-number" id="todayVisits">--</span>
                         <span class="stat-label">今日访问</span>
@@ -63,12 +63,12 @@
             <div class="admin-sections">
                 <!-- 文件管理 -->
                 <div class="admin-section">
-                    <h2>📂 文件管理</h2>
+                    <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> 文件管理</h2>
                     <div class="admin-card">
                         <div class="admin-toolbar">
                             <input type="text" id="fileSearch" placeholder="搜索文件名..." oninput="searchAdminFiles()">
-                            <button class="admin-btn" onclick="loadAdminFiles()">🔄 刷新列表</button>
-                            <button class="admin-btn" style="background:#f59e0b" onclick="document.getElementById('adminFileInput').click()">📤 上传文件</button>
+                            <button class="admin-btn" onclick="loadAdminFiles()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 刷新列表</button>
+                            <button class="admin-btn" style="background:#f59e0b" onclick="document.getElementById('adminFileInput').click()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 上传文件</button>
                             <input type="file" id="adminFileInput" multiple style="display:none" onchange="adminUploadFiles(event)">
                         </div>
                         <div id="adminUploadProgress" style="display:none;margin-bottom:16px;">
@@ -85,11 +85,11 @@
 
                 <!-- 用户管理 -->
                 <div class="admin-section">
-                    <h2>👥 用户管理</h2>
+                    <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 用户管理</h2>
                     <div class="admin-card">
                         <div class="admin-toolbar">
                             <input type="text" id="userSearch" placeholder="搜索用户邮箱..." oninput="searchUsers()">
-                            <button class="admin-btn" onclick="loadUsers()">🔄 刷新列表</button>
+                            <button class="admin-btn" onclick="loadUsers()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> 刷新列表</button>
                         </div>
                         <div class="user-list" id="userList">
                             <div class="loading-text">加载中...</div>
@@ -99,23 +99,23 @@
 
                 <!-- 网站公告 -->
                 <div class="admin-section">
-                    <h2>📢 网站公告</h2>
+                    <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 网站公告</h2>
                     <div class="admin-card">
                         <textarea id="announcement" placeholder="输入网站公告内容..." rows="3"></textarea>
-                        <button class="admin-btn" onclick="saveAnnouncement()">💾 保存公告</button>
+                        <button class="admin-btn" onclick="saveAnnouncement()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存公告</button>
                         <div id="announcementMsg" class="admin-msg"></div>
                     </div>
                 </div>
 
                 <!-- 网站设置 -->
                 <div class="admin-section">
-                    <h2>⚙️ 网站设置</h2>
+                    <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg> 网站设置</h2>
                     <div class="admin-card">
                         <div class="setting-item">
                             <label>是否开放注册</label>
                             <select id="allowRegister" onchange="saveSetting('allowRegister')">
-                                <option value="true">✅ 开放</option>
-                                <option value="false">❌ 关闭</option>
+                                <option value="true">开放</option>
+                                <option value="false">关闭</option>
                             </select>
                         </div>
                         <div class="setting-item">
