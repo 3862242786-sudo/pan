@@ -226,7 +226,7 @@ function saveSetting(key) {
     if (key === 'allowRegister') {
         const val = document.getElementById('allowRegister').value;
         localStorage.setItem('qn_allow_register', val);
-        alert('✅ 设置已保存！');
+        alert(val === 'true' ? '✅ 已开放注册！' : '🔒 已关闭注册！');
     } else if (key === 'contact') {
         const val = document.getElementById('adminContact').value;
         localStorage.setItem('qn_admin_contact', val);

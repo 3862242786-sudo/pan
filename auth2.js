@@ -43,6 +43,14 @@ function showMessage(elementId, message, isError = false) {
 // ===== 注册 =====
 async function handleRegister(e) {
     e.preventDefault();
+
+    // 检查是否开放注册
+    const allowRegister = localStorage.getItem('qn_allow_register');
+    if (allowRegister === 'false') {
+        showMessage('registerMessage', '当前暂未开放注册，请联系站长', true);
+        return;
+    }
+
     const email = document.getElementById('regEmail').value;
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
