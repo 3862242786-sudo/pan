@@ -101,9 +101,21 @@
                 <div class="admin-section">
                     <h2><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 网站公告</h2>
                     <div class="admin-card">
-                        <textarea id="announcement" placeholder="输入网站公告内容..." rows="3"></textarea>
-                        <button class="admin-btn" onclick="saveAnnouncement()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存公告</button>
+                        <textarea id="announcement" placeholder="输入网站公告内容（留空则不显示公告）..." rows="3"></textarea>
+                        <div class="admin-btn-group">
+                            <button class="admin-btn" onclick="saveAnnouncement()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存公告</button>
+                            <button class="admin-btn admin-btn-secondary" onclick="clearAnnouncement()">清除公告</button>
+                        </div>
                         <div id="announcementMsg" class="admin-msg"></div>
+                        <div class="announcement-preview" id="announcementPreview" style="display:none;margin-top:16px;">
+                            <p style="font-size:0.8rem;color:#64748b;margin-bottom:8px;">预览效果：</p>
+                            <div class="announcement-banner" style="position:relative;">
+                                <div class="announcement-content">
+                                    <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+                                    <span id="previewText"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

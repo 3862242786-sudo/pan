@@ -186,8 +186,28 @@ function saveAnnouncement() {
     localStorage.setItem('qn_announcement', text);
     
     const msg = document.getElementById('announcementMsg');
-    msg.textContent = '✅ 公告已保存！（仅本地存储）';
-    msg.style.color = '#16a34a';
+    if (text) {
+        msg.textContent = '✅ 公告已保存！将在首页显示。';
+        msg.style.color = '#16a34a';
+        // 更新预览
+        document.getElementById('previewText').textContent = text;
+        document.getElementById('announcementPreview').style.display = 'block';
+    } else {
+        msg.textContent = '✅ 公告已清除！首页将不再显示公告。';
+        msg.style.color = '#64748b';
+        document.getElementById('announcementPreview').style.display = 'none';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 3000);
+}
+
+function clearAnnouncement() {
+    document.getElementById('announcement').value = '';
+    localStorage.removeItem('qn_announcement');
+    document.getElementById('announcementPreview').style.display = 'none';
+    
+    const msg = document.getElementById('announcementMsg');
+    msg.textContent = '✅ 公告已清除！';
+    msg.style.color = '#64748b';
     setTimeout(() => { msg.textContent = ''; }, 3000);
 }
 
@@ -195,6 +215,9 @@ function loadAnnouncement() {
     const announcement = localStorage.getItem('qn_announcement');
     if (announcement) {
         document.getElementById('announcement').value = announcement;
+        // 显示预览
+        document.getElementById('previewText').textContent = announcement;
+        document.getElementById('announcementPreview').style.display = 'block';
     }
 }
 

@@ -247,6 +247,44 @@ body {
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
+/* ===== 公告横幅 ===== */
+.announcement-banner {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-bottom: 1px solid #fcd34d;
+    padding: 12px 0;
+}
+
+.announcement-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #92400e;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.announcement-content .icon {
+    color: #d97706;
+    flex-shrink: 0;
+}
+
+.announcement-close {
+    background: none;
+    border: none;
+    color: #92400e;
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0 8px;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    line-height: 1;
+}
+
+.announcement-close:hover {
+    opacity: 1;
+}
+
 .search-box {
     display: flex;
     gap: 8px;
@@ -1231,6 +1269,21 @@ body {
 
 .admin-btn-danger:hover {
     background: #dc2626;
+}
+
+.admin-btn-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.admin-btn-secondary {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
+.admin-btn-secondary:hover {
+    background: #e2e8f0 !important;
 }
 
 /* 用户列表 */
