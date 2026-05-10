@@ -222,15 +222,40 @@ function loadAnnouncement() {
 }
 
 // ===== 网站设置 =====
+const SETTINGS_FILE = 'site_settings.json';
+
 function saveSetting(key) {
     if (key === 'allowRegister') {
         const val = document.getElementById('allowRegister').value;
         localStorage.setItem('qn_allow_register', val);
+        saveSettingsToCloud();
         alert(val === 'true' ? '✅ 已开放注册！' : '🔒 已关闭注册！');
     } else if (key === 'contact') {
         const val = document.getElementById('adminContact').value;
         localStorage.setItem('qn_admin_contact', val);
+        saveSettingsToCloud();
         alert('✅ 设置已保存！');
+    }
+}
+
+// 将设置同步到 Supabase（所有用户可读）
+async function saveSettingsToCloud() {
+    const settings = {
+        allowRegister: localStorage.getItem('qn_allow_register') || 'true',
+        contact: localStorage.getItem('qn_admin_contact') || '',
+        announcement: localStorage.getItem('qn_announcement') || '',
+        updatedAt: new Date().toISOString()
+    };
+    try {
+        await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .upload(SETTINGS_FILE, JSON.stringify(settings), {
+                cacheControl: '60',
+                upsert: true,
+                contentType: 'application/json'
+            });
+    } catch (err) {
+        console.error('同步设置失败:', err);
     }
 }
 

@@ -161,14 +161,21 @@
             }
         })();
 
-        // 加载公告
-        (function() {
-            const announcement = localStorage.getItem('qn_announcement');
-            const dismissed = sessionStorage.getItem('qn_announcement_dismissed');
-            if (announcement && announcement.trim() && !dismissed) {
-                document.getElementById('announcementText').textContent = announcement;
-                document.getElementById('announcementBanner').style.display = 'block';
-            }
+        // 从云端加载公告和设置
+        (async function() {
+            try {
+                const { data } = supabaseClient.storage.from('files').getPublicUrl('site_settings.json');
+                const resp = await fetch(data.publicUrl + '?t=' + Date.now());
+                if (resp.ok) {
+                    const settings = await resp.json();
+                    const announcement = settings.announcement;
+                    const dismissed = sessionStorage.getItem('qn_announcement_dismissed');
+                    if (announcement && announcement.trim() && !dismissed) {
+                        document.getElementById('announcementText').textContent = announcement;
+                        document.getElementById('announcementBanner').style.display = 'block';
+                    }
+                }
+            } catch (err) {}
         })();
 
         function closeAnnouncement() {
