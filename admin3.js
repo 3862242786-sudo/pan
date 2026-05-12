@@ -54,7 +54,7 @@ async function loadAdminFiles() {
                         <span class="user-meta">${size} · ${date}</span>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <a href="${urlData.publicUrl}" download="${file.name}" class="admin-btn" style="padding:8px 12px;font-size:0.85rem;text-decoration:none;">下载</a>
+                        <a href="javascript:void(0)" onclick="downloadFile('${urlData.publicUrl}','${file.name}')" class="admin-btn" style="padding:8px 12px;font-size:0.85rem;text-decoration:none;">下载</a>
                         <button class="admin-btn-danger" onclick="adminDeleteFile('${file.name}')">删除</button>
                     </div>
                 </div>
@@ -307,6 +307,23 @@ async function init() {
     // 加载公告和设置
     loadAnnouncement();
     loadSettings();
+}
+
+// 通过 fetch+blob 强制下载
+async function downloadFile(url, filename) {
+    try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    } catch (err) {
+        window.open(url, '_blank');
+    }
 }
 
 init();

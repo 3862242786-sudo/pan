@@ -229,7 +229,7 @@ async function loadFiles() {
                             <span class="file-meta">${size} · ${date}</span>
                         </div>
                     </div>
-                    <a href="${urlData.publicUrl}" target="_blank" class="file-download-btn" download>下载</a>
+                    <a href="javascript:void(0)" onclick="downloadFile('${urlData.publicUrl}','${file.name}')" class="file-download-btn">下载</a>
                 </div>
             `;
         });
@@ -260,6 +260,23 @@ function getFileIcon(ext) {
         'exe': '⚙️', 'apk': '📱', 'js': '💛', 'py': '🐍', 'html': '🌐', 'css': '🎨',
     };
     return icons[ext] || '📄';
+}
+
+// 通过 fetch+blob 强制下载
+async function downloadFile(url, filename) {
+    try {
+        const resp = await fetch(url);
+        const blob = await resp.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    } catch (err) {
+        window.open(url, '_blank');
+    }
 }
 
 // 页面加载时获取文件列表
