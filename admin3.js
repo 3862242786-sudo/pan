@@ -54,7 +54,7 @@ async function loadAdminFiles() {
                         <span class="user-meta">${size} · ${date}</span>
                     </div>
                     <div style="display:flex;gap:8px;">
-                        <a href="${urlData.publicUrl}" target="_blank" class="admin-btn" style="padding:8px 12px;font-size:0.85rem;text-decoration:none;">下载</a>
+                        <a href="${urlData.publicUrl}" download="${file.name}" class="admin-btn" style="padding:8px 12px;font-size:0.85rem;text-decoration:none;">下载</a>
                         <button class="admin-btn-danger" onclick="adminDeleteFile('${file.name}')">删除</button>
                     </div>
                 </div>
