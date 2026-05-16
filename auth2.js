@@ -2,6 +2,14 @@
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
 
+// CDN 加载保护
+if (typeof window.supabase === 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.innerHTML = '<div style="text-align:center;padding:80px 20px;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><h2 style="color:#1e293b;">加载失败</h2><p style="color:#64748b;margin-top:8px;">无法加载登录组件，请检查网络连接后刷新页面。</p></div>';
+    });
+    throw new Error('Supabase JS SDK not loaded');
+}
+
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 站长邮箱（管理员）
@@ -151,8 +159,12 @@ async function handleLogin(e) {
         showMessage('loginMessage', '登录成功！正在跳转...');
         saveLoginState(email);
 
-        // 所有用户都跳转到首页
-        setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        // 管理员跳转到管理后台，普通用户跳转到首页
+        if (email === ADMIN_EMAIL) {
+            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        } else {
+            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        }
     } catch (err) {
         showMessage('loginMessage', '登录失败，请稍后重试', true);
     }
@@ -196,7 +208,11 @@ async function handleResetPassword(e) {
 
 // ===== 退出登录 =====
 async function handleLogout() {
-    await supabaseClient.auth.signOut();
+    try {
+        await supabaseClient.auth.signOut();
+    } catch (e) {
+        console.warn('Supabase signOut failed:', e);
+    }
     localStorage.removeItem('qn_logged_in');
     localStorage.removeItem('qn_user_email');
     localStorage.removeItem('qn_is_admin');
@@ -206,5 +222,22 @@ async function handleLogout() {
     window.location.href = 'auth.html';
 }
 
-// 页面加载时不再自动跳转
-// checkAuth();
+// ===== 验证登录状态（异步检查Session） =====
+async function checkLoginState() {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            // Session 已过期，清除本地状态
+            localStorage.removeItem('qn_logged_in');
+            localStorage.removeItem('qn_user_email');
+            localStorage.removeItem('qn_is_admin');
+            return false;
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// 页面加载时异步验证Session
+checkLoginState();
