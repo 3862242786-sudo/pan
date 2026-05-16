@@ -1,14 +1,22 @@
 {
   "latest": {
-    "version": "3.0.0",
-    "versionCode": 10,
-    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v3.0.0.apk",
-    "updateLog": "v3.0.0 全新本地UI\n完全本地UI化，数据API获取后本地渲染\n大量动画美化\n主题切换功能\n统计卡片\n文件列表本地渲染",
-    "force": true,
+    "version": "3.0.1",
+    "versionCode": 11,
+    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v3.0.1.apk",
+    "updateLog": "v3.0.1 Bug修复\n修复数据加载失败问题\n修复导航切换失效问题\n修复上传功能失效问题\n添加本地上传页面",
+    "force": false,
     "date": "2026-05-16",
-    "note": "【重大更新】全新本地UI，大量动画，主题切换"
+    "note": "【推荐】修复3个关键bug"
   },
   "history": [
+    {
+      "version": "3.0.1",
+      "versionCode": 11,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v3.0.1.apk",
+      "updateLog": "v3.0.1 Bug修复\n修复数据加载失败问题\n修复导航切换失效问题\n修复上传功能失效问题\n添加本地上传页面",
+      "date": "2026-05-16",
+      "note": "【推荐】修复3个关键bug"
+    },
     {
       "version": "3.0.0",
       "versionCode": 10,
