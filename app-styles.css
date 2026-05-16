@@ -1,0 +1,466 @@
+/* ===== APP专属样式 - 适配移动端 ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --text: #1e293b;
+    --text-secondary: #64748b;
+    --border: #e2e8f0;
+    --safe-top: env(safe-area-inset-top);
+    --safe-bottom: env(safe-area-inset-bottom);
+}
+
+html, body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* 状态栏占位 */
+.status-bar {
+    height: var(--safe-top);
+    background: var(--primary);
+}
+
+/* 顶部导航 */
+.app-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    padding: 12px 16px calc(12px + var(--safe-top));
+    padding-top: calc(12px + var(--safe-top));
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.app-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.app-logo svg {
+    stroke: white;
+}
+
+.app-version {
+    color: rgba(255,255,255,0.8);
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.15);
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* 主内容区 */
+.app-main {
+    padding: 16px;
+    padding-bottom: calc(80px + var(--safe-bottom));
+}
+
+/* 搜索栏 */
+.app-search-section {
+    margin-bottom: 16px;
+}
+
+.app-search-box {
+    display: flex;
+    align-items: center;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-search-box .search-icon {
+    color: var(--text-secondary);
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.app-search-box input {
+    flex: 1;
+    border: none;
+    background: none;
+    font-size: 0.95rem;
+    color: var(--text);
+    outline: none;
+}
+
+.app-search-box input::placeholder {
+    color: #94a3b8;
+}
+
+/* 功能卡片 */
+.app-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.app-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 16px;
+    text-decoration: none;
+    transition: transform 0.2s;
+}
+
+.app-card:active {
+    transform: scale(0.98);
+}
+
+.app-card-primary {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: white;
+}
+
+.app-card-secondary {
+    background: var(--card-bg);
+    color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.app-card-primary .app-card-icon {
+    background: rgba(255,255,255,0.2);
+}
+
+.app-card-secondary .app-card-icon {
+    background: #eff6ff;
+    color: var(--primary);
+}
+
+.app-card-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-card-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.app-card-desc {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+/* 标签页 */
+.app-tabs {
+    display: flex;
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 8px;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    border-radius: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.app-tab.active {
+    background: #eff6ff;
+    color: var(--primary);
+}
+
+.app-tab svg {
+    stroke-width: 2;
+}
+
+/* 标签内容 */
+.app-tab-content {
+    display: none;
+}
+
+.app-tab-content.active {
+    display: block;
+}
+
+/* 分区标题 */
+.app-section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.file-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.app-text-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+/* 文件列表 */
+.app-file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.app-file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    background: var(--card-bg);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-file-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.app-file-icon svg {
+    color: var(--primary);
+}
+
+.app-file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.app-file-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+
+.app-file-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 2px;
+    display: block;
+}
+
+.app-file-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #eff6ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    border: none;
+    cursor: pointer;
+}
+
+/* 加载和空状态 */
+.app-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    gap: 12px;
+}
+
+.app-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e2e8f0;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.app-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    gap: 12px;
+}
+
+/* 个人中心 */
+.app-profile {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px;
+    background: var(--card-bg);
+    border-radius: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.app-profile-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-profile-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.app-profile-id {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* 菜单列表 */
+.app-menu-list {
+    background: var(--card-bg);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.app-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    text-decoration: none;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+}
+
+.app-menu-item:last-child {
+    border-bottom: none;
+}
+
+.app-menu-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+}
+
+.app-menu-item span {
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+.app-menu-arrow {
+    color: var(--text-secondary);
+}
+
+.app-version-tag {
+    font-size: 0.75rem;
+    color: var(--primary);
+    background: #eff6ff;
+    padding: 4px 10px;
+    border-radius: 20px;
+}
+
+/* 底部安全区 */
+.safe-area-bottom {
+    height: var(--safe-bottom);
+}
+
+/* 深色模式适配 */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f1f5f9;
+        --text-secondary: #94a3b8;
+        --border: #334155;
+    }
+    
+    .app-search-box,
+    .app-card-secondary,
+    .app-file-item,
+    .app-profile,
+    .app-menu-list {
+        background: var(--card-bg);
+    }
+    
+    .app-file-icon,
+    .app-menu-icon {
+        background: #334155;
+    }
+}
