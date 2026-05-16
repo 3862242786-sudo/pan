@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>站长管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #f8fafc; --card: #fff; --text: #1e293b; --text2: #64748b;
+            --primary: #3b82f6; --primary-light: #dbeafe; --border: #e2e8f0;
+            --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
+            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        [data-theme="dark"] {
+            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --text2: #94a3b8;
+            --primary: #60a5fa; --primary-light: #1e3a5f; --border: #334155;
+            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh;
+            overflow-x: hidden;
+        }
+        /* 头部 */
+        .header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: var(--card); padding: 16px 20px;
+            display: flex; align-items: center; justify-content: space-between;
+            box-shadow: var(--shadow);
+        }
+        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+        .logo-icon {
+            width: 36px; height: 36px; background: var(--primary);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        }
+        .logo-icon svg { width: 22px; height: 22px; stroke: #fff; }
+        .header-actions { display: flex; gap: 12px; }
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; border: none;
+            background: var(--bg); cursor: pointer; display: flex;
+            align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .icon-btn:active { transform: scale(0.9); }
+        .icon-btn svg { width: 20px; height: 20px; stroke: var(--text); }
+        /* 页面 */
+        .pages { padding-top: 72px; padding-bottom: 80px; min-height: 100vh; }
+        .page { display: none; padding: 16px; }
+        .page.active { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* 卡片 */
+        .card {
+            background: var(--card); border-radius: 16px; padding: 20px;
+            margin-bottom: 16px; box-shadow: var(--shadow);
+        }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+        /* 统计网格 */
+        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        .stat-item {
+            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+            border-radius: 12px; padding: 16px; color: #fff;
+        }
+        .stat-item.warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); }
+        .stat-item.success { background: linear-gradient(135deg, var(--success) 0%, #16a34a 100%); }
+        .stat-item.error { background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%); }
+        .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
+        .stat-label { font-size: 12px; opacity: 0.9; }
+        /* 按钮 */
+        .btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:active { transform: translateY(2px); }
+        .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
+        .btn-danger { background: var(--error); color: #fff; }
+        /* 列表 */
+        .list-item {
+            display: flex; align-items: center; gap: 12px;
+            background: var(--card); padding: 14px; border-radius: 12px;
+            margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .list-icon {
+            width: 40px; height: 40px; background: var(--primary-light);
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+        }
+        .list-icon svg { width: 20px; height: 20px; stroke: var(--primary); }
+        .list-info { flex: 1; }
+        .list-title { font-weight: 500; }
+        .list-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+        /* 底部导航 */
+        .nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--card); display: flex; justify-content: space-around;
+            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100;
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 6px 20px; cursor: pointer; color: var(--text2);
+            font-size: 11px; font-weight: 500; transition: all 0.2s;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 24px; height: 24px; stroke-width: 2; }
+        /* Toast */
+        .toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: var(--card); color: var(--text); padding: 12px 20px;
+            border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none;
+            transition: all 0.3s; z-index: 1000;
+            box-shadow: var(--shadow); border: 1px solid var(--border);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        /* 加载 */
+        .loading { text-align: center; padding: 40px; }
+        .spinner {
+            width: 40px; height: 40px; border: 3px solid var(--border);
+            border-top-color: var(--primary); border-radius: 50%;
+            animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+    
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            站长管理后台
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" onclick="toggleTheme()">
+                <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="5"/>
+                    <line x1="12" y1="1" x2="12" y2="3"/>
+                    <line x1="12" y1="21" x2="12" y2="23"/>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                    <line x1="1" y1="12" x2="3" y2="12"/>
+                    <line x1="21" y1="12" x2="23" y2="12"/>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                </svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="pages">
+        <!-- 概览页 -->
+        <div id="page-overview" class="page active">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="statFiles">-</div>
+                    <div class="stat-label">文件总数</div>
+                </div>
+                <div class="stat-item success">
+                    <div class="stat-value" id="statToday">-</div>
+                    <div class="stat-label">今日新增</div>
+                </div>
+                <div class="stat-item warning">
+                    <div class="stat-value" id="statStorage">-</div>
+                    <div class="stat-label">存储使用</div>
+                </div>
+                <div class="stat-item error">
+                    <div class="stat-value" id="statUsers">-</div>
+                    <div class="stat-label">用户数</div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-title">快捷操作</div>
+                <button class="btn btn-primary" onclick="openWeb('admin.html')">🎛️ 进入完整后台</button>
+                <button class="btn btn-outline" onclick="loadFiles()">🔄 刷新数据</button>
+            </div>
+        </div>
+
+        <!-- 文件管理页 -->
+        <div id="page-files" class="page">
+            <div class="card">
+                <div class="card-title">文件管理</div>
+                <div id="filesList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p style="color: var(--text2);">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 设置页 -->
+        <div id="page-settings" class="page">
+            <div class="card">
+                <div class="card-title">系统设置</div>
+                <button class="btn btn-outline" onclick="toggleTheme()">🌓 切换主题</button>
+                <button class="btn btn-outline" onclick="clearCache()">🗑️ 清除缓存</button>
+            </div>
+            <div class="card">
+                <div class="card-title">危险操作</div>
+                <button class="btn btn-danger" onclick="clearAllFiles()">⚠️ 清空所有文件</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="nav">
+        <div class="nav-item active" onclick="switchPage('overview')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            概览
+        </div>
+        <div class="nav-item" onclick="switchPage('files')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            文件
+        </div>
+        <div class="nav-item" onclick="switchPage('settings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            设置
+        </div>
+    </nav>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
+    <script>
+        const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
+        const BUCKET_NAME = 'files';
+        
+        let supabaseClient = null;
+        if (typeof window.supabase !== 'undefined') {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
+        
+        // 主题
+        function initTheme() {
+            const saved = localStorage.getItem('admin-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', saved);
+            updateThemeIcon(saved);
+        }
+        
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            const next = current === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('admin-theme', next);
+            updateThemeIcon(next);
+            showToast(next === 'dark' ? '已切换到深色模式' : '已切换到浅色模式');
+        }
+        
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (theme === 'dark') {
+                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+            } else {
+                icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+            }
+        }
+        
+        // 页面切换
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach((n, i) => {
+                n.classList.toggle('active', 
+                    (page === 'overview' && i === 0) ||
+                    (page === 'files' && i === 1) ||
+                    (page === 'settings' && i === 2)
+                );
+            });
+            document.getElementById('page-' + page).classList.add('active');
+            if (page === 'files') loadFiles();
+        }
+        
+        // 加载数据
+        async function loadFiles() {
+            if (!supabaseClient) {
+                showToast('服务组件未加载');
+                return;
+            }
+            try {
+                const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list('', {
+                    limit: 100, offset: 0, sortBy: { column: 'created_at', order: 'desc' }
+                });
+                if (error) throw error;
+                
+                const files = data || [];
+                document.getElementById('statFiles').textContent = files.length;
+                const today = new Date().toDateString();
+                document.getElementById('statToday').textContent = files.filter(f => new Date(f.created_at).toDateString() === today).length;
+                
+                let totalSize = files.reduce((sum, f) => sum + (f.metadata?.size || 0), 0);
+                document.getElementById('statStorage').textContent = formatSize(totalSize);
+                document.getElementById('statUsers').textContent = '-';
+                
+                renderFiles(files);
+            } catch (err) {
+                showToast('加载失败: ' + err.message);
+            }
+        }
+        
+        function renderFiles(files) {
+            const container = document.getElementById('filesList');
+            if (!files || files.length === 0) {
+                container.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px;">暂无文件</p>';
+                return;
+            }
+            container.innerHTML = files.map(f => `
+                <div class="list-item">
+                    <div class="list-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        </svg>
+                    </div>
+                    <div class="list-info">
+                        <div class="list-title">${f.name}</div>
+                        <div class="list-desc">${formatSize(f.metadata?.size || 0)} · ${new Date(f.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <button class="btn btn-danger" style="width:auto;padding:8px 16px;" onclick="deleteFile('${f.name}')">删除</button>
+                </div>
+            `).join('');
+        }
+        
+        async function deleteFile(name) {
+            if (!confirm('确定要删除 ' + name + ' 吗？')) return;
+            try {
+                const { error } = await supabaseClient.storage.from(BUCKET_NAME).remove([name]);
+                if (error) throw error;
+                showToast('删除成功');
+                loadFiles();
+            } catch (err) {
+                showToast('删除失败: ' + err.message);
+            }
+        }
+        
+        function clearCache() {
+            localStorage.clear();
+            showToast('缓存已清除');
+        }
+        
+        function clearAllFiles() {
+            if (!confirm('⚠️ 警告：这将删除所有文件！\n\n此操作不可恢复，确定继续吗？')) return;
+            showToast('请前往完整后台执行此操作');
+        }
+        
+        function openWeb(path) {
+            window.location.href = 'https://3862242786-sudo.github.io/pan/' + path;
+        }
+        
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+        
+        function formatSize(bytes) {
+            if (!bytes) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        // 初始化
+        initTheme();
+        loadFiles();
+    </script>
+</body>
+</html>
