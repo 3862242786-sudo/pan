@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>青柠网盘</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card: #fff;
+            --text: #333;
+            --text2: #666;
+            --primary: #3b82f6;
+            --border: #e0e0e0;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        [data-theme="dark"] {
+            --bg: #1a1a1a;
+            --card: #2a2a2a;
+            --text: #eee;
+            --text2: #999;
+            --primary: #60a5fa;
+            --border: #333;
+            --shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: 60px;
+        }
+        /* 头部 */
+        .header {
+            background: var(--card);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .theme-btn {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--bg);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 页面内容 */
+        .page {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.2s ease;
+        }
+        .page.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* 卡片 */
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+        }
+        /* 底部导航 */
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 16px;
+            cursor: pointer;
+            color: var(--text2);
+            font-size: 12px;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 24px; height: 24px; }
+        /* 网络错误 */
+        .error-page {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .error-icon {
+            width: 80px; height: 80px;
+            margin: 0 auto 20px;
+            background: var(--border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <div class="header">
+        <div class="logo">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            </svg>
+            青柠网盘
+        </div>
+        <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+    </div>
+
+    <!-- 首页 -->
+    <div id="page-home" class="page active">
+        <div class="card">
+            <h2 style="margin-bottom: 8px;">欢迎使用</h2>
+            <p style="color: var(--text2); margin-bottom: 16px;">简单快速的文件分享服务</p>
+            <button class="btn" onclick="openWeb('upload')">📤 上传文件</button>
+            <button class="btn btn-outline" onclick="openWeb('files')">📁 查看文件</button>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom: 12px;">快捷入口</h3>
+            <button class="btn btn-outline" onclick="openWeb('')">🌐 访问网页版</button>
+        </div>
+    </div>
+
+    <!-- 文件页 -->
+    <div id="page-files" class="page">
+        <div class="card">
+            <h3 style="margin-bottom: 16px;">文件列表</h3>
+            <button class="btn" onclick="openWeb('files')">打开文件列表</button>
+        </div>
+    </div>
+
+    <!-- 我的页面 -->
+    <div id="page-me" class="page">
+        <div class="card">
+            <h3 style="margin-bottom: 16px;">设置</h3>
+            <button class="btn" onclick="toggleTheme()">切换主题</button>
+            <button class="btn btn-outline" onclick="openWeb('about')">关于我们</button>
+        </div>
+    </div>
+
+    <!-- 网络错误页 -->
+    <div id="page-error" class="page">
+        <div class="error-page">
+            <div class="error-icon">📡</div>
+            <h3>无法连接网络</h3>
+            <p style="color: var(--text2); margin: 12px 0 20px;">请检查网络后重试</p>
+            <button class="btn" onclick="checkNetwork()">重新连接</button>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="nav">
+        <div class="nav-item active" onclick="switchTab('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            首页
+        </div>
+        <div class="nav-item" onclick="switchTab('files')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            文件
+        </div>
+        <div class="nav-item" onclick="switchTab('me')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            设置
+        </div>
+    </div>
+
+    <script>
+        // 主题切换
+        function toggleTheme() {
+            const html = document.documentElement;
+            const btn = document.querySelector('.theme-btn');
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            btn.textContent = isDark ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+        }
+        // 加载保存的主题
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.querySelector('.theme-btn').textContent = savedTheme === 'dark' ? '☀️' : '🌙';
+
+        // 页面切换
+        function switchTab(tab) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page-' + tab).classList.add('active');
+            event.target.closest('.nav-item').classList.add('active');
+        }
+
+        // 打开网页
+        function openWeb(path) {
+            const base = 'https://3862242786-sudo.github.io/pan/';
+            window.location.href = base + (path ? '#' + path : '');
+        }
+
+        // 检查网络
+        function checkNetwork() {
+            fetch('https://3862242786-sudo.github.io/pan/', { mode: 'no-cors' })
+                .then(() => switchTab('home'))
+                .catch(() => alert('仍无法连接网络'));
+        }
+    </script>
+</body>
+</html>
