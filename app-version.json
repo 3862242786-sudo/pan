@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
-  "versionCode": 2,
+  "version": "1.1.1",
+  "versionCode": 3,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
-  "updateLog": "修复Android 11显示问题\n优化界面适配\n添加下载历史功能\n添加版本检测更新",
-  "force": false,
-  "minVersion": "1.0.0"
+  "updateLog": "修复显示比例异常问题\n优化WebView缩放设置",
+  "force": true,
+  "minVersion": "1.1.0"
 }

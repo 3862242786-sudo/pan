@@ -17,11 +17,20 @@
     --safe-bottom: env(safe-area-inset-bottom);
 }
 
-html, body {
+html {
+    /* 固定viewport缩放，防止WebView自动缩放导致比例异常 */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
     font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
+    width: 100%;
+    max-width: 100vw;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
 }
