@@ -1,8 +1,8 @@
 {
-  "version": "1.2.0",
-  "versionCode": 5,
+  "version": "1.2.1",
+  "versionCode": 6,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
-  "updateLog": "修复登录功能失效问题\n修复Session过期后状态不更新\n修复退出登录异常\n修复管理员登录跳转错误\n锁定SDK版本号防止兼容性问题",
+  "updateLog": "修复APP显示默认账号问题\n正确验证Session显示登录状态\n未登录时显示游客",
   "force": true,
-  "minVersion": "1.1.2"
+  "minVersion": "1.2.0"
 }
