@@ -1,8 +1,8 @@
 {
-  "version": "1.1.1",
-  "versionCode": 3,
+  "version": "1.1.2",
+  "versionCode": 4,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
-  "updateLog": "修复显示比例异常问题\n优化WebView缩放设置",
+  "updateLog": "修复红米等全面屏手机显示比例问题\n适配刘海屏/水滴屏\n优化WebView缩放设置",
   "force": true,
-  "minVersion": "1.1.0"
+  "minVersion": "1.1.1"
 }
