@@ -7,7 +7,7 @@ const BUCKET_NAME = 'files';
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let downloadHistory = [];
-let currentVersion = '1.1.0';
+let currentVersion = '3.0.1';
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
