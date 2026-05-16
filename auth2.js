@@ -7,10 +7,9 @@ if (typeof window.supabase === 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
         document.body.innerHTML = '<div style="text-align:center;padding:80px 20px;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><h2 style="color:#1e293b;">加载失败</h2><p style="color:#64748b;margin-top:8px;">无法加载登录组件，请检查网络连接后刷新页面。</p></div>';
     });
-    throw new Error('Supabase JS SDK not loaded');
+} else {
+    var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
-
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 站长邮箱（管理员）
 const ADMIN_EMAIL = '3862242786@qq.com';

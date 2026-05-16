@@ -246,6 +246,8 @@
             const adminBtn = document.getElementById('navAdminBtn');
             const logoutBtn = document.getElementById('navLogoutBtn');
             
+            if (typeof supabaseClient === 'undefined') return;
+            
             try {
                 // 验证真实的Supabase Session
                 const { data: { session } } = await supabaseClient.auth.getSession();
