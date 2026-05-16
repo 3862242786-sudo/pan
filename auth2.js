@@ -67,9 +67,14 @@ async function handleRegister(e) {
         // 读取失败时默认允许注册
     }
 
-    const email = document.getElementById('regEmail').value;
+    const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+    if (!email || !password) {
+        showMessage('registerMessage', '请输入邮箱和密码！', true);
+        return;
+    }
 
     if (password !== confirmPassword) {
         showMessage('registerMessage', '两次输入的密码不一致！', true);
@@ -131,8 +136,13 @@ async function handleRegister(e) {
 // ===== 登录 =====
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
+    const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
+
+    if (!email || !password) {
+        showMessage('loginMessage', '请输入邮箱和密码！', true);
+        return;
+    }
 
     try {
         const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -144,12 +154,20 @@ async function handleLogin(e) {
             if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
                 showMessage('loginMessage', '邮箱或密码错误！', true);
             } else if (error.message.includes('Email not confirmed')) {
-                showMessage('loginMessage', '邮箱未确认，正在尝试重新发送确认邮件...', false);
-                // 尝试重新发送确认邮件
-                await supabaseClient.auth.resend({
-                    type: 'signup',
-                    email: email,
-                });
+                showMessage('loginMessage', '邮箱未确认，正在重新发送确认邮件...', false);
+                try {
+                    await supabaseClient.auth.resend({
+                        type: 'signup',
+                        email: email,
+                    });
+                    showMessage('loginMessage', '确认邮件已发送，请查收邮箱', false);
+                } catch (resendErr) {
+                    showMessage('loginMessage', '邮箱未确认，请检查邮箱或联系站长', true);
+                }
+            } else if (error.message.includes('Too many requests')) {
+                showMessage('loginMessage', '请求过于频繁，请稍后再试', true);
+            } else if (error.message.includes('Network') || error.message.includes('fetch')) {
+                showMessage('loginMessage', '网络连接失败，请检查网络后重试', true);
             } else {
                 showMessage('loginMessage', '登录失败：' + error.message, true);
             }
@@ -166,7 +184,8 @@ async function handleLogin(e) {
             setTimeout(() => { window.location.href = 'index.html'; }, 1000);
         }
     } catch (err) {
-        showMessage('loginMessage', '登录失败，请稍后重试', true);
+        console.error('Login error:', err);
+        showMessage('loginMessage', '登录失败，请检查网络后重试', true);
     }
 }
 
