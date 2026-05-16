@@ -308,6 +308,25 @@
                 </p>
             </div>
         </div>
+
+        <!-- 上传页 -->
+        <div id="page-upload" class="page">
+            <div class="card">
+                <h3 style="margin-bottom: 16px;">上传文件</h3>
+                <div id="uploadArea" style="border: 2px dashed var(--border); border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click()">
+                    <div style="font-size: 48px; margin-bottom: 12px;">📤</div>
+                    <p style="color: var(--text2);">点击选择文件</p>
+                    <p style="color: var(--text2); font-size: 12px; margin-top: 4px;">支持任意文件类型</p>
+                </div>
+                <input type="file" id="fileInput" style="display:none" onchange="handleFileSelect(event)">
+                <div id="uploadProgress" style="display:none; margin-top: 16px;">
+                    <div style="background: var(--border); border-radius: 8px; height: 8px; overflow: hidden;">
+                        <div id="uploadBar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.3s; border-radius: 8px;"></div>
+                    </div>
+                    <p id="uploadStatus" style="color: var(--text2); font-size: 13px; margin-top: 8px; text-align: center;">上传中...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- 刷新按钮 -->
@@ -344,14 +363,18 @@
         </div>
     </nav>
 
+    <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
     <script>
         // ===== 配置 =====
         const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const BUCKET_NAME = 'files';
         
-        // 初始化 Supabase
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // 初始化 Supabase（带保护）
+        let supabaseClient = null;
+        if (typeof window.supabase !== 'undefined') {
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
         
         // ===== 状态 =====
         let currentPage = 'home';
@@ -409,6 +432,10 @@
         
         // ===== 数据加载 =====
         async function loadFiles() {
+            if (!supabaseClient) {
+                renderError('无法加载服务组件');
+                return;
+            }
             try {
                 const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list('', {
                     limit: 100, offset: 0, sortBy: { column: 'created_at', order: 'desc' }
@@ -422,8 +449,22 @@
                 updateStats(filesData);
             } catch (err) {
                 showToast('加载失败: ' + err.message);
-                renderEmpty();
+                renderError('加载失败，请检查网络');
             }
+        }
+        
+        function renderError(msg) {
+            const html = `
+                <div class="empty-state">
+                    <div class="empty-icon">⚠️</div>
+                    <p style="color: var(--text2);">${msg}</p>
+                    <button class="btn btn-outline" style="margin-top:16px;max-width:200px;margin-left:auto;margin-right:auto;" onclick="loadFiles()">重试</button>
+                </div>
+            `;
+            document.getElementById('recentFiles').innerHTML = html;
+            document.getElementById('filesList').innerHTML = html;
+            document.getElementById('statFiles').textContent = '0';
+            document.getElementById('statToday').textContent = '0';
         }
         
         function renderFiles(files) {
@@ -486,15 +527,6 @@
             document.getElementById('statToday').textContent = todayCount;
         }
         
-        function renderEmpty() {
-            document.getElementById('filesList').innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">⚠️</div>
-                    <p style="color: var(--text2);">加载失败</p>
-                </div>
-            `;
-        }
-        
         // ===== 操作 =====
         function downloadFile(name) {
             const { data } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(name);
@@ -503,7 +535,55 @@
         }
         
         function openUpload() {
-            window.location.href = 'https://3862242786-sudo.github.io/pan/upload.html';
+            switchPage('upload');
+        }
+        
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!supabaseClient) {
+                showToast('无法上传：服务组件未加载');
+                return;
+            }
+            
+            // 显示进度
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('uploadBar').style.width = '0%';
+            document.getElementById('uploadStatus').textContent = '上传中: ' + file.name;
+            
+            try {
+                // 模拟进度
+                let progress = 0;
+                const timer = setInterval(() => {
+                    progress = Math.min(progress + Math.random() * 15, 90);
+                    document.getElementById('uploadBar').style.width = progress + '%';
+                }, 200);
+                
+                const { error } = await supabaseClient.storage
+                    .from(BUCKET_NAME)
+                    .upload(file.name, file);
+                
+                clearInterval(timer);
+                
+                if (error) throw error;
+                
+                document.getElementById('uploadBar').style.width = '100%';
+                document.getElementById('uploadStatus').textContent = '上传成功！';
+                showToast('上传成功: ' + file.name);
+                
+                // 刷新文件列表
+                filesData = [];
+                loadFiles();
+                
+                setTimeout(() => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                    switchPage('home');
+                }, 1500);
+            } catch (err) {
+                document.getElementById('uploadStatus').textContent = '上传失败: ' + err.message;
+                showToast('上传失败');
+            }
         }
         
         function refreshData() {
