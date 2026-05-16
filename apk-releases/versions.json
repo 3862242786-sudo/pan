@@ -1,21 +1,37 @@
 {
   "latest": {
-    "version": "2.0.0",
-    "versionCode": 8,
-    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v2.0.0.apk",
-    "updateLog": "v2.0.0 全新重构\n精简代码，移除冗余功能\n界面更轻盈简洁\nAPK体积大幅缩小至49KB",
+    "version": "3.0.0",
+    "versionCode": 10,
+    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v3.0.0.apk",
+    "updateLog": "v3.0.0 全新本地UI\n完全本地UI化，数据API获取后本地渲染\n大量动画美化\n主题切换功能\n统计卡片\n文件列表本地渲染",
     "force": true,
     "date": "2026-05-16",
-    "note": "推荐版本，代码最简洁稳定"
+    "note": "【重大更新】全新本地UI，大量动画，主题切换"
   },
   "history": [
+    {
+      "version": "3.0.0",
+      "versionCode": 10,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v3.0.0.apk",
+      "updateLog": "v3.0.0 全新本地UI\n完全本地UI化，数据API获取后本地渲染\n大量动画美化\n主题切换功能\n统计卡片\n文件列表本地渲染",
+      "date": "2026-05-16",
+      "note": "【重大更新】全新本地UI，大量动画，主题切换"
+    },
+    {
+      "version": "2.1.0",
+      "versionCode": 9,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v2.1.0.apk",
+      "updateLog": "本地页面重构\n全新本地主界面\n添加主题切换功能（亮色/暗色）\n页面切换动画\n代码精简至54行",
+      "date": "2026-05-16",
+      "note": "本地页面重构，添加主题切换"
+    },
     {
       "version": "2.0.0",
       "versionCode": 8,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v2.0.0.apk",
       "updateLog": "v2.0.0 全新重构\n精简代码，移除冗余功能\n界面更轻盈简洁\nAPK体积大幅缩小至49KB",
       "date": "2026-05-16",
-      "note": "【推荐】代码精简，仅92行，最稳定版本"
+      "note": "代码精简，仅54行，最稳定版本"
     },
     {
       "version": "1.3.0",

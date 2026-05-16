@@ -1,8 +1,8 @@
 {
-  "version": "2.1.0",
-  "versionCode": 9,
+  "version": "3.0.0",
+  "versionCode": 10,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
-  "updateLog": "v2.1.0 本地页面重构\n全新本地主界面\n添加主题切换功能（亮色/暗色）\n页面切换动画\n代码精简至54行",
+  "updateLog": "v3.0.0 全新本地UI\n完全本地UI化，数据API获取后本地渲染\n大量动画美化\n主题切换功能\n统计卡片\n文件列表本地渲染",
   "force": true,
-  "minVersion": "2.0.0"
+  "minVersion": "2.1.0"
 }
