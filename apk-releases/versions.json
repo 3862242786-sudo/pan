@@ -1,13 +1,20 @@
 {
   "latest": {
-    "version": "1.1.2",
-    "versionCode": 4,
-    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.1.2.apk",
-    "updateLog": "修复红米K20 Pro等全面屏手机显示比例问题\n适配刘海屏/水滴屏\n优化WebView缩放设置",
+    "version": "1.2.0",
+    "versionCode": 5,
+    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.0.apk",
+    "updateLog": "修复登录功能失效问题\n修复Session过期后状态不更新\n修复退出登录异常\n修复管理员登录跳转错误\n锁定SDK版本号防止兼容性问题",
     "force": true,
     "date": "2026-05-16"
   },
   "history": [
+    {
+      "version": "1.2.0",
+      "versionCode": 5,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.0.apk",
+      "updateLog": "修复登录功能失效问题\n修复Session过期后状态不更新\n修复退出登录异常\n修复管理员登录跳转错误\n锁定SDK版本号防止兼容性问题",
+      "date": "2026-05-16"
+    },
     {
       "version": "1.1.2",
       "versionCode": 4,
