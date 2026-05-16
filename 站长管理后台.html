@@ -5,377 +5,819 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>站长管理后台</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        :root {
-            --bg: #f8fafc; --card: #fff; --text: #1e293b; --text2: #64748b;
-            --primary: #3b82f6; --primary-light: #dbeafe; --border: #e2e8f0;
-            --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
-            --shadow: 0 4px 20px rgba(0,0,0,0.08);
+        *{margin:0;padding:0;box-sizing:border-box}
+        :root{
+            --bg:#f0f2f5;--card:#fff;--text:#1a1a2e;--text2:#6b7280;
+            --primary:#3b82f6;--primary-dark:#1d4ed8;--primary-light:#eff6ff;
+            --border:#e5e7eb;--success:#10b981;--error:#ef4444;--warning:#f59e0b;
+            --shadow:0 2px 12px rgba(0,0,0,0.08);--radius:14px;
         }
-        [data-theme="dark"] {
-            --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --text2: #94a3b8;
-            --primary: #60a5fa; --primary-light: #1e3a5f; --border: #334155;
-            --shadow: 0 4px 20px rgba(0,0,0,0.3);
+        [data-theme="dark"]{
+            --bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--text2:#94a3b8;
+            --primary:#60a5fa;--primary-dark:#3b82f6;--primary-light:#1e3a5f;
+            --border:#334155;--shadow:0 2px 12px rgba(0,0,0,0.3);
         }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg); color: var(--text); min-height: 100vh;
-            overflow-x: hidden;
-        }
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+        /* ===== 开屏免责声明 ===== */
+        .splash{position:fixed;inset:0;z-index:9999;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;animation:splashIn .5s ease}
+        @keyframes splashIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        .splash-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 8px 24px rgba(59,130,246,.3)}
+        .splash-logo svg{width:40px;height:40px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .splash h1{font-size:22px;font-weight:700;margin-bottom:8px}
+        .splash p.sub{color:var(--text2);font-size:14px;margin-bottom:32px}
+        .disclaimer-box{background:var(--bg);border-radius:var(--radius);padding:20px;margin-bottom:24px;max-height:40vh;overflow-y:auto;width:100%;max-width:400px;border:1px solid var(--border)}
+        .disclaimer-box h3{font-size:15px;margin-bottom:12px;color:var(--primary)}
+        .disclaimer-box p,.disclaimer-box li{font-size:13px;color:var(--text2);line-height:1.8}
+        .disclaimer-box ul{padding-left:20px}
+        .splash .btn-agree{width:100%;max-width:400px;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
+        .splash .btn-agree:active{transform:scale(.98);background:var(--primary-dark)}
+        .splash .btn-agree:disabled{opacity:.5;cursor:not-allowed}
+
+        /* ===== 登录页 ===== */
+        .login-page{position:fixed;inset:0;z-index:9998;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
+        .login-page.show{display:flex;animation:fadeIn .3s ease}
+        .login-card{background:var(--card);border-radius:var(--radius);padding:32px;width:100%;max-width:380px;box-shadow:var(--shadow)}
+        .login-card h2{text-align:center;margin-bottom:4px;font-size:20px}
+        .login-card .hint{text-align:center;color:var(--text2);font-size:13px;margin-bottom:24px}
+        .form-group{margin-bottom:16px}
+        .form-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:var(--text2)}
+        .form-group input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;background:var(--bg);color:var(--text);outline:none;transition:border .2s}
+        .form-group input:focus{border-color:var(--primary)}
+        .form-msg{text-align:center;font-size:13px;margin-top:12px;min-height:20px}
+        .form-msg.err{color:var(--error)}
+        .form-msg.ok{color:var(--success)}
+        .btn-login{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s}
+        .btn-login:active{transform:scale(.98)}
+
+        /* ===== 主界面 ===== */
+        .app{display:none;padding-bottom:80px}
+        .app.show{display:block}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
         /* 头部 */
-        .header {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-            background: var(--card); padding: 16px 20px;
-            display: flex; align-items: center; justify-content: space-between;
-            box-shadow: var(--shadow);
-        }
-        .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
-        .logo-icon {
-            width: 36px; height: 36px; background: var(--primary);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        }
-        .logo-icon svg { width: 22px; height: 22px; stroke: #fff; }
-        .header-actions { display: flex; gap: 12px; }
-        .icon-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: none;
-            background: var(--bg); cursor: pointer; display: flex;
-            align-items: center; justify-content: center; transition: all 0.2s;
-        }
-        .icon-btn:active { transform: scale(0.9); }
-        .icon-btn svg { width: 20px; height: 20px; stroke: var(--text); }
-        /* 页面 */
-        .pages { padding-top: 72px; padding-bottom: 80px; min-height: 100vh; }
-        .page { display: none; padding: 16px; }
-        .page.active { display: block; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .header{position:sticky;top:0;z-index:100;background:var(--card);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow)}
+        .header-left{display:flex;align-items:center;gap:10px}
+        .header-avatar{width:36px;height:36px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:10px;display:flex;align-items:center;justify-content:center}
+        .header-avatar svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:2}
+        .header-title{font-weight:700;font-size:17px}
+        .header-sub{font-size:11px;color:var(--text2)}
+        .icon-btn{width:38px;height:38px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s}
+        .icon-btn:active{transform:scale(.9)}
+        .icon-btn svg{width:18px;height:18px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+        /* 统计 */
+        .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:16px}
+        .stat{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+        .stat::after{content:'';position:absolute;top:-10px;right:-10px;width:50px;height:50px;border-radius:50%;opacity:.1}
+        .stat.blue::after{background:var(--primary)}
+        .stat.green::after{background:var(--success)}
+        .stat.orange::after{background:var(--warning)}
+        .stat.red::after{background:var(--error)}
+        .stat-val{font-size:26px;font-weight:800}
+        .stat-label{font-size:12px;color:var(--text2);margin-top:2px}
+
+        /* Tab 导航 */
+        .tabs{display:flex;gap:0;padding:0 16px;margin-bottom:4px;overflow-x:auto}
+        .tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;transition:all .2s}
+        .tab.active{color:var(--primary);border-color:var(--primary)}
+
+        /* Tab 内容 */
+        .tab-content{display:none;padding:0 16px 16px;animation:fadeIn .25s ease}
+        .tab-content.active{display:block}
+
         /* 卡片 */
-        .card {
-            background: var(--card); border-radius: 16px; padding: 20px;
-            margin-bottom: 16px; box-shadow: var(--shadow);
-        }
-        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-        /* 统计网格 */
-        .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
-        .stat-item {
-            background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
-            border-radius: 12px; padding: 16px; color: #fff;
-        }
-        .stat-item.warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); }
-        .stat-item.success { background: linear-gradient(135deg, var(--success) 0%, #16a34a 100%); }
-        .stat-item.error { background: linear-gradient(135deg, var(--error) 0%, #dc2626 100%); }
-        .stat-value { font-size: 28px; font-weight: 700; margin-bottom: 4px; }
-        .stat-label { font-size: 12px; opacity: 0.9; }
+        .card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:var(--shadow)}
+        .card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+        .card-title{font-size:15px;font-weight:600}
+
+        /* 搜索栏 */
+        .search-bar{display:flex;gap:8px;margin-bottom:14px}
+        .search-bar input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none}
+        .search-bar input:focus{border-color:var(--primary)}
+
         /* 按钮 */
-        .btn {
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            width: 100%; padding: 14px; border: none; border-radius: 12px;
-            font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s;
-        }
-        .btn-primary { background: var(--primary); color: #fff; }
-        .btn-primary:active { transform: translateY(2px); }
-        .btn-outline { background: transparent; color: var(--primary); border: 1.5px solid var(--primary); }
-        .btn-danger { background: var(--error); color: #fff; }
-        /* 列表 */
-        .list-item {
-            display: flex; align-items: center; gap: 12px;
-            background: var(--card); padding: 14px; border-radius: 12px;
-            margin-bottom: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-        .list-icon {
-            width: 40px; height: 40px; background: var(--primary-light);
-            border-radius: 10px; display: flex; align-items: center; justify-content: center;
-        }
-        .list-icon svg { width: 20px; height: 20px; stroke: var(--primary); }
-        .list-info { flex: 1; }
-        .list-title { font-weight: 500; }
-        .list-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
-        /* 底部导航 */
-        .nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--card); display: flex; justify-content: space-around;
-            padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.08); z-index: 100;
-        }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            padding: 6px 20px; cursor: pointer; color: var(--text2);
-            font-size: 11px; font-weight: 500; transition: all 0.2s;
-        }
-        .nav-item.active { color: var(--primary); }
-        .nav-item svg { width: 24px; height: 24px; stroke-width: 2; }
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+        .btn:active{transform:scale(.97)}
+        .btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
+        .btn-primary{background:var(--primary);color:#fff}
+        .btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--border)}
+        .btn-danger{background:var(--error);color:#fff}
+        .btn-success{background:var(--success);color:#fff}
+        .btn-warning{background:var(--warning);color:#fff}
+        .btn-full{width:100%}
+
+        /* 文件列表 */
+        .file-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:8px;transition:all .15s}
+        .file-row:active{transform:scale(.99)}
+        .file-emoji{font-size:28px;width:40px;text-align:center}
+        .file-info{flex:1;min-width:0}
+        .file-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .file-meta{font-size:11px;color:var(--text2);margin-top:2px}
+        .file-actions{display:flex;gap:6px}
+
+        /* 设置表单 */
+        .setting-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--border)}
+        .setting-row:last-child{border-bottom:none}
+        .setting-label{font-size:14px}
+        .setting-desc{font-size:12px;color:var(--text2);margin-top:2px}
+        .setting-row select,.setting-row input[type="text"],.setting-row input[type="email"]{padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);outline:none}
+        .setting-row select:focus,.setting-row input:focus{border-color:var(--primary)}
+
+        /* 公告 */
+        .announce-textarea{width:100%;min-height:100px;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none;resize:vertical;font-family:inherit}
+        .announce-textarea:focus{border-color:var(--primary)}
+
+        /* 上传进度 */
+        .upload-progress{margin-top:12px;display:none}
+        .upload-progress.show{display:block}
+        .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+        .progress-fill{height:100%;background:var(--primary);border-radius:3px;transition:width .3s;width:0%}
+        .progress-text{font-size:12px;color:var(--text2);margin-top:6px;text-align:center}
+
         /* Toast */
-        .toast {
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
-            background: var(--card); color: var(--text); padding: 12px 20px;
-            border-radius: 8px; font-size: 14px; opacity: 0; pointer-events: none;
-            transition: all 0.3s; z-index: 1000;
-            box-shadow: var(--shadow); border: 1px solid var(--border);
-        }
-        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:10000;box-shadow:var(--shadow);border:1px solid var(--border);max-width:90%;text-align:center}
+        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+        /* 确认弹窗 */
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;display:none;align-items:center;justify-content:center;padding:24px}
+        .modal-overlay.show{display:flex}
+        .modal{background:var(--card);border-radius:var(--radius);padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .25s ease}
+        @keyframes modalIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+        .modal h3{font-size:16px;margin-bottom:8px}
+        .modal p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6}
+        .modal-btns{display:flex;gap:10px}
+        .modal-btns .btn{flex:1}
+
+        /* 底部导航 */
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);display:flex;justify-content:space-around;padding:6px 0 calc(6px + env(safe-area-inset-bottom));box-shadow:0 -2px 12px rgba(0,0,0,.06);z-index:100}
+        .nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;cursor:pointer;color:var(--text2);font-size:10px;font-weight:500;transition:all .2s}
+        .nav-item.active{color:var(--primary)}
+        .nav-item svg{width:22px;height:22px;stroke-width:2;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+
         /* 加载 */
-        .loading { text-align: center; padding: 40px; }
-        .spinner {
-            width: 40px; height: 40px; border: 3px solid var(--border);
-            border-top-color: var(--primary); border-radius: 50%;
-            animation: spin 0.8s linear infinite; margin: 0 auto 16px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-box{text-align:center;padding:40px 20px}
+        .loading-box p{color:var(--text2);font-size:13px;margin-top:12px}
+        .empty-box{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px}
+
+        /* 隐藏文件input */
+        .hidden-input{display:none}
     </style>
 </head>
 <body>
+    <!-- Toast -->
     <div class="toast" id="toast"></div>
-    
-    <header class="header">
-        <div class="logo">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                </svg>
-            </div>
-            站长管理后台
-        </div>
-        <div class="header-actions">
-            <button class="icon-btn" onclick="toggleTheme()">
-                <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="5"/>
-                    <line x1="12" y1="1" x2="12" y2="3"/>
-                    <line x1="12" y1="21" x2="12" y2="23"/>
-                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                    <line x1="1" y1="12" x2="3" y2="12"/>
-                    <line x1="21" y1="12" x2="23" y2="12"/>
-                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                </svg>
-            </button>
-        </div>
-    </header>
 
-    <div class="pages">
-        <!-- 概览页 -->
-        <div id="page-overview" class="page active">
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-value" id="statFiles">-</div>
-                    <div class="stat-label">文件总数</div>
-                </div>
-                <div class="stat-item success">
-                    <div class="stat-value" id="statToday">-</div>
-                    <div class="stat-label">今日新增</div>
-                </div>
-                <div class="stat-item warning">
-                    <div class="stat-value" id="statStorage">-</div>
-                    <div class="stat-label">存储使用</div>
-                </div>
-                <div class="stat-item error">
-                    <div class="stat-value" id="statUsers">-</div>
-                    <div class="stat-label">用户数</div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-title">快捷操作</div>
-                <button class="btn btn-primary" onclick="openWeb('admin.html')">🎛️ 进入完整后台</button>
-                <button class="btn btn-outline" onclick="loadFiles()">🔄 刷新数据</button>
-            </div>
-        </div>
-
-        <!-- 文件管理页 -->
-        <div id="page-files" class="page">
-            <div class="card">
-                <div class="card-title">文件管理</div>
-                <div id="filesList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p style="color: var(--text2);">加载中...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 设置页 -->
-        <div id="page-settings" class="page">
-            <div class="card">
-                <div class="card-title">系统设置</div>
-                <button class="btn btn-outline" onclick="toggleTheme()">🌓 切换主题</button>
-                <button class="btn btn-outline" onclick="clearCache()">🗑️ 清除缓存</button>
-            </div>
-            <div class="card">
-                <div class="card-title">危险操作</div>
-                <button class="btn btn-danger" onclick="clearAllFiles()">⚠️ 清空所有文件</button>
+    <!-- 确认弹窗 -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3 id="modalTitle">确认</h3>
+            <p id="modalMsg">确定执行此操作吗？</p>
+            <div class="modal-btns">
+                <button class="btn btn-outline" onclick="closeModal()">取消</button>
+                <button class="btn btn-danger" id="modalConfirmBtn" onclick="confirmModal()">确定</button>
             </div>
         </div>
     </div>
 
-    <nav class="nav">
-        <div class="nav-item active" onclick="switchPage('overview')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="7" height="7"/>
-                <rect x="14" y="3" width="7" height="7"/>
-                <rect x="14" y="14" width="7" height="7"/>
-                <rect x="3" y="14" width="7" height="7"/>
-            </svg>
-            概览
+    <!-- ===== 开屏免责声明 ===== -->
+    <div class="splash" id="splash">
+        <div class="splash-logo">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
-        <div class="nav-item" onclick="switchPage('files')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-            </svg>
+        <h1>站长管理后台</h1>
+        <p class="sub">v1.0.0 · 青柠网盘管理系统</p>
+        <div class="disclaimer-box">
+            <h3>⚠️ 免责声明</h3>
+            <p>在使用本应用之前，请仔细阅读以下条款：</p>
+            <ul>
+                <li>本应用为站长管理工具，仅限授权管理员使用</li>
+                <li>管理员需对上传、删除等操作负责</li>
+                <li>请勿上传违法违规内容</li>
+                <li>请勿滥用管理权限</li>
+                <li>数据存储在第三方云服务（Supabase）上</li>
+                <li>因管理员操作失误导致的数据丢失，由管理员自行承担</li>
+                <li>开发者不对因使用本应用造成的任何损失负责</li>
+                <li>本应用可能随时更新或停止服务</li>
+            </ul>
+        </div>
+        <button class="btn-agree" id="agreeBtn" disabled onclick="agreeDisclaimer()">
+            请阅读完毕后点击同意（5s）
+        </button>
+    </div>
+
+    <!-- ===== 登录页 ===== -->
+    <div class="login-page" id="loginPage">
+        <div class="login-card">
+            <div style="text-align:center;margin-bottom:20px">
+                <div class="splash-logo" style="margin:0 auto 16px;width:56px;height:56px;border-radius:16px">
+                    <svg viewBox="0 0 24 24" style="width:30px;height:30px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h2>站长登录</h2>
+                <p class="hint">请使用管理员账号登录</p>
+            </div>
+            <div class="form-group">
+                <label>邮箱地址</label>
+                <input type="email" id="loginEmail" placeholder="请输入管理员邮箱" autocomplete="email" inputmode="email">
+            </div>
+            <div class="form-group">
+                <label>密码</label>
+                <input type="password" id="loginPassword" placeholder="请输入密码" autocomplete="current-password">
+            </div>
+            <div class="form-msg" id="loginMsg"></div>
+            <button class="btn-login" id="loginBtn" onclick="handleLogin()">登 录</button>
+        </div>
+    </div>
+
+    <!-- ===== 主界面 ===== -->
+    <div class="app" id="mainApp">
+        <!-- 头部 -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-avatar">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div>
+                    <div class="header-title">管理后台</div>
+                    <div class="header-sub" id="headerEmail">-</div>
+                </div>
+            </div>
+            <div style="display:flex;gap:8px">
+                <button class="icon-btn" onclick="toggleTheme()" title="切换主题">
+                    <svg id="themeIcon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+                <button class="icon-btn" onclick="handleLogout()" title="退出登录">
+                    <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 统计 -->
+        <div class="stats">
+            <div class="stat blue"><div class="stat-val" id="sFiles">-</div><div class="stat-label">📁 文件总数</div></div>
+            <div class="stat green"><div class="stat-val" id="sToday">-</div><div class="stat-label">📅 今日新增</div></div>
+            <div class="stat orange"><div class="stat-val" id="sStorage">-</div><div class="stat-label">💾 存储使用</div></div>
+            <div class="stat red"><div class="stat-val" id="sUsers">-</div><div class="stat-label">👥 用户数</div></div>
+        </div>
+
+        <!-- Tab 导航 -->
+        <div class="tabs" id="tabs">
+            <div class="tab active" data-tab="files" onclick="switchTab('files')">文件管理</div>
+            <div class="tab" data-tab="announce" onclick="switchTab('announce')">公告管理</div>
+            <div class="tab" data-tab="settings" onclick="switchTab('settings')">站点设置</div>
+            <div class="tab" data-tab="about" onclick="switchTab('about')">关于</div>
+        </div>
+
+        <!-- 文件管理 -->
+        <div class="tab-content active" id="tab-files">
+            <div class="card">
+                <div class="card-head">
+                    <div class="card-title">文件列表</div>
+                    <div style="display:flex;gap:6px">
+                        <button class="btn btn-sm btn-outline" onclick="loadFiles()">🔄 刷新</button>
+                        <button class="btn btn-sm btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传</button>
+                    </div>
+                </div>
+                <div class="search-bar">
+                    <input type="text" id="fileSearch" placeholder="🔍 搜索文件..." oninput="filterFiles()">
+                </div>
+                <div class="upload-progress" id="uploadProgress">
+                    <div class="progress-bar"><div class="progress-fill" id="uploadBar"></div></div>
+                    <div class="progress-text" id="uploadText">上传中...</div>
+                </div>
+                <input type="file" id="fileInput" class="hidden-input" multiple onchange="uploadFiles(event)">
+                <div id="filesContainer"><div class="loading-box"><div class="spinner"></div><p>加载中...</p></div></div>
+            </div>
+        </div>
+
+        <!-- 公告管理 -->
+        <div class="tab-content" id="tab-announce">
+            <div class="card">
+                <div class="card-head"><div class="card-title">编辑公告</div></div>
+                <textarea class="announce-textarea" id="announceInput" placeholder="请输入公告内容..."></textarea>
+                <div style="display:flex;gap:8px;margin-top:12px">
+                    <button class="btn btn-primary" style="flex:1" onclick="saveAnnouncement()">💾 保存公告</button>
+                    <button class="btn btn-outline" style="flex:1" onclick="clearAnnouncement()">🗑️ 清除公告</button>
+                </div>
+            </div>
+            <div class="card" id="announcePreview" style="display:none">
+                <div class="card-head"><div class="card-title">公告预览</div></div>
+                <div id="announcePreviewContent" style="font-size:14px;line-height:1.8;color:var(--text2)"></div>
+            </div>
+        </div>
+
+        <!-- 站点设置 -->
+        <div class="tab-content" id="tab-settings">
+            <div class="card">
+                <div class="card-head"><div class="card-title">站点设置</div></div>
+                <div class="setting-row">
+                    <div><div class="setting-label">开放注册</div><div class="setting-desc">是否允许新用户注册</div></div>
+                    <select id="settingRegister" onchange="saveSetting('allowRegister')">
+                        <option value="true">允许</option>
+                        <option value="false">禁止</option>
+                    </select>
+                </div>
+                <div class="setting-row">
+                    <div><div class="setting-label">联系邮箱</div><div class="setting-desc">站长联系邮箱</div></div>
+                    <input type="email" id="settingContact" placeholder="邮箱" style="width:160px" onchange="saveSetting('contact')">
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-head"><div class="card-title">危险操作</div></div>
+                <button class="btn btn-danger btn-full" onclick="handleLogout()">🚪 退出登录</button>
+            </div>
+        </div>
+
+        <!-- 关于 -->
+        <div class="tab-content" id="tab-about">
+            <div class="card" style="text-align:center;padding:32px 20px">
+                <div class="splash-logo" style="margin:0 auto 16px;width:64px;height:64px;border-radius:18px">
+                    <svg viewBox="0 0 24 24" style="width:34px;height:34px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h2 style="margin-bottom:4px">站长管理后台</h2>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.0.0</p>
+                <p style="color:var(--text2);font-size:13px;line-height:1.8">青柠网盘管理系统<br>基于 Supabase 构建<br>© 2026 青柠网盘</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div class="bottom-nav" id="bottomNav" style="display:none">
+        <div class="nav-item active" data-tab="files" onclick="switchTab('files')">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             文件
         </div>
-        <div class="nav-item" onclick="switchPage('settings')">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
+        <div class="nav-item" data-tab="announce" onclick="switchTab('announce')">
+            <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            公告
+        </div>
+        <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             设置
         </div>
-    </nav>
+    </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
     <script>
+        // ===== 配置 =====
         const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
-        const BUCKET_NAME = 'files';
-        
+        const ADMIN_EMAIL = '3862242786@qq.com';
+        const BUCKET = 'files';
+        const SETTINGS_FILE = 'site_settings.json';
+
         let supabaseClient = null;
+        let filesData = [];
+        let modalCallback = null;
+
+        // ===== 初始化 Supabase =====
         if (typeof window.supabase !== 'undefined') {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
-        
-        // 主题
-        function initTheme() {
-            const saved = localStorage.getItem('admin-theme') || 'light';
-            document.documentElement.setAttribute('data-theme', saved);
-            updateThemeIcon(saved);
+
+        // ===== 开屏免责声明 =====
+        (function() {
+            const agreed = localStorage.getItem('admin_disclaimer_agreed');
+            if (agreed === 'true') {
+                document.getElementById('splash').style.display = 'none';
+                showLoginPage();
+            } else {
+                let countdown = 5;
+                const btn = document.getElementById('agreeBtn');
+                const timer = setInterval(() => {
+                    countdown--;
+                    if (countdown <= 0) {
+                        clearInterval(timer);
+                        btn.disabled = false;
+                        btn.textContent = '✅ 我已阅读并同意以上条款';
+                    } else {
+                        btn.textContent = `请阅读完毕后点击同意（${countdown}s）`;
+                    }
+                }, 1000);
+            }
+        })();
+
+        function agreeDisclaimer() {
+            localStorage.setItem('admin_disclaimer_agreed', 'true');
+            const splash = document.getElementById('splash');
+            splash.style.opacity = '0';
+            splash.style.transition = 'opacity .3s';
+            setTimeout(() => {
+                splash.style.display = 'none';
+                showLoginPage();
+            }, 300);
         }
-        
+
+        // ===== 登录 =====
+        function showLoginPage() {
+            // 检查是否已有有效 Session
+            if (supabaseClient) {
+                supabaseClient.auth.getSession().then(({ data: { session } }) => {
+                    if (session && session.user.email === ADMIN_EMAIL) {
+                        enterApp(session.user.email);
+                    } else {
+                        document.getElementById('loginPage').classList.add('show');
+                        if (session) supabaseClient.auth.signOut();
+                    }
+                }).catch(() => {
+                    document.getElementById('loginPage').classList.add('show');
+                });
+            } else {
+                document.getElementById('loginPage').classList.add('show');
+            }
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const msgEl = document.getElementById('loginMsg');
+            const btn = document.getElementById('loginBtn');
+
+            if (!email || !password) {
+                showFormMsg(msgEl, '请输入邮箱和密码', true);
+                return;
+            }
+
+            if (!supabaseClient) {
+                showFormMsg(msgEl, '服务组件未加载，请检查网络', true);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+            showFormMsg(msgEl, '', false);
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
+                        showFormMsg(msgEl, '邮箱或密码错误', true);
+                    } else if (error.message.includes('Email not confirmed')) {
+                        showFormMsg(msgEl, '邮箱未确认，请查收确认邮件', true);
+                    } else if (error.message.includes('Too many requests')) {
+                        showFormMsg(msgEl, '请求过于频繁，请稍后再试', true);
+                    } else {
+                        showFormMsg(msgEl, '登录失败：' + error.message, true);
+                    }
+                    btn.disabled = false;
+                    btn.textContent = '登 录';
+                    return;
+                }
+
+                if (data.user.email !== ADMIN_EMAIL) {
+                    await supabaseClient.auth.signOut();
+                    showFormMsg(msgEl, '权限不足：非管理员账号', true);
+                    btn.disabled = false;
+                    btn.textContent = '登 录';
+                    return;
+                }
+
+                showFormMsg(msgEl, '✅ 登录成功', false);
+                setTimeout(() => enterApp(data.user.email), 500);
+            } catch (err) {
+                showFormMsg(msgEl, '网络错误，请重试', true);
+                btn.disabled = false;
+                btn.textContent = '登 录';
+            }
+        }
+
+        function showFormMsg(el, msg, isErr) {
+            el.textContent = msg;
+            el.className = 'form-msg ' + (isErr ? 'err' : 'ok');
+        }
+
+        // ===== 进入主界面 =====
+        function enterApp(email) {
+            document.getElementById('loginPage').classList.remove('show');
+            document.getElementById('mainApp').classList.add('show');
+            document.getElementById('bottomNav').style.display = 'flex';
+            document.getElementById('headerEmail').textContent = email;
+            initTheme();
+            loadAllData();
+        }
+
+        // ===== 退出登录 =====
+        async function handleLogout() {
+            showModal('退出登录', '确定要退出登录吗？', async () => {
+                try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch(e) {}
+                localStorage.removeItem('admin_disclaimer_agreed');
+                location.reload();
+            });
+        }
+
+        // ===== 主题 =====
+        function initTheme() {
+            const t = localStorage.getItem('admin-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', t);
+            updateThemeIcon(t);
+        }
+
         function toggleTheme() {
-            const current = document.documentElement.getAttribute('data-theme');
-            const next = current === 'dark' ? 'light' : 'dark';
+            const cur = document.documentElement.getAttribute('data-theme');
+            const next = cur === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('admin-theme', next);
             updateThemeIcon(next);
-            showToast(next === 'dark' ? '已切换到深色模式' : '已切换到浅色模式');
+            showToast(next === 'dark' ? '🌙 深色模式' : '☀️ 浅色模式');
         }
-        
-        function updateThemeIcon(theme) {
-            const icon = document.getElementById('themeIcon');
-            if (theme === 'dark') {
-                icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
-            } else {
-                icon.innerHTML = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
-            }
+
+        function updateThemeIcon(t) {
+            document.getElementById('themeIcon').innerHTML = t === 'dark'
+                ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+                : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
         }
-        
-        // 页面切换
-        function switchPage(page) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach((n, i) => {
-                n.classList.toggle('active', 
-                    (page === 'overview' && i === 0) ||
-                    (page === 'files' && i === 1) ||
-                    (page === 'settings' && i === 2)
-                );
-            });
-            document.getElementById('page-' + page).classList.add('active');
-            if (page === 'files') loadFiles();
+
+        // ===== Tab 切换 =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
         }
-        
-        // 加载数据
+
+        // ===== 加载所有数据 =====
+        async function loadAllData() {
+            await loadFiles();
+            loadAnnouncement();
+            loadSettings();
+            loadUserCount();
+        }
+
+        // ===== 文件管理 =====
         async function loadFiles() {
-            if (!supabaseClient) {
-                showToast('服务组件未加载');
-                return;
-            }
+            if (!supabaseClient) { showToast('服务未加载'); return; }
             try {
-                const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).list('', {
-                    limit: 100, offset: 0, sortBy: { column: 'created_at', order: 'desc' }
+                const { data, error } = await supabaseClient.storage.from(BUCKET).list('', {
+                    limit: 100, sortBy: { column: 'created_at', order: 'desc' }
                 });
                 if (error) throw error;
-                
-                const files = data || [];
-                document.getElementById('statFiles').textContent = files.length;
-                const today = new Date().toDateString();
-                document.getElementById('statToday').textContent = files.filter(f => new Date(f.created_at).toDateString() === today).length;
-                
-                let totalSize = files.reduce((sum, f) => sum + (f.metadata?.size || 0), 0);
-                document.getElementById('statStorage').textContent = formatSize(totalSize);
-                document.getElementById('statUsers').textContent = '-';
-                
-                renderFiles(files);
+                filesData = data || [];
+                updateStats();
+                renderFiles(filesData);
             } catch (err) {
-                showToast('加载失败: ' + err.message);
+                showToast('文件加载失败: ' + err.message);
+                document.getElementById('filesContainer').innerHTML = '<div class="empty-box">⚠️ 加载失败，请重试</div>';
             }
         }
-        
+
         function renderFiles(files) {
-            const container = document.getElementById('filesList');
-            if (!files || files.length === 0) {
-                container.innerHTML = '<p style="text-align:center;color:var(--text2);padding:20px;">暂无文件</p>';
+            const c = document.getElementById('filesContainer');
+            if (!files.length) {
+                c.innerHTML = '<div class="empty-box">📂 暂无文件</div>';
                 return;
             }
-            container.innerHTML = files.map(f => `
-                <div class="list-item">
-                    <div class="list-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        </svg>
+            c.innerHTML = files.map(f => {
+                const icon = getFileIcon(f.name);
+                const size = formatSize(f.metadata?.size || 0);
+                const date = new Date(f.created_at).toLocaleDateString('zh-CN');
+                const escapedName = f.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `<div class="file-row" data-name="${f.name.toLowerCase()}">
+                    <div class="file-emoji">${icon}</div>
+                    <div class="file-info">
+                        <div class="file-name" title="${f.name}">${f.name}</div>
+                        <div class="file-meta">${size} · ${date}</div>
                     </div>
-                    <div class="list-info">
-                        <div class="list-title">${f.name}</div>
-                        <div class="list-desc">${formatSize(f.metadata?.size || 0)} · ${new Date(f.created_at).toLocaleDateString()}</div>
+                    <div class="file-actions">
+                        <button class="btn btn-sm btn-outline" onclick="downloadFile('${escapedName}')">⬇️</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${escapedName}')">🗑️</button>
                     </div>
-                    <button class="btn btn-danger" style="width:auto;padding:8px 16px;" onclick="deleteFile('${f.name}')">删除</button>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
-        
-        async function deleteFile(name) {
-            if (!confirm('确定要删除 ' + name + ' 吗？')) return;
+
+        function filterFiles() {
+            const q = document.getElementById('fileSearch').value.toLowerCase();
+            document.querySelectorAll('.file-row').forEach(row => {
+                row.style.display = row.dataset.name.includes(q) ? 'flex' : 'none';
+            });
+        }
+
+        function getFileIcon(name) {
+            const ext = (name.split('.').pop() || '').toLowerCase();
+            const map = {
+                pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📊', pptx:'📊',
+                jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
+                mp4:'🎬', avi:'🎬', mkv:'🎬', mov:'🎬', mp3:'🎵', wav:'🎵',
+                zip:'📦', rar:'📦', '7z':'📦', tar:'📦', gz:'📦',
+                js:'💻', html:'💻', css:'💻', py:'💻', java:'💻',
+                txt:'📃', md:'📃', json:'📋', xml:'📋',
+                apk:'📱', exe:'⚙️', dmg:'💿'
+            };
+            return map[ext] || '📎';
+        }
+
+        async function downloadFile(name) {
             try {
-                const { error } = await supabaseClient.storage.from(BUCKET_NAME).remove([name]);
-                if (error) throw error;
-                showToast('删除成功');
-                loadFiles();
+                const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(name);
+                const resp = await fetch(data.publicUrl);
+                const blob = await resp.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = name; a.click();
+                URL.revokeObjectURL(url);
+                showToast('开始下载: ' + name);
             } catch (err) {
-                showToast('删除失败: ' + err.message);
+                const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(name);
+                window.open(data.publicUrl, '_blank');
             }
         }
-        
-        function clearCache() {
-            localStorage.clear();
-            showToast('缓存已清除');
+
+        function deleteFile(name) {
+            showModal('删除文件', `确定要删除「${name}」吗？\n\n此操作不可恢复！`, async () => {
+                try {
+                    const { error } = await supabaseClient.storage.from(BUCKET).remove([name]);
+                    if (error) throw error;
+                    showToast('✅ 已删除: ' + name);
+                    loadFiles();
+                } catch (err) {
+                    showToast('删除失败: ' + err.message);
+                }
+            });
         }
-        
-        function clearAllFiles() {
-            if (!confirm('⚠️ 警告：这将删除所有文件！\n\n此操作不可恢复，确定继续吗？')) return;
-            showToast('请前往完整后台执行此操作');
+
+        async function uploadFiles(event) {
+            const files = event.target.files;
+            if (!files.length || !supabaseClient) return;
+
+            const progress = document.getElementById('uploadProgress');
+            const bar = document.getElementById('uploadBar');
+            const text = document.getElementById('uploadText');
+            progress.classList.add('show');
+
+            let uploaded = 0;
+            let failed = 0;
+
+            for (const file of files) {
+                const ext = file.name.split('.').pop();
+                const newName = Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '.' + ext;
+                text.textContent = `上传中 (${uploaded + 1}/${files.length}): ${file.name}`;
+                bar.style.width = ((uploaded) / files.length * 100) + '%';
+
+                try {
+                    const { error } = await supabaseClient.storage.from(BUCKET).upload(newName, file, {
+                        cacheControl: '3600', upsert: false
+                    });
+                    if (error) { failed++; console.error('Upload error:', error); }
+                    else { uploaded++; }
+                } catch (err) { failed++; }
+            }
+
+            bar.style.width = '100%';
+            text.textContent = `完成！成功 ${uploaded}，失败 ${failed}`;
+            setTimeout(() => { progress.classList.remove('show'); }, 2000);
+            event.target.value = '';
+            loadFiles();
+            showToast(`✅ 上传完成：成功 ${uploaded} 个`);
         }
-        
-        function openWeb(path) {
-            window.location.href = 'https://3862242786-sudo.github.io/pan/' + path;
+
+        function updateStats() {
+            document.getElementById('sFiles').textContent = filesData.length;
+            const today = new Date().toDateString();
+            document.getElementById('sToday').textContent = filesData.filter(f => new Date(f.created_at).toDateString() === today).length;
+            const total = filesData.reduce((s, f) => s + (f.metadata?.size || 0), 0);
+            document.getElementById('sStorage').textContent = formatSize(total);
         }
-        
+
+        async function loadUserCount() {
+            if (!supabaseClient) return;
+            try {
+                const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
+                document.getElementById('sUsers').textContent = count || 0;
+            } catch (e) {
+                document.getElementById('sUsers').textContent = '-';
+            }
+        }
+
+        // ===== 公告管理 =====
+        function loadAnnouncement() {
+            const saved = localStorage.getItem('qn_announcement') || '';
+            document.getElementById('announceInput').value = saved;
+            if (saved) {
+                document.getElementById('announcePreview').style.display = 'block';
+                document.getElementById('announcePreviewContent').textContent = saved;
+            }
+        }
+
+        function saveAnnouncement() {
+            const text = document.getElementById('announceInput').value.trim();
+            if (!text) { showToast('请输入公告内容'); return; }
+            localStorage.setItem('qn_announcement', text);
+            document.getElementById('announcePreview').style.display = 'block';
+            document.getElementById('announcePreviewContent').textContent = text;
+            syncSettingsToCloud();
+            showToast('✅ 公告已保存');
+        }
+
+        function clearAnnouncement() {
+            showModal('清除公告', '确定要清除公告吗？', () => {
+                localStorage.removeItem('qn_announcement');
+                document.getElementById('announceInput').value = '';
+                document.getElementById('announcePreview').style.display = 'none';
+                syncSettingsToCloud();
+                showToast('公告已清除');
+            });
+        }
+
+        // ===== 站点设置 =====
+        function loadSettings() {
+            const reg = localStorage.getItem('qn_allow_register');
+            const contact = localStorage.getItem('qn_admin_contact');
+            if (reg !== null) document.getElementById('settingRegister').value = reg;
+            if (contact) document.getElementById('settingContact').value = contact;
+            // 从云端加载
+            loadSettingsFromCloud();
+        }
+
+        async function loadSettingsFromCloud() {
+            if (!supabaseClient) return;
+            try {
+                const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(SETTINGS_FILE);
+                const resp = await fetch(data.publicUrl + '?t=' + Date.now());
+                if (resp.ok) {
+                    const settings = await resp.json();
+                    if (settings.allowRegister !== undefined) {
+                        document.getElementById('settingRegister').value = settings.allowRegister ? 'true' : 'false';
+                        localStorage.setItem('qn_allow_register', settings.allowRegister ? 'true' : 'false');
+                    }
+                    if (settings.contact) {
+                        document.getElementById('settingContact').value = settings.contact;
+                        localStorage.setItem('qn_admin_contact', settings.contact);
+                    }
+                    if (settings.announcement) {
+                        localStorage.setItem('qn_announcement', settings.announcement);
+                        document.getElementById('announceInput').value = settings.announcement;
+                    }
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        function saveSetting(key) {
+            if (key === 'allowRegister') {
+                const val = document.getElementById('settingRegister').value;
+                localStorage.setItem('qn_allow_register', val);
+            } else if (key === 'contact') {
+                const val = document.getElementById('settingContact').value.trim();
+                localStorage.setItem('qn_admin_contact', val);
+            }
+            syncSettingsToCloud();
+            showToast('✅ 设置已保存');
+        }
+
+        async function syncSettingsToCloud() {
+            if (!supabaseClient) return;
+            try {
+                const settings = {
+                    allowRegister: localStorage.getItem('qn_allow_register') === 'true',
+                    contact: localStorage.getItem('qn_admin_contact') || '',
+                    announcement: localStorage.getItem('qn_announcement') || '',
+                    updatedAt: new Date().toISOString()
+                };
+                await supabaseClient.storage.from(BUCKET).upload(SETTINGS_FILE, JSON.stringify(settings), {
+                    cacheControl: '60', upsert: true, contentType: 'application/json'
+                });
+            } catch (e) { console.error('Settings sync failed:', e); }
+        }
+
+        // ===== 弹窗 =====
+        function showModal(title, msg, callback) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalMsg').textContent = msg;
+            modalCallback = callback;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('show');
+            modalCallback = null;
+        }
+
+        async function confirmModal() {
+            const cb = modalCallback;
+            closeModal();
+            if (cb) await cb();
+        }
+
+        // ===== 工具 =====
         function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.textContent = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
         }
-        
+
         function formatSize(bytes) {
             if (!bytes) return '0 B';
-            const k = 1024;
-            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const k = 1024, s = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
         }
-        
-        // 初始化
-        initTheme();
-        loadFiles();
+
+        // 回车登录
+        document.getElementById('loginPassword').addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleLogin();
+        });
     </script>
 </body>
 </html>
