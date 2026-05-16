@@ -238,19 +238,37 @@
     <script src="auth2.js"></script>
     <script src="script.js"></script>
     <script>
-        // 检查登录状态，更新导航栏
-        (function() {
-            const isLoggedIn = localStorage.getItem('qn_logged_in');
-            const isAdmin = localStorage.getItem('qn_is_admin');
+        // 检查登录状态，更新导航栏（异步验证Session）
+        (async function() {
             const loginBtn = document.getElementById('navLoginBtn');
             const adminBtn = document.getElementById('navAdminBtn');
             const logoutBtn = document.getElementById('navLogoutBtn');
-            if (isLoggedIn) {
-                loginBtn.style.display = 'none';
-                logoutBtn.style.display = 'block';
-                if (isAdmin === 'true') {
-                    adminBtn.style.display = 'block';
+            
+            try {
+                // 验证真实的Supabase Session
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                
+                if (session) {
+                    // Session有效，显示已登录状态
+                    const isAdmin = session.user.email === '3862242786@qq.com';
+                    loginBtn.style.display = 'none';
+                    logoutBtn.style.display = 'block';
+                    if (isAdmin) {
+                        adminBtn.style.display = 'block';
+                    }
+                    // 同步localStorage
+                    localStorage.setItem('qn_logged_in', 'true');
+                    localStorage.setItem('qn_user_email', session.user.email);
+                    localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                } else {
+                    // Session无效，清除本地状态
+                    localStorage.removeItem('qn_logged_in');
+                    localStorage.removeItem('qn_user_email');
+                    localStorage.removeItem('qn_is_admin');
                 }
+            } catch (e) {
+                // 出错时保守处理，显示未登录
+                console.warn('Session check failed:', e);
             }
         })();
 
