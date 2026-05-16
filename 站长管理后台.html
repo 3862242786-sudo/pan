@@ -19,7 +19,12 @@
         }
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-        /* ===== 开屏免责声明 ===== */
+        /* 图标样式 */
+        .icon{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;margin-right:4px}
+        .icon-sm{width:14px;height:14px}
+        .icon-lg{width:20px;height:20px}
+
+        /* 开屏免责声明 */
         .splash{position:fixed;inset:0;z-index:9999;background:var(--card);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;animation:splashIn .5s ease}
         @keyframes splashIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
         .splash-logo{width:72px;height:72px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:20px;display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 8px 24px rgba(59,130,246,.3)}
@@ -27,14 +32,14 @@
         .splash h1{font-size:22px;font-weight:700;margin-bottom:8px}
         .splash p.sub{color:var(--text2);font-size:14px;margin-bottom:32px}
         .disclaimer-box{background:var(--bg);border-radius:var(--radius);padding:20px;margin-bottom:24px;max-height:40vh;overflow-y:auto;width:100%;max-width:400px;border:1px solid var(--border)}
-        .disclaimer-box h3{font-size:15px;margin-bottom:12px;color:var(--primary)}
+        .disclaimer-box h3{font-size:15px;margin-bottom:12px;color:var(--primary);display:flex;align-items:center;gap:8px}
         .disclaimer-box p,.disclaimer-box li{font-size:13px;color:var(--text2);line-height:1.8}
         .disclaimer-box ul{padding-left:20px}
         .splash .btn-agree{width:100%;max-width:400px;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
         .splash .btn-agree:active{transform:scale(.98);background:var(--primary-dark)}
         .splash .btn-agree:disabled{opacity:.5;cursor:not-allowed}
 
-        /* ===== 登录页 ===== */
+        /* 登录页 */
         .login-page{position:fixed;inset:0;z-index:9998;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px}
         .login-page.show{display:flex;animation:fadeIn .3s ease}
         .login-card{background:var(--card);border-radius:var(--radius);padding:32px;width:100%;max-width:380px;box-shadow:var(--shadow)}
@@ -50,7 +55,7 @@
         .btn-login{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:8px;transition:all .2s}
         .btn-login:active{transform:scale(.98)}
 
-        /* ===== 主界面 ===== */
+        /* 主界面 */
         .app{display:none;padding-bottom:80px}
         .app.show{display:block}
         @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
@@ -75,7 +80,8 @@
         .stat.orange::after{background:var(--warning)}
         .stat.red::after{background:var(--error)}
         .stat-val{font-size:26px;font-weight:800}
-        .stat-label{font-size:12px;color:var(--text2);margin-top:2px}
+        .stat-label{font-size:12px;color:var(--text2);margin-top:2px;display:flex;align-items:center;gap:4px}
+        .stat-label svg{width:14px;height:14px;stroke:var(--text2);fill:none;stroke-width:2}
 
         /* Tab 导航 */
         .tabs{display:flex;gap:0;padding:0 16px;margin-bottom:4px;overflow-x:auto}
@@ -92,25 +98,31 @@
         .card-title{font-size:15px;font-weight:600}
 
         /* 搜索栏 */
-        .search-bar{display:flex;gap:8px;margin-bottom:14px}
-        .search-bar input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none}
+        .search-bar{display:flex;gap:8px;margin-bottom:14px;position:relative}
+        .search-bar input{flex:1;padding:10px 14px 10px 36px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;background:var(--bg);color:var(--text);outline:none}
         .search-bar input:focus{border-color:var(--primary)}
+        .search-bar svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--text2);fill:none;stroke-width:2}
 
         /* 按钮 */
         .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
         .btn:active{transform:scale(.97)}
         .btn-sm{padding:7px 12px;font-size:12px;border-radius:8px}
         .btn-primary{background:var(--primary);color:#fff}
+        .btn-primary svg{stroke:#fff}
         .btn-outline{background:transparent;color:var(--primary);border:1.5px solid var(--border)}
         .btn-danger{background:var(--error);color:#fff}
+        .btn-danger svg{stroke:#fff}
         .btn-success{background:var(--success);color:#fff}
+        .btn-success svg{stroke:#fff}
         .btn-warning{background:var(--warning);color:#fff}
+        .btn-warning svg{stroke:#fff}
         .btn-full{width:100%}
 
         /* 文件列表 */
         .file-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg);border-radius:10px;margin-bottom:8px;transition:all .15s}
         .file-row:active{transform:scale(.99)}
-        .file-emoji{font-size:28px;width:40px;text-align:center}
+        .file-icon{width:40px;height:40px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center}
+        .file-icon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:2}
         .file-info{flex:1;min-width:0}
         .file-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .file-meta{font-size:11px;color:var(--text2);margin-top:2px}
@@ -182,15 +194,15 @@
         </div>
     </div>
 
-    <!-- ===== 开屏免责声明 ===== -->
+    <!-- 开屏免责声明 -->
     <div class="splash" id="splash">
         <div class="splash-logo">
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h1>站长管理后台</h1>
-        <p class="sub">v1.0.0 · 青柠网盘管理系统</p>
+        <p class="sub">v1.1.0 · 青柠网盘管理系统</p>
         <div class="disclaimer-box">
-            <h3>⚠️ 免责声明</h3>
+            <h3><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>免责声明</h3>
             <p>在使用本应用之前，请仔细阅读以下条款：</p>
             <ul>
                 <li>本应用为站长管理工具，仅限授权管理员使用</li>
@@ -208,7 +220,7 @@
         </button>
     </div>
 
-    <!-- ===== 登录页 ===== -->
+    <!-- 登录页 -->
     <div class="login-page" id="loginPage">
         <div class="login-card">
             <div style="text-align:center;margin-bottom:20px">
@@ -231,7 +243,7 @@
         </div>
     </div>
 
-    <!-- ===== 主界面 ===== -->
+    <!-- 主界面 -->
     <div class="app" id="mainApp">
         <!-- 头部 -->
         <div class="header">
@@ -256,10 +268,22 @@
 
         <!-- 统计 -->
         <div class="stats">
-            <div class="stat blue"><div class="stat-val" id="sFiles">-</div><div class="stat-label">📁 文件总数</div></div>
-            <div class="stat green"><div class="stat-val" id="sToday">-</div><div class="stat-label">📅 今日新增</div></div>
-            <div class="stat orange"><div class="stat-val" id="sStorage">-</div><div class="stat-label">💾 存储使用</div></div>
-            <div class="stat red"><div class="stat-val" id="sUsers">-</div><div class="stat-label">👥 用户数</div></div>
+            <div class="stat blue">
+                <div class="stat-val" id="sFiles">-</div>
+                <div class="stat-label"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>文件总数</div>
+            </div>
+            <div class="stat green">
+                <div class="stat-val" id="sToday">-</div>
+                <div class="stat-label"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>今日新增</div>
+            </div>
+            <div class="stat orange">
+                <div class="stat-val" id="sStorage">-</div>
+                <div class="stat-label"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>存储使用</div>
+            </div>
+            <div class="stat red">
+                <div class="stat-val" id="sUsers">-</div>
+                <div class="stat-label"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>用户数</div>
+            </div>
         </div>
 
         <!-- Tab 导航 -->
@@ -276,12 +300,13 @@
                 <div class="card-head">
                     <div class="card-title">文件列表</div>
                     <div style="display:flex;gap:6px">
-                        <button class="btn btn-sm btn-outline" onclick="loadFiles()">🔄 刷新</button>
-                        <button class="btn btn-sm btn-primary" onclick="document.getElementById('fileInput').click()">📤 上传</button>
+                        <button class="btn btn-sm btn-outline" onclick="loadFiles()"><svg class="icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>刷新</button>
+                        <button class="btn btn-sm btn-primary" onclick="document.getElementById('fileInput').click()"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>上传</button>
                     </div>
                 </div>
                 <div class="search-bar">
-                    <input type="text" id="fileSearch" placeholder="🔍 搜索文件..." oninput="filterFiles()">
+                    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" id="fileSearch" placeholder="搜索文件..." oninput="filterFiles()">
                 </div>
                 <div class="upload-progress" id="uploadProgress">
                     <div class="progress-bar"><div class="progress-fill" id="uploadBar"></div></div>
@@ -298,8 +323,8 @@
                 <div class="card-head"><div class="card-title">编辑公告</div></div>
                 <textarea class="announce-textarea" id="announceInput" placeholder="请输入公告内容..."></textarea>
                 <div style="display:flex;gap:8px;margin-top:12px">
-                    <button class="btn btn-primary" style="flex:1" onclick="saveAnnouncement()">💾 保存公告</button>
-                    <button class="btn btn-outline" style="flex:1" onclick="clearAnnouncement()">🗑️ 清除公告</button>
+                    <button class="btn btn-primary" style="flex:1" onclick="saveAnnouncement()"><svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>保存公告</button>
+                    <button class="btn btn-outline" style="flex:1" onclick="clearAnnouncement()"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>清除公告</button>
                 </div>
             </div>
             <div class="card" id="announcePreview" style="display:none">
@@ -326,7 +351,7 @@
             </div>
             <div class="card">
                 <div class="card-head"><div class="card-title">危险操作</div></div>
-                <button class="btn btn-danger btn-full" onclick="handleLogout()">🚪 退出登录</button>
+                <button class="btn btn-danger btn-full" onclick="handleLogout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button>
             </div>
         </div>
 
@@ -337,7 +362,7 @@
                     <svg viewBox="0 0 24 24" style="width:34px;height:34px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <h2 style="margin-bottom:4px">站长管理后台</h2>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.0.0</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.0</p>
                 <p style="color:var(--text2);font-size:13px;line-height:1.8">青柠网盘管理系统<br>基于 Supabase 构建<br>© 2026 青柠网盘</p>
             </div>
         </div>
@@ -361,7 +386,6 @@
 
     <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
     <script>
-        // ===== 配置 =====
         const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const ADMIN_EMAIL = '3862242786@qq.com';
@@ -372,12 +396,11 @@
         let filesData = [];
         let modalCallback = null;
 
-        // ===== 初始化 Supabase =====
         if (typeof window.supabase !== 'undefined') {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         }
 
-        // ===== 开屏免责声明 =====
+        // 开屏免责声明
         (function() {
             const agreed = localStorage.getItem('admin_disclaimer_agreed');
             if (agreed === 'true') {
@@ -391,7 +414,7 @@
                     if (countdown <= 0) {
                         clearInterval(timer);
                         btn.disabled = false;
-                        btn.textContent = '✅ 我已阅读并同意以上条款';
+                        btn.textContent = '我已阅读并同意以上条款';
                     } else {
                         btn.textContent = `请阅读完毕后点击同意（${countdown}s）`;
                     }
@@ -404,15 +427,10 @@
             const splash = document.getElementById('splash');
             splash.style.opacity = '0';
             splash.style.transition = 'opacity .3s';
-            setTimeout(() => {
-                splash.style.display = 'none';
-                showLoginPage();
-            }, 300);
+            setTimeout(() => { splash.style.display = 'none'; showLoginPage(); }, 300);
         }
 
-        // ===== 登录 =====
         function showLoginPage() {
-            // 检查是否已有有效 Session
             if (supabaseClient) {
                 supabaseClient.auth.getSession().then(({ data: { session } }) => {
                     if (session && session.user.email === ADMIN_EMAIL) {
@@ -421,9 +439,7 @@
                         document.getElementById('loginPage').classList.add('show');
                         if (session) supabaseClient.auth.signOut();
                     }
-                }).catch(() => {
-                    document.getElementById('loginPage').classList.add('show');
-                });
+                }).catch(() => { document.getElementById('loginPage').classList.add('show'); });
             } else {
                 document.getElementById('loginPage').classList.add('show');
             }
@@ -435,15 +451,8 @@
             const msgEl = document.getElementById('loginMsg');
             const btn = document.getElementById('loginBtn');
 
-            if (!email || !password) {
-                showFormMsg(msgEl, '请输入邮箱和密码', true);
-                return;
-            }
-
-            if (!supabaseClient) {
-                showFormMsg(msgEl, '服务组件未加载，请检查网络', true);
-                return;
-            }
+            if (!email || !password) { showFormMsg(msgEl, '请输入邮箱和密码', true); return; }
+            if (!supabaseClient) { showFormMsg(msgEl, '服务组件未加载，请检查网络', true); return; }
 
             btn.disabled = true;
             btn.textContent = '登录中...';
@@ -451,7 +460,6 @@
 
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
                 if (error) {
                     if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
                         showFormMsg(msgEl, '邮箱或密码错误', true);
@@ -466,7 +474,6 @@
                     btn.textContent = '登 录';
                     return;
                 }
-
                 if (data.user.email !== ADMIN_EMAIL) {
                     await supabaseClient.auth.signOut();
                     showFormMsg(msgEl, '权限不足：非管理员账号', true);
@@ -474,8 +481,7 @@
                     btn.textContent = '登 录';
                     return;
                 }
-
-                showFormMsg(msgEl, '✅ 登录成功', false);
+                showFormMsg(msgEl, '登录成功', false);
                 setTimeout(() => enterApp(data.user.email), 500);
             } catch (err) {
                 showFormMsg(msgEl, '网络错误，请重试', true);
@@ -489,7 +495,6 @@
             el.className = 'form-msg ' + (isErr ? 'err' : 'ok');
         }
 
-        // ===== 进入主界面 =====
         function enterApp(email) {
             document.getElementById('loginPage').classList.remove('show');
             document.getElementById('mainApp').classList.add('show');
@@ -499,7 +504,6 @@
             loadAllData();
         }
 
-        // ===== 退出登录 =====
         async function handleLogout() {
             showModal('退出登录', '确定要退出登录吗？', async () => {
                 try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch(e) {}
@@ -508,7 +512,6 @@
             });
         }
 
-        // ===== 主题 =====
         function initTheme() {
             const t = localStorage.getItem('admin-theme') || 'light';
             document.documentElement.setAttribute('data-theme', t);
@@ -521,7 +524,7 @@
             document.documentElement.setAttribute('data-theme', next);
             localStorage.setItem('admin-theme', next);
             updateThemeIcon(next);
-            showToast(next === 'dark' ? '🌙 深色模式' : '☀️ 浅色模式');
+            showToast(next === 'dark' ? '深色模式' : '浅色模式');
         }
 
         function updateThemeIcon(t) {
@@ -530,14 +533,12 @@
                 : '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
         }
 
-        // ===== Tab 切换 =====
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.toggle('active', t.id === 'tab-' + tab));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
         }
 
-        // ===== 加载所有数据 =====
         async function loadAllData() {
             await loadFiles();
             loadAnnouncement();
@@ -545,7 +546,6 @@
             loadUserCount();
         }
 
-        // ===== 文件管理 =====
         async function loadFiles() {
             if (!supabaseClient) { showToast('服务未加载'); return; }
             try {
@@ -558,30 +558,29 @@
                 renderFiles(filesData);
             } catch (err) {
                 showToast('文件加载失败: ' + err.message);
-                document.getElementById('filesContainer').innerHTML = '<div class="empty-box">⚠️ 加载失败，请重试</div>';
+                document.getElementById('filesContainer').innerHTML = '<div class="empty-box">加载失败，请重试</div>';
             }
         }
 
         function renderFiles(files) {
             const c = document.getElementById('filesContainer');
             if (!files.length) {
-                c.innerHTML = '<div class="empty-box">📂 暂无文件</div>';
+                c.innerHTML = '<div class="empty-box">暂无文件</div>';
                 return;
             }
             c.innerHTML = files.map(f => {
-                const icon = getFileIcon(f.name);
                 const size = formatSize(f.metadata?.size || 0);
                 const date = new Date(f.created_at).toLocaleDateString('zh-CN');
                 const escapedName = f.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 return `<div class="file-row" data-name="${f.name.toLowerCase()}">
-                    <div class="file-emoji">${icon}</div>
+                    <div class="file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
                     <div class="file-info">
                         <div class="file-name" title="${f.name}">${f.name}</div>
                         <div class="file-meta">${size} · ${date}</div>
                     </div>
                     <div class="file-actions">
-                        <button class="btn btn-sm btn-outline" onclick="downloadFile('${escapedName}')">⬇️</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${escapedName}')">🗑️</button>
+                        <button class="btn btn-sm btn-outline" onclick="downloadFile('${escapedName}')"><svg class="icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFile('${escapedName}')"><svg class="icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
                     </div>
                 </div>`;
             }).join('');
@@ -592,20 +591,6 @@
             document.querySelectorAll('.file-row').forEach(row => {
                 row.style.display = row.dataset.name.includes(q) ? 'flex' : 'none';
             });
-        }
-
-        function getFileIcon(name) {
-            const ext = (name.split('.').pop() || '').toLowerCase();
-            const map = {
-                pdf:'📄', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📊', pptx:'📊',
-                jpg:'🖼️', jpeg:'🖼️', png:'🖼️', gif:'🖼️', webp:'🖼️', svg:'🖼️',
-                mp4:'🎬', avi:'🎬', mkv:'🎬', mov:'🎬', mp3:'🎵', wav:'🎵',
-                zip:'📦', rar:'📦', '7z':'📦', tar:'📦', gz:'📦',
-                js:'💻', html:'💻', css:'💻', py:'💻', java:'💻',
-                txt:'📃', md:'📃', json:'📋', xml:'📋',
-                apk:'📱', exe:'⚙️', dmg:'💿'
-            };
-            return map[ext] || '📎';
         }
 
         async function downloadFile(name) {
@@ -629,7 +614,7 @@
                 try {
                     const { error } = await supabaseClient.storage.from(BUCKET).remove([name]);
                     if (error) throw error;
-                    showToast('✅ 已删除: ' + name);
+                    showToast('已删除: ' + name);
                     loadFiles();
                 } catch (err) {
                     showToast('删除失败: ' + err.message);
@@ -646,8 +631,7 @@
             const text = document.getElementById('uploadText');
             progress.classList.add('show');
 
-            let uploaded = 0;
-            let failed = 0;
+            let uploaded = 0, failed = 0;
 
             for (const file of files) {
                 const ext = file.name.split('.').pop();
@@ -669,7 +653,7 @@
             setTimeout(() => { progress.classList.remove('show'); }, 2000);
             event.target.value = '';
             loadFiles();
-            showToast(`✅ 上传完成：成功 ${uploaded} 个`);
+            showToast(`上传完成：成功 ${uploaded} 个`);
         }
 
         function updateStats() {
@@ -690,7 +674,6 @@
             }
         }
 
-        // ===== 公告管理 =====
         function loadAnnouncement() {
             const saved = localStorage.getItem('qn_announcement') || '';
             document.getElementById('announceInput').value = saved;
@@ -707,7 +690,7 @@
             document.getElementById('announcePreview').style.display = 'block';
             document.getElementById('announcePreviewContent').textContent = text;
             syncSettingsToCloud();
-            showToast('✅ 公告已保存');
+            showToast('公告已保存');
         }
 
         function clearAnnouncement() {
@@ -720,13 +703,11 @@
             });
         }
 
-        // ===== 站点设置 =====
         function loadSettings() {
             const reg = localStorage.getItem('qn_allow_register');
             const contact = localStorage.getItem('qn_admin_contact');
             if (reg !== null) document.getElementById('settingRegister').value = reg;
             if (contact) document.getElementById('settingContact').value = contact;
-            // 从云端加载
             loadSettingsFromCloud();
         }
 
@@ -750,7 +731,7 @@
                         document.getElementById('announceInput').value = settings.announcement;
                     }
                 }
-            } catch (e) { /* ignore */ }
+            } catch (e) {}
         }
 
         function saveSetting(key) {
@@ -762,7 +743,7 @@
                 localStorage.setItem('qn_admin_contact', val);
             }
             syncSettingsToCloud();
-            showToast('✅ 设置已保存');
+            showToast('设置已保存');
         }
 
         async function syncSettingsToCloud() {
@@ -780,7 +761,6 @@
             } catch (e) { console.error('Settings sync failed:', e); }
         }
 
-        // ===== 弹窗 =====
         function showModal(title, msg, callback) {
             document.getElementById('modalTitle').textContent = title;
             document.getElementById('modalMsg').textContent = msg;
@@ -799,7 +779,6 @@
             if (cb) await cb();
         }
 
-        // ===== 工具 =====
         function showToast(msg) {
             const t = document.getElementById('toast');
             t.textContent = msg;
@@ -814,7 +793,6 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
         }
 
-        // 回车登录
         document.getElementById('loginPassword').addEventListener('keydown', e => {
             if (e.key === 'Enter') handleLogin();
         });
