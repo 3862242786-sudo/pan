@@ -1,54 +1,77 @@
 {
   "latest": {
-    "version": "1.2.1",
-    "versionCode": 6,
-    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.1.apk",
-    "updateLog": "修复APP显示默认账号问题\n正确验证Session显示登录状态\n未登录时显示游客",
+    "version": "2.0.0",
+    "versionCode": 8,
+    "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v2.0.0.apk",
+    "updateLog": "v2.0.0 全新重构\n精简代码，移除冗余功能\n界面更轻盈简洁\nAPK体积大幅缩小至49KB",
     "force": true,
-    "date": "2026-05-16"
+    "date": "2026-05-16",
+    "note": "推荐版本，代码最简洁稳定"
   },
   "history": [
+    {
+      "version": "2.0.0",
+      "versionCode": 8,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v2.0.0.apk",
+      "updateLog": "v2.0.0 全新重构\n精简代码，移除冗余功能\n界面更轻盈简洁\nAPK体积大幅缩小至49KB",
+      "date": "2026-05-16",
+      "note": "【推荐】代码精简，仅92行，最稳定版本"
+    },
+    {
+      "version": "1.3.0",
+      "versionCode": 7,
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.3.0.apk",
+      "updateLog": "修复登录功能\n优化错误提示信息\n添加空输入校验\n添加网络错误检测\n优化邮箱确认重发逻辑",
+      "date": "2026-05-16",
+      "note": "修复登录bug，增强错误提示"
+    },
     {
       "version": "1.2.1",
       "versionCode": 6,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.1.apk",
       "updateLog": "修复APP显示默认账号问题\n正确验证Session显示登录状态\n未登录时显示游客",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "修复游客账号显示问题"
     },
     {
       "version": "1.2.0",
       "versionCode": 5,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.0.apk",
       "updateLog": "修复登录功能失效问题\n修复Session过期后状态不更新\n修复退出登录异常\n修复管理员登录跳转错误\n锁定SDK版本号防止兼容性问题",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "大量登录相关bug修复"
     },
     {
       "version": "1.1.2",
       "versionCode": 4,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.1.2.apk",
       "updateLog": "修复红米K20 Pro等全面屏手机显示比例问题\n适配刘海屏/水滴屏\n优化WebView缩放设置",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "适配全面屏手机"
     },
     {
       "version": "1.1.1",
       "versionCode": 3,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.1.1.apk",
       "updateLog": "修复显示比例异常问题\n优化WebView缩放设置\n修复文字竖排显示问题",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "修复显示比例bug"
     },
     {
       "version": "1.1.0",
       "versionCode": 2,
       "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.1.0.apk",
       "updateLog": "添加APP专属主页\n添加下载历史功能\n添加版本检测更新\n修复Android 11显示问题\n独立UI设计",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "首次添加APP专属界面"
     },
     {
       "version": "1.0.0",
       "versionCode": 1,
-      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.2.0.apk",
+      "downloadUrl": "https://3862242786-sudo.github.io/pan/apk-releases/青柠网盘_v1.0.0.apk",
       "updateLog": "初始版本\n基础WebView功能\n文件上传下载",
-      "date": "2026-05-16"
+      "date": "2026-05-16",
+      "note": "首个版本，基础功能"
     }
   ]
 }
