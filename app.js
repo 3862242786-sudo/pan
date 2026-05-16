@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initVersion();
     loadFiles();
     loadDownloadHistory();
-    generateUserId();
+    checkLoginState();
 });
 
 // 获取APP版本
@@ -29,14 +29,38 @@ function initVersion() {
     document.getElementById('updateBadge').textContent = 'v' + currentVersion;
 }
 
-// 生成用户ID
-function generateUserId() {
-    let userId = localStorage.getItem('qn_user_id');
-    if (!userId) {
-        userId = 'U' + Date.now().toString(36).toUpperCase();
-        localStorage.setItem('qn_user_id', userId);
+// 检查登录状态
+async function checkLoginState() {
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        
+        if (session) {
+            // 已登录，显示用户信息
+            const email = session.user.email;
+            const isAdmin = email === '3862242786@qq.com';
+            
+            document.getElementById('userId').textContent = email;
+            document.querySelector('.app-profile-name').textContent = isAdmin ? '管理员' : '已登录用户';
+            
+            // 同步localStorage
+            localStorage.setItem('qn_logged_in', 'true');
+            localStorage.setItem('qn_user_email', email);
+            localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+        } else {
+            // 未登录，显示游客状态
+            document.getElementById('userId').textContent = '未登录';
+            document.querySelector('.app-profile-name').textContent = '游客';
+            
+            // 清除可能残留的登录状态
+            localStorage.removeItem('qn_logged_in');
+            localStorage.removeItem('qn_user_email');
+            localStorage.removeItem('qn_is_admin');
+        }
+    } catch (e) {
+        console.warn('Session check failed:', e);
+        document.getElementById('userId').textContent = '未登录';
+        document.querySelector('.app-profile-name').textContent = '游客';
     }
-    document.getElementById('userId').textContent = 'ID: ' + userId;
 }
 
 // 切换标签页
