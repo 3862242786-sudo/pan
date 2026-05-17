@@ -6,260 +6,79 @@
     <title>青柠网盘</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        :root{--bg:#f8fafc;--card:#fff;--text:#1e293b;--text2:#64748b;--primary:#3b82f6;--primary-light:#dbeafe;--border:#e2e8f0;--success:#22c55e;--error:#ef4444;--shadow:0 4px 20px rgba(0,0,0,0.08)}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;padding-bottom:100px}
-        
-        /* 动画定义 */
-        @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
-        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
-        
-        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;animation:fadeIn .4s ease}
-        .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
-        .logo-icon{width:40px;height:40px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center;animation:pulse 2s ease infinite}
-        .logo-icon svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2}
-        
-        .stats{display:flex;gap:12px;margin-bottom:20px;animation:slideUp .5s ease .1s both}
-        .stat{flex:1;background:var(--card);padding:16px;border-radius:16px;box-shadow:var(--shadow);text-align:center;transition:transform .2s}
-        .stat:active{transform:scale(0.98)}
-        .stat-val{font-size:28px;font-weight:700;color:var(--primary);animation:scaleIn .4s ease}
-        .stat-label{font-size:12px;color:var(--text2);margin-top:4px}
-        
-        .upload-area{background:var(--card);border-radius:16px;padding:40px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:20px;cursor:pointer;transition:all .3s;border:2px dashed var(--border);animation:slideUp .5s ease .2s both;position:relative;overflow:hidden}
-        .upload-area:hover{border-color:var(--primary);transform:translateY(-2px)}
-        .upload-area:active{transform:scale(0.98)}
-        .upload-area.uploading{border-color:var(--primary);background:var(--primary-light)}
-        .upload-area svg{width:48px;height:48px;stroke:var(--primary);fill:none;stroke-width:1.5;margin-bottom:12px;transition:transform .3s}
-        .upload-area:hover svg{transform:translateY(-4px)}
-        .upload-area p{color:var(--text2);font-size:14px}
-        .upload-area .hint{color:var(--text2);font-size:12px;margin-top:6px;opacity:.7}
-        
-        .progress{display:none;margin-top:16px;animation:fadeIn .3s ease}
-        .progress.show{display:block}
-        .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-        .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);width:0%;transition:width .3s;border-radius:3px;background-size:200% 100%;animation:shimmer 1.5s infinite}
-        .progress-text{font-size:12px;color:var(--text2);margin-top:8px;text-align:center}
-        
-        .section-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2);animation:slideUp .5s ease .3s both}
-        .file-list{display:flex;flex-direction:column;gap:8px;animation:slideUp .5s ease .4s both}
-        .file-item{background:var(--card);padding:14px 16px;border-radius:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;animation:slideUp .4s ease both}
-        .file-item:nth-child(1){animation-delay:.1s}
-        .file-item:nth-child(2){animation-delay:.15s}
-        .file-item:nth-child(3){animation-delay:.2s}
-        .file-item:nth-child(4){animation-delay:.25s}
-        .file-item:nth-child(5){animation-delay:.3s}
-        .file-item:hover{transform:translateX(4px);box-shadow:0 6px 24px rgba(0,0,0,0.12)}
-        .file-item:active{transform:scale(0.99);background:var(--primary-light)}
-        .file-icon{width:40px;height:40px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
-        .file-item:hover .file-icon{background:var(--primary);transform:rotate(-5deg)}
-        .file-item:hover .file-icon svg{stroke:#fff}
-        .file-icon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:2;transition:all .2s}
+        :root{--bg:#f5f5f5;--card:#fff;--text:#333;--text2:#666;--primary:#3b82f6;--border:#e0e0e0;--shadow:0 2px 8px rgba(0,0,0,0.08)}
+        body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;padding-bottom:80px}
+        .header{background:var(--card);padding:16px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow);position:sticky;top:0;z-index:100;margin:-16px -16px 16px}
+        .logo{display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px}
+        .logo svg{width:28px;height:28px}
+        .btn{padding:10px 16px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer}
+        .btn:active{opacity:0.8}
+        .card{background:var(--card);border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+        .upload-area{border:2px dashed var(--border);border-radius:12px;padding:30px;text-align:center;cursor:pointer;transition:all 0.2s}
+        .upload-area:active{background:var(--bg)}
+        .upload-area svg{width:40px;height:40px;margin-bottom:8px;stroke:var(--primary);fill:none;stroke-width:1.5}
+        .file-list{display:flex;flex-direction:column;gap:8px}
+        .file-item{background:var(--card);padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer}
+        .file-item:active{background:var(--bg)}
+        .file-icon{width:36px;height:36px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center}
+        .file-icon svg{width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2}
         .file-info{flex:1;min-width:0}
-        .file-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .file-meta{font-size:11px;color:var(--text2);margin-top:2px}
-        
-        .empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px;animation:fadeIn .5s ease}
-        .empty svg{width:48px;height:48px;stroke:var(--border);fill:none;stroke-width:1.5;margin-bottom:12px}
-        
-        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 24px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:1000;box-shadow:var(--shadow);border:1px solid var(--border);white-space:nowrap}
-        .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-        
-        .refresh{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;box-shadow:0 4px 16px rgba(59,130,246,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:100;animation:slideUp .5s ease .5s both}
-        .refresh:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(59,130,246,.5)}
-        .refresh:active{transform:scale(0.9)}
-        .refresh svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2}
-        .refresh.spin svg{animation:spin 1s linear infinite}
-        
-        .loading-skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:60px;margin-bottom:8px}
-        
+        .file-name{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .file-meta{font-size:12px;color:var(--text2);margin-top:2px}
+        .empty{text-align:center;padding:40px;color:var(--text2);font-size:14px}
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;opacity:0;transition:opacity 0.3s;z-index:1000}
+        .toast.show{opacity:1}
+        .loading{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+        @keyframes spin{to{transform:rotate(360deg)}}
         input[type=file]{display:none}
-        
-        /* 现代简约版弹窗 */
-        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
-        .modal-overlay.show{display:flex;animation:fadeIn .2s ease}
-        .modal{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .3s ease;margin:auto}
-        .modal-icon{width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
-        .modal-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2}
-        .modal-icon.info{background:linear-gradient(135deg,var(--primary),#1d4ed8)}
-        .modal-icon.success{background:linear-gradient(135deg,var(--success),#059669)}
-        .modal-icon.warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
-        .modal-icon.error{background:linear-gradient(135deg,var(--error),#dc2626)}
-        .modal h3{font-size:17px;font-weight:600;text-align:center;margin-bottom:8px}
-        .modal p{font-size:14px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:20px;white-space:pre-line}
-        .modal-btns{display:flex;gap:10px}
-        .modal-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
-        .modal-btn:active{transform:scale(.97)}
-        .modal-btn.primary{background:var(--primary);color:#fff}
-        .modal-btn.secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
-        .modal-btn.danger{background:var(--error);color:#fff}
     </style>
 </head>
 <body>
     <div class="toast" id="toast"></div>
     
-    <!-- 现代简约版弹窗 -->
-    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-        <div class="modal" onclick="event.stopPropagation()">
-            <div class="modal-icon info" id="modalIcon">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            </div>
-            <h3 id="modalTitle">提示</h3>
-            <p id="modalMsg">确定执行此操作吗？</p>
-            <div class="modal-btns" id="modalBtns">
-                <button class="modal-btn secondary" onclick="handleModalCancel()">取消</button>
-                <button class="modal-btn primary" id="modalConfirmBtn" onclick="handleModalConfirm()">确定</button>
-            </div>
-        </div>
-    </div>
-    
     <div class="header">
         <div class="logo">
-            <div class="logo-icon">
-                <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-            </div>
-            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.1.0</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            青柠网盘 v4.2.0
+        </div>
+        <button class="btn" onclick="document.getElementById('fileInput').click()">上传</button>
+    </div>
+
+    <input type="file" id="fileInput" onchange="uploadFile(this.files[0])">
+
+    <div class="card">
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div style="color:var(--text2);font-size:14px">点击上传文件</div>
         </div>
     </div>
 
-    <div class="stats">
-        <div class="stat">
-            <div class="stat-val" id="statFiles">-</div>
-            <div class="stat-label">文件总数</div>
-        </div>
-        <div class="stat">
-            <div class="stat-val" id="statToday">-</div>
-            <div class="stat-label">今日新增</div>
+    <div class="card">
+        <div style="font-weight:600;margin-bottom:12px">文件列表</div>
+        <div class="file-list" id="fileList">
+            <div class="empty">加载中...</div>
         </div>
     </div>
-
-    <div class="upload-area" id="uploadArea" onclick="selectFile()">
-        <svg viewBox="0 0 24 24" id="uploadIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <p id="uploadText">点击上传文件</p>
-        <p class="hint" id="uploadHint">支持任意文件类型</p>
-        <div class="progress" id="progress">
-            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
-            <div class="progress-text" id="progressText">准备上传...</div>
-        </div>
-    </div>
-
-    <input type="file" id="fileInput" onchange="handleFileSelect(event)">
-
-    <div class="section-title">文件列表</div>
-    <div class="file-list" id="fileList">
-        <div class="loading-skeleton"></div>
-        <div class="loading-skeleton"></div>
-        <div class="loading-skeleton"></div>
-    </div>
-
-    <button class="refresh" id="refreshBtn" onclick="loadFiles()">
-        <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-    </button>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
     <script>
         const SUPABASE_URL='https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const BUCKET='files';
-        const APP_VERSION='4.1.0';
         
         let supabase=null;
         
-        // 初始化Supabase，带重试机制
-        function initSupabase(){
-            if(typeof window.supabase!=='undefined'){
-                try{
-                    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-                    showToast('服务已连接','success');
-                    loadFiles();
-                    checkUpdate();
-                    return;
-                }catch(e){
-                    console.error('Supabase init error:',e);
-                }
-            }
-            // CDN加载失败，尝试备用CDN
-            const script=document.createElement('script');
-            script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js';
-            script.onload=function(){
-                if(typeof window.supabase!=='undefined'){
-                    try{
-                        supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-                        showToast('服务已连接','success');
-                        loadFiles();
-                        checkUpdate();
-                    }catch(e){showToast('服务初始化失败','error');}
-                }else{showToast('服务加载失败，请刷新','error');}
-            };
-            script.onerror=function(){showToast('网络连接失败，请检查网络','error');};
-            document.head.appendChild(script);
-        }
-        
-        let filesData=[];
-        let isUploading=false;
-        let modalCallback=null;
-        let modalCancelCallback=null;
-        
-        // ========== 现代简约版弹窗 ==========
-        function showModal(options){
-            const{title='提示',msg='',type='info',confirmText='确定',cancelText='',onConfirm,onCancel}=options;
-            
-            document.getElementById('modalTitle').textContent=title;
-            document.getElementById('modalMsg').textContent=msg;
-            
-            const iconEl=document.getElementById('modalIcon');
-            iconEl.className='modal-icon '+type;
-            iconEl.innerHTML={
-                info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-                success:'<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-                warning:'<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-                error:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-            }[type];
-            
-            const btnsEl=document.getElementById('modalBtns');
-            const confirmBtn=document.getElementById('modalConfirmBtn');
-            
-            if(cancelText){
-                btnsEl.innerHTML=`<button class="modal-btn secondary" onclick="handleModalCancel()">${cancelText}</button><button class="modal-btn primary" id="modalConfirmBtn" onclick="handleModalConfirm()">${confirmText}</button>`;
-            }else{
-                btnsEl.innerHTML=`<button class="modal-btn primary" style="width:100%" onclick="handleModalConfirm()">${confirmText}</button>`;
-            }
-            
-            modalCallback=onConfirm||null;
-            modalCancelCallback=onCancel||null;
-            document.getElementById('modalOverlay').classList.add('show');
-        }
-        
-        function closeModal(e){
-            if(e&&e.target!==e.currentTarget)return;
-            document.getElementById('modalOverlay').classList.remove('show');
-            modalCallback=null;
-            modalCancelCallback=null;
-        }
-        
-        function handleModalConfirm(){
-            closeModal();
-            if(modalCallback)modalCallback();
-        }
-        
-        function handleModalCancel(){
-            closeModal();
-            if(modalCancelCallback)modalCancelCallback();
-        }
-        
-        function showToast(msg,type='info'){
+        function showToast(msg){
             const t=document.getElementById('toast');
             t.textContent=msg;
-            t.style.borderColor=type==='error'?'var(--error)':type==='success'?'var(--success)':'var(--border)';
             t.classList.add('show');
-            setTimeout(()=>{t.classList.remove('show');t.style.borderColor=''},2500);
+            setTimeout(()=>t.classList.remove('show'),2000);
         }
         
         function formatSize(b){
             if(!b)return'0 B';
-            const k=1024,s=['B','KB','MB','GB'];
+            const k=1024;
+            const s=['B','KB','MB','GB'];
             const i=Math.floor(Math.log(b)/Math.log(k));
             return parseFloat((b/Math.pow(k,i)).toFixed(1))+' '+s[i];
         }
@@ -272,102 +91,45 @@
         
         async function loadFiles(){
             if(!supabase){
-                renderEmpty('服务未加载，请刷新重试');
+                document.getElementById('fileList').innerHTML='<div class="empty">服务未加载，请刷新</div>';
                 return;
             }
-            
-            const btn=document.getElementById('refreshBtn');
-            btn.classList.add('spin');
             
             try{
-                const{data,error}=await supabase.storage.from(BUCKET).list('',{
-                    limit:100,sortBy:{column:'created_at',order:'desc'}
-                });
-                
+                const{data,error}=await supabase.storage.from(BUCKET).list('',{limit:100,sortBy:{column:'created_at',order:'desc'}});
                 if(error)throw error;
                 
-                filesData=data||[];
-                renderFiles(filesData);
-                updateStats(filesData);
+                const files=data||[];
+                const container=document.getElementById('fileList');
                 
-                if(filesData.length>0)showToast('已加载 '+filesData.length+' 个文件','success');
+                if(files.length===0){
+                    container.innerHTML='<div class="empty">暂无文件</div>';
+                    return;
+                }
+                
+                container.innerHTML=files.map(f=>{
+                    const size=formatSize(f.metadata?.size||0);
+                    const date=new Date(f.created_at).toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
+                    return`<div class="file-item" onclick="downloadFile('${escapeHtml(f.name)}')">
+                        <div class="file-icon">
+                            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        </div>
+                        <div class="file-info">
+                            <div class="file-name">${escapeHtml(f.name)}</div>
+                            <div class="file-meta">${size} · ${date}</div>
+                        </div>
+                    </div>`;
+                }).join('');
             }catch(e){
-                showToast('加载失败: '+e.message,'error');
-                renderEmpty('加载失败，点击刷新重试');
-            }finally{
-                btn.classList.remove('spin');
+                document.getElementById('fileList').innerHTML='<div class="empty">加载失败，点击重试</div>';
             }
-        }
-        
-        function renderFiles(files){
-            const c=document.getElementById('fileList');
-            if(!files||files.length===0){
-                renderEmpty('暂无文件，点击上方上传');
-                return;
-            }
-            
-            c.innerHTML=files.map((f,i)=>{
-                const size=formatSize(f.metadata?.size||0);
-                const date=new Date(f.created_at).toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
-                return`<div class="file-item" onclick="downloadFile('${escapeHtml(f.name)}')" style="animation-delay:${i*0.05}s">
-                    <div class="file-icon">
-                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    </div>
-                    <div class="file-info">
-                        <div class="file-name">${escapeHtml(f.name)}</div>
-                        <div class="file-meta">${size} · ${date}</div>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-        
-        function renderEmpty(msg){
-            document.getElementById('fileList').innerHTML=`<div class="empty">
-                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <p>${msg}</p>
-            </div>`;
-        }
-        
-        function updateStats(files){
-            document.getElementById('statFiles').textContent=files.length;
-            const today=new Date().toDateString();
-            document.getElementById('statToday').textContent=files.filter(f=>new Date(f.created_at).toDateString()===today).length;
-        }
-        
-        function selectFile(){
-            if(isUploading)return;
-            const input=document.getElementById('fileInput');
-            input.value='';
-            input.click();
-        }
-        
-        function handleFileSelect(event){
-            const file=event.target.files[0];
-            if(!file)return;
-            uploadFile(file);
         }
         
         async function uploadFile(file){
             if(!file)return;
-            if(!supabase){showToast('服务未加载','error');return;}
-            if(isUploading){showToast('正在上传中...','error');return;}
+            if(!supabase){showToast('服务未加载');return;}
             
-            isUploading=true;
-            const uploadArea=document.getElementById('uploadArea');
-            const uploadIcon=document.getElementById('uploadIcon');
-            const uploadText=document.getElementById('uploadText');
-            const uploadHint=document.getElementById('uploadHint');
-            const progress=document.getElementById('progress');
-            const fill=document.getElementById('progressFill');
-            const text=document.getElementById('progressText');
-            
-            uploadArea.classList.add('uploading');
-            uploadIcon.innerHTML='<circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></circle>';
-            uploadText.textContent='正在上传...';
-            uploadHint.textContent=file.name;
-            progress.classList.add('show');
-            fill.style.width='10%';
-            text.textContent='准备上传: '+file.name;
+            showToast('正在上传...');
             
             try{
                 let fileName=file.name;
@@ -375,125 +137,44 @@
                 const ext=file.name.includes('.')?file.name.split('.').pop():'';
                 const baseName=ext?file.name.slice(0,-(ext.length+1)):file.name;
                 
-                while(filesData.some(f=>f.name===fileName)){
+                // 检查重名
+                const{data:existing}=await supabase.storage.from(BUCKET).list();
+                while((existing||[]).some(f=>f.name===fileName)){
                     fileName=ext?`${baseName}(${counter}).${ext}`:`${baseName}(${counter})`;
                     counter++;
                 }
                 
-                let p=10;
-                const timer=setInterval(()=>{
-                    p=Math.min(p+Math.random()*20,90);
-                    fill.style.width=p+'%';
-                },300);
-                
-                const{error}=await supabase.storage.from(BUCKET).upload(fileName,file,{
-                    cacheControl:'3600',upsert:false
-                });
-                
-                clearInterval(timer);
-                
+                const{error}=await supabase.storage.from(BUCKET).upload(fileName,file,{cacheControl:'3600',upsert:false});
                 if(error)throw error;
                 
-                fill.style.width='100%';
-                text.textContent='上传成功!';
-                text.style.color='var(--success)';
-                showToast('上传成功: '+file.name,'success');
-                
-                setTimeout(()=>{
-                    resetUploadArea();
-                    loadFiles();
-                },1200);
+                showToast('上传成功');
+                document.getElementById('fileInput').value='';
+                loadFiles();
             }catch(e){
-                fill.style.width='100%';
-                fill.style.background='var(--error)';
-                text.textContent='上传失败: '+e.message;
-                text.style.color='var(--error)';
-                showToast('上传失败: '+e.message,'error');
-                
-                setTimeout(()=>{
-                    resetUploadArea();
-                },2000);
-            }finally{
-                isUploading=false;
+                showToast('上传失败: '+e.message);
             }
         }
         
-        function resetUploadArea(){
-            const uploadArea=document.getElementById('uploadArea');
-            const uploadIcon=document.getElementById('uploadIcon');
-            const uploadText=document.getElementById('uploadText');
-            const uploadHint=document.getElementById('uploadHint');
-            const progress=document.getElementById('progress');
-            const fill=document.getElementById('progressFill');
-            const text=document.getElementById('progressText');
-            
-            uploadArea.classList.remove('uploading');
-            uploadIcon.innerHTML='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>';
-            uploadText.textContent='点击上传文件';
-            uploadHint.textContent='支持任意文件类型';
-            progress.classList.remove('show');
-            fill.style.width='0%';
-            fill.style.background='';
-            text.textContent='准备上传...';
-            text.style.color='';
-            document.getElementById('fileInput').value='';
-        }
-        
-        async function downloadFile(name){
-            if(!supabase){showToast('服务未加载','error');return;}
+        function downloadFile(name){
+            if(!supabase){showToast('服务未加载');return;}
             try{
                 const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
-                // 直接打开链接，让系统处理下载
-                const a=document.createElement('a');
-                a.href=data.publicUrl;
-                a.target='_blank';
-                a.rel='noopener';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast('正在下载: '+name,'success');
+                // 在新窗口打开下载链接
+                window.open(data.publicUrl,'_blank');
+                showToast('正在下载...');
             }catch(e){
-                showToast('下载失败: '+e.message,'error');
+                showToast('下载失败');
             }
-        }
-        
-        // 版本检测
-        async function checkUpdate(){
-            try{
-                const resp=await fetch('https://3862242786-sudo.github.io/pan/app-version.json?t='+Date.now());
-                if(!resp.ok)return;
-                const data=await resp.json();
-                if(data.version&&data.version!==APP_VERSION){
-                    setTimeout(()=>{
-                        showModal({
-                            title:'发现新版本',
-                            msg:`最新版本: v${data.version}\n当前版本: v${APP_VERSION}\n\n${data.updateLog||''}`,
-                            type:'info',
-                            confirmText:'立即更新',
-                            cancelText:data.force?false:'稍后再说',
-                            onConfirm:()=>{
-                                window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
-                            },
-                            onCancel:data.force?()=>{
-                                showModal({
-                                    title:'强制更新',
-                                    msg:'此为强制更新，必须更新后才能继续使用',
-                                    type:'warning',
-                                    confirmText:'立即更新',
-                                    onConfirm:()=>{
-                                        window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
-                                    },
-                                    onCancel:checkUpdate
-                                });
-                            }:null
-                        });
-                    },1000);
-                }
-            }catch(e){}
         }
         
         // 初始化
-        initSupabase();
+        if(typeof window.supabase!=='undefined'){
+            supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+            loadFiles();
+        }else{
+            // CDN加载失败
+            document.getElementById('fileList').innerHTML='<div class="empty">网络错误，请刷新重试</div>';
+        }
     </script>
 </body>
 </html>
