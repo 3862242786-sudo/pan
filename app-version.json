@@ -3,6 +3,6 @@
   "versionCode": 13,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
   "updateLog": "v4.0.1 Bug修复\n修复文件上传功能（可重复选择同一文件）\n修复文件下载功能（双重保障机制）\n添加入场动画和交互动画\n优化上传进度显示\n修复重名文件处理逻辑",
-  "force": false,
-  "minVersion": "4.0.0"
+  "force": true,
+  "minVersion": "4.0.1"
 }
