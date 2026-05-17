@@ -1,8 +1,8 @@
 {
-  "version": "4.0.0",
-  "versionCode": 12,
+  "version": "4.0.1",
+  "versionCode": 13,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/青柠网盘.apk",
-  "updateLog": "v4.0.0 极限精简重构\n仅保留上传和下载核心功能\n移除设置页、主题切换等\n全新简洁UI设计\n修复所有已知问题",
+  "updateLog": "v4.0.1 Bug修复\n修复文件上传功能（可重复选择同一文件）\n修复文件下载功能（双重保障机制）\n添加入场动画和交互动画\n优化上传进度显示\n修复重名文件处理逻辑",
   "force": false,
   "minVersion": "4.0.0"
 }

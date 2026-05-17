@@ -8,42 +8,73 @@
         *{margin:0;padding:0;box-sizing:border-box}
         :root{--bg:#f8fafc;--card:#fff;--text:#1e293b;--text2:#64748b;--primary:#3b82f6;--primary-light:#dbeafe;--border:#e2e8f0;--success:#22c55e;--error:#ef4444;--shadow:0 4px 20px rgba(0,0,0,0.08)}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:16px;padding-bottom:100px}
-        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+        
+        /* 动画定义 */
+        @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes scaleIn{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.02)}}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        
+        .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;animation:fadeIn .4s ease}
         .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
-        .logo-icon{width:40px;height:40px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center}
+        .logo-icon{width:40px;height:40px;background:var(--primary);border-radius:12px;display:flex;align-items:center;justify-content:center;animation:pulse 2s ease infinite}
         .logo-icon svg{width:24px;height:24px;stroke:#fff;fill:none;stroke-width:2}
-        .stats{display:flex;gap:12px;margin-bottom:20px}
-        .stat{flex:1;background:var(--card);padding:16px;border-radius:16px;box-shadow:var(--shadow);text-align:center}
-        .stat-val{font-size:28px;font-weight:700;color:var(--primary)}
+        
+        .stats{display:flex;gap:12px;margin-bottom:20px;animation:slideUp .5s ease .1s both}
+        .stat{flex:1;background:var(--card);padding:16px;border-radius:16px;box-shadow:var(--shadow);text-align:center;transition:transform .2s}
+        .stat:active{transform:scale(0.98)}
+        .stat-val{font-size:28px;font-weight:700;color:var(--primary);animation:scaleIn .4s ease}
         .stat-label{font-size:12px;color:var(--text2);margin-top:4px}
-        .upload-area{background:var(--card);border-radius:16px;padding:40px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:20px;cursor:pointer;transition:all .2s;border:2px dashed var(--border)}
-        .upload-area:active{transform:scale(.98)}
-        .upload-area svg{width:48px;height:48px;stroke:var(--primary);fill:none;stroke-width:1.5;margin-bottom:12px}
+        
+        .upload-area{background:var(--card);border-radius:16px;padding:40px 20px;text-align:center;box-shadow:var(--shadow);margin-bottom:20px;cursor:pointer;transition:all .3s;border:2px dashed var(--border);animation:slideUp .5s ease .2s both;position:relative;overflow:hidden}
+        .upload-area:hover{border-color:var(--primary);transform:translateY(-2px)}
+        .upload-area:active{transform:scale(0.98)}
+        .upload-area.uploading{border-color:var(--primary);background:var(--primary-light)}
+        .upload-area svg{width:48px;height:48px;stroke:var(--primary);fill:none;stroke-width:1.5;margin-bottom:12px;transition:transform .3s}
+        .upload-area:hover svg{transform:translateY(-4px)}
         .upload-area p{color:var(--text2);font-size:14px}
         .upload-area .hint{color:var(--text2);font-size:12px;margin-top:6px;opacity:.7}
-        .progress{display:none;margin-top:16px}
+        
+        .progress{display:none;margin-top:16px;animation:fadeIn .3s ease}
         .progress.show{display:block}
         .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
-        .progress-fill{height:100%;background:var(--primary);width:0%;transition:width .3s;border-radius:3px}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#60a5fa);width:0%;transition:width .3s;border-radius:3px;background-size:200% 100%;animation:shimmer 1.5s infinite}
         .progress-text{font-size:12px;color:var(--text2);margin-top:8px;text-align:center}
-        .section-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2)}
-        .file-list{display:flex;flex-direction:column;gap:8px}
-        .file-item{background:var(--card);padding:14px 16px;border-radius:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s}
-        .file-item:active{transform:scale(.99);background:var(--primary-light)}
-        .file-icon{width:40px;height:40px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-        .file-icon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:2}
+        
+        .section-title{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text2);animation:slideUp .5s ease .3s both}
+        .file-list{display:flex;flex-direction:column;gap:8px;animation:slideUp .5s ease .4s both}
+        .file-item{background:var(--card);padding:14px 16px;border-radius:12px;box-shadow:var(--shadow);display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;animation:slideUp .4s ease both}
+        .file-item:nth-child(1){animation-delay:.1s}
+        .file-item:nth-child(2){animation-delay:.15s}
+        .file-item:nth-child(3){animation-delay:.2s}
+        .file-item:nth-child(4){animation-delay:.25s}
+        .file-item:nth-child(5){animation-delay:.3s}
+        .file-item:hover{transform:translateX(4px);box-shadow:0 6px 24px rgba(0,0,0,0.12)}
+        .file-item:active{transform:scale(0.99);background:var(--primary-light)}
+        .file-icon{width:40px;height:40px;background:var(--primary-light);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+        .file-item:hover .file-icon{background:var(--primary);transform:rotate(-5deg)}
+        .file-item:hover .file-icon svg{stroke:#fff}
+        .file-icon svg{width:20px;height:20px;stroke:var(--primary);fill:none;stroke-width:2;transition:all .2s}
         .file-info{flex:1;min-width:0}
         .file-name{font-weight:500;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .file-meta{font-size:11px;color:var(--text2);margin-top:2px}
-        .empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px}
+        
+        .empty{text-align:center;padding:40px 20px;color:var(--text2);font-size:14px;animation:fadeIn .5s ease}
         .empty svg{width:48px;height:48px;stroke:var(--border);fill:none;stroke-width:1.5;margin-bottom:12px}
-        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 20px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:1000;box-shadow:var(--shadow);border:1px solid var(--border);white-space:nowrap}
+        
+        .toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-20px);background:var(--card);color:var(--text);padding:12px 24px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:all .3s;z-index:1000;box-shadow:var(--shadow);border:1px solid var(--border);white-space:nowrap}
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-        .refresh{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;box-shadow:0 4px 16px rgba(59,130,246,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:100}
-        .refresh:active{transform:scale(.9)}
+        
+        .refresh{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;box-shadow:0 4px 16px rgba(59,130,246,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;z-index:100;animation:slideUp .5s ease .5s both}
+        .refresh:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(59,130,246,.5)}
+        .refresh:active{transform:scale(0.9)}
         .refresh svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:2}
         .refresh.spin svg{animation:spin 1s linear infinite}
-        @keyframes spin{to{transform:rotate(360deg)}}
+        
+        .loading-skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:60px;margin-bottom:8px}
+        
         input[type=file]{display:none}
     </style>
 </head>
@@ -55,7 +86,7 @@
             <div class="logo-icon">
                 <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
             </div>
-            青柠网盘
+            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.0.1</span>
         </div>
     </div>
 
@@ -70,24 +101,23 @@
         </div>
     </div>
 
-    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <p>点击上传文件</p>
-        <p class="hint">支持任意文件类型</p>
+    <div class="upload-area" id="uploadArea" onclick="selectFile()">
+        <svg viewBox="0 0 24 24" id="uploadIcon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p id="uploadText">点击上传文件</p>
+        <p class="hint" id="uploadHint">支持任意文件类型</p>
         <div class="progress" id="progress">
             <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
             <div class="progress-text" id="progressText">准备上传...</div>
         </div>
     </div>
 
-    <input type="file" id="fileInput" onchange="uploadFile(this.files[0])">
+    <input type="file" id="fileInput" onchange="handleFileSelect(event)">
 
     <div class="section-title">文件列表</div>
     <div class="file-list" id="fileList">
-        <div class="empty">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <p>加载中...</p>
-        </div>
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
+        <div class="loading-skeleton"></div>
     </div>
 
     <button class="refresh" id="refreshBtn" onclick="loadFiles()">
@@ -99,6 +129,7 @@
         const SUPABASE_URL='https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const BUCKET='files';
+        const APP_VERSION='4.0.1';
         
         let supabase=null;
         if(typeof window.supabase!=='undefined'){
@@ -106,12 +137,14 @@
         }
         
         let filesData=[];
+        let isUploading=false;
         
-        function showToast(msg){
+        function showToast(msg,type='info'){
             const t=document.getElementById('toast');
             t.textContent=msg;
+            t.style.borderColor=type==='error'?'var(--error)':type==='success'?'var(--success)':'var(--border)';
             t.classList.add('show');
-            setTimeout(()=>t.classList.remove('show'),2000);
+            setTimeout(()=>{t.classList.remove('show');t.style.borderColor=''},2500);
         }
         
         function formatSize(b){
@@ -147,9 +180,9 @@
                 renderFiles(filesData);
                 updateStats(filesData);
                 
-                if(filesData.length>0)showToast('已加载 '+filesData.length+' 个文件');
+                if(filesData.length>0)showToast('已加载 '+filesData.length+' 个文件','success');
             }catch(e){
-                showToast('加载失败: '+e.message);
+                showToast('加载失败: '+e.message,'error');
                 renderEmpty('加载失败，点击刷新重试');
             }finally{
                 btn.classList.remove('spin');
@@ -163,10 +196,10 @@
                 return;
             }
             
-            c.innerHTML=files.map(f=>{
+            c.innerHTML=files.map((f,i)=>{
                 const size=formatSize(f.metadata?.size||0);
                 const date=new Date(f.created_at).toLocaleDateString('zh-CN',{month:'short',day:'numeric'});
-                return`<div class="file-item" onclick="downloadFile('${escapeHtml(f.name)}')">
+                return`<div class="file-item" onclick="downloadFile('${escapeHtml(f.name)}')" style="animation-delay:${i*0.05}s">
                     <div class="file-icon">
                         <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     </div>
@@ -191,92 +224,161 @@
             document.getElementById('statToday').textContent=files.filter(f=>new Date(f.created_at).toDateString()===today).length;
         }
         
+        // 修复：点击上传区域时重置input，确保每次都能选择文件
+        function selectFile(){
+            if(isUploading)return;
+            const input=document.getElementById('fileInput');
+            input.value=''; // 关键修复：清空值，确保onchange能触发
+            input.click();
+        }
+        
+        function handleFileSelect(event){
+            const file=event.target.files[0];
+            if(!file)return;
+            uploadFile(file);
+        }
+        
         async function uploadFile(file){
             if(!file)return;
-            if(!supabase){showToast('服务未加载');return;}
+            if(!supabase){showToast('服务未加载','error');return;}
+            if(isUploading){showToast('正在上传中...','error');return;}
             
+            isUploading=true;
+            const uploadArea=document.getElementById('uploadArea');
+            const uploadIcon=document.getElementById('uploadIcon');
+            const uploadText=document.getElementById('uploadText');
+            const uploadHint=document.getElementById('uploadHint');
             const progress=document.getElementById('progress');
             const fill=document.getElementById('progressFill');
             const text=document.getElementById('progressText');
             
+            uploadArea.classList.add('uploading');
+            uploadIcon.innerHTML='<circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20"><animateTransform attributeName="transform" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/></circle>';
+            uploadText.textContent='正在上传...';
+            uploadHint.textContent=file.name;
             progress.classList.add('show');
             fill.style.width='10%';
-            text.textContent='正在上传: '+file.name;
+            text.textContent='准备上传: '+file.name;
             
             try{
-                // 检查重名
-                const exists=filesData.some(f=>f.name===file.name);
-                const fileName=exists?Date.now()+'_'+file.name:file.name;
+                // 检查重名并生成唯一文件名
+                let fileName=file.name;
+                let counter=1;
+                const ext=file.name.includes('.')?file.name.split('.').pop():'';
+                const baseName=ext?file.name.slice(0,-(ext.length+1)):file.name;
+                
+                while(filesData.some(f=>f.name===fileName)){
+                    fileName=ext?`${baseName}(${counter}).${ext}`:`${baseName}(${counter})`;
+                    counter++;
+                }
+                
+                // 模拟进度
+                let p=10;
+                const timer=setInterval(()=>{
+                    p=Math.min(p+Math.random()*20,90);
+                    fill.style.width=p+'%';
+                },300);
                 
                 const{error}=await supabase.storage.from(BUCKET).upload(fileName,file,{
                     cacheControl:'3600',upsert:false
                 });
+                
+                clearInterval(timer);
                 
                 if(error)throw error;
                 
                 fill.style.width='100%';
                 text.textContent='上传成功!';
                 text.style.color='var(--success)';
-                showToast('上传成功: '+file.name);
+                showToast('上传成功: '+file.name,'success');
                 
                 setTimeout(()=>{
-                    progress.classList.remove('show');
-                    fill.style.width='0%';
-                    text.style.color='';
-                    document.getElementById('fileInput').value='';
+                    resetUploadArea();
                     loadFiles();
-                },1500);
+                },1200);
             }catch(e){
                 fill.style.width='100%';
                 fill.style.background='var(--error)';
                 text.textContent='上传失败: '+e.message;
                 text.style.color='var(--error)';
-                showToast('上传失败');
+                showToast('上传失败: '+e.message,'error');
                 
                 setTimeout(()=>{
-                    progress.classList.remove('show');
-                    fill.style.width='0%';
-                    fill.style.background='';
-                    text.style.color='';
-                    document.getElementById('fileInput').value='';
+                    resetUploadArea();
                 },2000);
+            }finally{
+                isUploading=false;
             }
         }
         
-        function downloadFile(name){
-            if(!supabase){showToast('服务未加载');return;}
+        function resetUploadArea(){
+            const uploadArea=document.getElementById('uploadArea');
+            const uploadIcon=document.getElementById('uploadIcon');
+            const uploadText=document.getElementById('uploadText');
+            const uploadHint=document.getElementById('uploadHint');
+            const progress=document.getElementById('progress');
+            const fill=document.getElementById('progressFill');
+            const text=document.getElementById('progressText');
+            
+            uploadArea.classList.remove('uploading');
+            uploadIcon.innerHTML='<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>';
+            uploadText.textContent='点击上传文件';
+            uploadHint.textContent='支持任意文件类型';
+            progress.classList.remove('show');
+            fill.style.width='0%';
+            fill.style.background='';
+            text.textContent='准备上传...';
+            text.style.color='';
+            document.getElementById('fileInput').value='';
+        }
+        
+        async function downloadFile(name){
+            if(!supabase){showToast('服务未加载','error');return;}
             try{
+                showToast('准备下载...');
                 const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
+                
+                // 使用fetch获取blob确保下载成功
+                const response=await fetch(data.publicUrl);
+                if(!response.ok)throw new Error('文件获取失败');
+                
+                const blob=await response.blob();
+                const url=window.URL.createObjectURL(blob);
                 const a=document.createElement('a');
-                a.href=data.publicUrl;
+                a.href=url;
                 a.download=name;
-                a.target='_blank';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                showToast('开始下载...');
+                window.URL.revokeObjectURL(url);
+                
+                showToast('开始下载: '+name,'success');
             }catch(e){
-                showToast('下载失败: '+e.message);
+                // 降级方案：直接打开链接
+                try{
+                    const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
+                    window.open(data.publicUrl,'_blank');
+                    showToast('开始下载...');
+                }catch(err){
+                    showToast('下载失败: '+e.message,'error');
+                }
             }
         }
         
         // 版本检测
-        const APP_VERSION = '4.0.0';
-        const VERSION_URL = 'https://3862242786-sudo.github.io/pan/app-version.json';
-        
-        async function checkUpdate() {
-            try {
-                const resp = await fetch(VERSION_URL + '?t=' + Date.now());
-                if (!resp.ok) return;
-                const data = await resp.json();
-                
-                if (data.version && data.version !== APP_VERSION) {
-                    const go = confirm(`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog || ''}\n\n是否更新?`);
-                    if (go && data.downloadUrl) {
-                        window.open(data.downloadUrl, '_blank');
-                    }
+        async function checkUpdate(){
+            try{
+                const resp=await fetch('https://3862242786-sudo.github.io/pan/app-version.json?t='+Date.now());
+                if(!resp.ok)return;
+                const data=await resp.json();
+                if(data.version&&data.version!==APP_VERSION){
+                    setTimeout(()=>{
+                        if(confirm(`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog||''}\n\n是否更新?`)){
+                            if(data.downloadUrl)window.open(data.downloadUrl,'_blank');
+                        }
+                    },1000);
                 }
-            } catch (e) {}
+            }catch(e){}
         }
         
         // 初始化
