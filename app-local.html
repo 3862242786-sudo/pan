@@ -120,7 +120,7 @@
             <div class="logo-icon">
                 <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
             </div>
-            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.0.2</span>
+            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.1.0</span>
         </div>
     </div>
 
@@ -163,11 +163,38 @@
         const SUPABASE_URL='https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const BUCKET='files';
-        const APP_VERSION='4.0.2';
+        const APP_VERSION='4.1.0';
         
         let supabase=null;
-        if(typeof window.supabase!=='undefined'){
-            supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+        
+        // 初始化Supabase，带重试机制
+        function initSupabase(){
+            if(typeof window.supabase!=='undefined'){
+                try{
+                    supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+                    showToast('服务已连接','success');
+                    loadFiles();
+                    checkUpdate();
+                    return;
+                }catch(e){
+                    console.error('Supabase init error:',e);
+                }
+            }
+            // CDN加载失败，尝试备用CDN
+            const script=document.createElement('script');
+            script.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js';
+            script.onload=function(){
+                if(typeof window.supabase!=='undefined'){
+                    try{
+                        supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+                        showToast('服务已连接','success');
+                        loadFiles();
+                        checkUpdate();
+                    }catch(e){showToast('服务初始化失败','error');}
+                }else{showToast('服务加载失败，请刷新','error');}
+            };
+            script.onerror=function(){showToast('网络连接失败，请检查网络','error');};
+            document.head.appendChild(script);
         }
         
         let filesData=[];
@@ -415,31 +442,18 @@
         async function downloadFile(name){
             if(!supabase){showToast('服务未加载','error');return;}
             try{
-                showToast('准备下载...');
                 const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
-                
-                const response=await fetch(data.publicUrl);
-                if(!response.ok)throw new Error('文件获取失败');
-                
-                const blob=await response.blob();
-                const url=window.URL.createObjectURL(blob);
+                // 直接打开链接，让系统处理下载
                 const a=document.createElement('a');
-                a.href=url;
-                a.download=name;
+                a.href=data.publicUrl;
+                a.target='_blank';
+                a.rel='noopener';
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-                
-                showToast('开始下载: '+name,'success');
+                showToast('正在下载: '+name,'success');
             }catch(e){
-                try{
-                    const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
-                    window.open(data.publicUrl,'_blank');
-                    showToast('开始下载...');
-                }catch(err){
-                    showToast('下载失败: '+e.message,'error');
-                }
+                showToast('下载失败: '+e.message,'error');
             }
         }
         
@@ -479,8 +493,7 @@
         }
         
         // 初始化
-        loadFiles();
-        checkUpdate();
+        initSupabase();
     </script>
 </body>
 </html>
