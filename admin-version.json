@@ -3,6 +3,6 @@
   "versionCode": 4,
   "downloadUrl": "https://3862242786-sudo.github.io/pan/站长管理后台.apk",
   "updateLog": "v1.1.2 修复弹窗居中\n修复确认弹窗显示位置\n修复强制更新弹窗居中问题\n优化WebView兼容性",
-  "force": true,
-  "minVersion": "1.1.2"
+  "force": false,
+  "minVersion": "1.1.0"
 }
