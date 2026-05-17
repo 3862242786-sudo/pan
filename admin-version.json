@@ -1,0 +1,8 @@
+{
+  "version": "1.1.1",
+  "versionCode": 3,
+  "downloadUrl": "https://3862242786-sudo.github.io/pan/站长管理后台.apk",
+  "updateLog": "v1.1.1 修复更新\n修复文件下载功能\n修复用户统计显示\n修复搜索空结果提示\n修复设置同步错误提示\n优化上传进度显示",
+  "force": false,
+  "minVersion": "1.1.1"
+}

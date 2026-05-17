@@ -176,6 +176,25 @@
 
         /* 隐藏文件input */
         .hidden-input{display:none}
+
+        /* 强制更新弹窗 */
+        .update-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:none;align-items:center;justify-content:center;padding:24px}
+        .update-overlay.show{display:flex}
+        .update-box{background:var(--card);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .3s ease;text-align:center}
+        .update-box .update-icon{width:64px;height:64px;margin:0 auto 16px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:18px;display:flex;align-items:center;justify-content:center}
+        .update-box .update-icon svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+        .update-box h3{font-size:18px;font-weight:700;margin-bottom:4px}
+        .update-box .update-ver{font-size:13px;color:var(--text2);margin-bottom:16px}
+        .update-box .update-log{background:var(--bg);border-radius:10px;padding:14px;text-align:left;font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:20px;max-height:200px;overflow-y:auto;white-space:pre-line}
+        .update-box .update-log .log-title{font-weight:600;color:var(--text);margin-bottom:6px;font-size:14px}
+        .update-box .btn-update{width:100%;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+        .update-box .btn-update:active{transform:scale(.98)}
+        .update-box .btn-update svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+        .update-box .force-hint{font-size:12px;color:var(--error);margin-top:10px;font-weight:500}
+
+        /* Toggle 开关 */
+        #updateForceToggle:checked + span{background:var(--primary)!important}
+        #updateForceToggle:checked ~ span:last-child{transform:translateX(22px)!important}
     </style>
 </head>
 <body>
@@ -191,6 +210,23 @@
                 <button class="btn btn-outline" onclick="closeModal()">取消</button>
                 <button class="btn btn-danger" id="modalConfirmBtn" onclick="confirmModal()">确定</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 强制更新弹窗 -->
+    <div class="update-overlay" id="updateOverlay">
+        <div class="update-box">
+            <div class="update-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <h3>发现新版本</h3>
+            <div class="update-ver" id="updateVerText">v1.1.1</div>
+            <div class="update-log" id="updateLogContent"></div>
+            <button class="btn-update" id="updateBtn" onclick="doUpdate()">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                立即更新
+            </button>
+            <div class="force-hint" id="forceHint">此为强制更新，请更新后继续使用</div>
         </div>
     </div>
 
@@ -350,6 +386,41 @@
                 </div>
             </div>
             <div class="card">
+                <div class="card-head">
+                    <div class="card-title">更新管理</div>
+                    <svg viewBox="0 0 24 24" style="width:18px;height:18px;stroke:var(--primary);fill:none;stroke-width:2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <div class="setting-label">强制更新</div>
+                        <div class="setting-desc">开启后所有用户必须更新到最新版本</div>
+                    </div>
+                    <label style="position:relative;display:inline-block;width:48px;height:26px;cursor:pointer">
+                        <input type="checkbox" id="updateForceToggle" onchange="toggleForceUpdate()" style="opacity:0;width:0;height:0">
+                        <span style="position:absolute;inset:0;background:var(--border);border-radius:13px;transition:.3s"></span>
+                        <span style="position:absolute;left:3px;top:3px;width:20px;height:20px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+                    </label>
+                </div>
+                <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px">
+                    <div>
+                        <div class="setting-label">新版本号</div>
+                        <div class="setting-desc">发布新版本时填写版本号（如 1.2.0）</div>
+                    </div>
+                    <input type="text" id="updateNewVersion" placeholder="例如: 1.2.0" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);color:var(--text);outline:none;width:100%">
+                </div>
+                <div class="setting-row" style="flex-direction:column;align-items:stretch;gap:8px">
+                    <div>
+                        <div class="setting-label">更新日志</div>
+                        <div class="setting-desc">向用户展示的更新说明</div>
+                    </div>
+                    <textarea id="updateLogInput" class="announce-textarea" placeholder="请输入更新内容，每行一条..." style="min-height:80px"></textarea>
+                </div>
+                <button class="btn btn-primary btn-full" onclick="saveUpdateConfig()" style="margin-top:4px">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    保存更新配置
+                </button>
+            </div>
+            <div class="card">
                 <div class="card-head"><div class="card-title">危险操作</div></div>
                 <button class="btn btn-danger btn-full" onclick="handleLogout()"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>退出登录</button>
             </div>
@@ -391,10 +462,14 @@
         const ADMIN_EMAIL = '3862242786@qq.com';
         const BUCKET = 'files';
         const SETTINGS_FILE = 'site_settings.json';
+        const APP_VERSION = '1.1.1';
+        const APP_VERSION_CODE = 3;
+        const VERSION_CHECK_URL = 'https://3862242786-sudo.github.io/pan/admin-version.json';
 
         let supabaseClient = null;
         let filesData = [];
         let modalCallback = null;
+        let modalCancelCallback = null;
 
         if (typeof window.supabase !== 'undefined') {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -501,6 +576,7 @@
             document.getElementById('bottomNav').style.display = 'flex';
             document.getElementById('headerEmail').textContent = email;
             initTheme();
+            checkForUpdate();
             loadAllData();
         }
 
@@ -544,6 +620,7 @@
             loadAnnouncement();
             loadSettings();
             loadUserCount();
+            loadUpdateConfig();
         }
 
         async function loadFiles() {
@@ -799,15 +876,17 @@
             }
         }
 
-        function showModal(title, msg, callback) {
+        function showModal(title, msg, callback, cancelCallback) {
             document.getElementById('modalTitle').textContent = title;
             document.getElementById('modalMsg').textContent = msg;
             modalCallback = callback;
+            modalCancelCallback = cancelCallback || null;
             document.getElementById('modalOverlay').classList.add('show');
         }
 
         function closeModal() {
             document.getElementById('modalOverlay').classList.remove('show');
+            if (modalCancelCallback) { modalCancelCallback(); modalCancelCallback = null; }
             modalCallback = null;
         }
 
@@ -829,6 +908,151 @@
             const k = 1024, s = ['B', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + s[i];
+        }
+
+        // ========== 版本检查与强制更新 ==========
+        async function checkForUpdate() {
+            try {
+                const resp = await fetch(VERSION_CHECK_URL + '?t=' + Date.now());
+                if (!resp.ok) return;
+                const remote = await resp.json();
+
+                // 判断是否需要更新
+                const needUpdate = remote.versionCode > APP_VERSION_CODE;
+                const isForce = remote.force === true;
+
+                if (!needUpdate) return;
+
+                // 显示更新弹窗
+                document.getElementById('updateVerText').textContent = '最新版本: v' + remote.version;
+                document.getElementById('updateLogContent').innerHTML =
+                    '<div class="log-title">更新内容</div>' + (remote.updateLog || '暂无更新说明');
+                document.getElementById('forceHint').style.display = isForce ? 'block' : 'none';
+
+                // 强制更新时隐藏关闭按钮效果（弹窗不可关闭）
+                if (isForce) {
+                    // 强制更新：阻止点击遮罩关闭
+                    document.getElementById('updateOverlay').onclick = function(e) {
+                        if (e.target === this) e.preventDefault();
+                    };
+                }
+
+                // 存储下载链接
+                document.getElementById('updateBtn').dataset.url = remote.downloadUrl || '';
+                document.getElementById('updateOverlay').classList.add('show');
+
+            } catch (e) {
+                // 网络错误，静默忽略
+            }
+        }
+
+        function doUpdate() {
+            const url = document.getElementById('updateBtn').dataset.url;
+            if (url) {
+                window.open(url, '_blank');
+            } else {
+                showToast('下载链接不可用');
+            }
+        }
+
+        // ========== 强制更新管理（站长端） ==========
+        function loadUpdateConfig() {
+            const el = document.getElementById('updateForceToggle');
+            if (!el) return;
+            // 从云端加载当前配置
+            loadUpdateConfigFromCloud();
+        }
+
+        async function loadUpdateConfigFromCloud() {
+            if (!supabaseClient) return;
+            try {
+                const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl('admin-version.json');
+                const resp = await fetch(data.publicUrl + '?t=' + Date.now());
+                if (resp.ok) {
+                    const config = await resp.json();
+                    const el = document.getElementById('updateForceToggle');
+                    if (el) el.checked = config.force === true;
+                    const logEl = document.getElementById('updateLogInput');
+                    if (logEl && config.updateLog) logEl.value = config.updateLog;
+                    const verEl = document.getElementById('updateNewVersion');
+                    if (verEl && config.version) verEl.value = config.version;
+                }
+            } catch (e) {}
+        }
+
+        async function toggleForceUpdate() {
+            if (!supabaseClient) { showToast('服务未加载'); return; }
+            const isForce = document.getElementById('updateForceToggle').checked;
+            showModal(
+                isForce ? '开启强制更新' : '关闭强制更新',
+                isForce ? '开启后所有用户必须更新到最新版本才能继续使用，确定开启吗？' : '确定关闭强制更新吗？',
+                async () => {
+                    try {
+                        // 先读取当前配置
+                        const { data: urlData } = supabaseClient.storage.from(BUCKET).getPublicUrl('admin-version.json');
+                        const resp = await fetch(urlData.publicUrl + '?t=' + Date.now());
+                        let config = {};
+                        if (resp.ok) config = await resp.json();
+
+                        config.force = isForce;
+                        config.updatedAt = new Date().toISOString();
+
+                        const { error } = await supabaseClient.storage.from(BUCKET).upload(
+                            'admin-version.json', JSON.stringify(config, null, 2),
+                            { cacheControl: '60', upsert: true, contentType: 'application/json' }
+                        );
+                        if (error) throw error;
+                        showToast(isForce ? '已开启强制更新' : '已关闭强制更新');
+                    } catch (err) {
+                        showToast('操作失败: ' + err.message);
+                        // 恢复开关状态
+                        document.getElementById('updateForceToggle').checked = !isForce;
+                    }
+                },
+                () => {
+                    // 取消时恢复开关状态
+                    document.getElementById('updateForceToggle').checked = !isForce;
+                }
+            );
+        }
+
+        async function saveUpdateConfig() {
+            if (!supabaseClient) { showToast('服务未加载'); return; }
+            const newVer = document.getElementById('updateNewVersion').value.trim();
+            const newLog = document.getElementById('updateLogInput').value.trim();
+
+            if (!newVer) { showToast('请输入版本号'); return; }
+
+            try {
+                // 读取当前配置
+                const { data: urlData } = supabaseClient.storage.from(BUCKET).getPublicUrl('admin-version.json');
+                const resp = await fetch(urlData.publicUrl + '?t=' + Date.now());
+                let config = {};
+                if (resp.ok) config = await resp.json();
+
+                // 解析版本号
+                const parts = newVer.replace('v', '').split('.');
+                const major = parseInt(parts[0]) || 0;
+                const minor = parseInt(parts[1]) || 0;
+                const patch = parseInt(parts[2]) || 0;
+                const newCode = major * 10000 + minor * 100 + patch;
+
+                config.version = newVer.replace('v', '');
+                config.versionCode = Math.max(newCode, (config.versionCode || 0) + 1);
+                config.updateLog = newLog || config.updateLog || '';
+                config.updatedAt = new Date().toISOString();
+
+                const { error } = await supabaseClient.storage.from(BUCKET).upload(
+                    'admin-version.json', JSON.stringify(config, null, 2),
+                    { cacheControl: '60', upsert: true, contentType: 'application/json' }
+                );
+                if (error) throw error;
+
+                // 同步更新本地 admin-version.json（下次部署时生效）
+                showToast('更新配置已保存');
+            } catch (err) {
+                showToast('保存失败: ' + err.message);
+            }
         }
 
         document.getElementById('loginPassword').addEventListener('keydown', e => {
