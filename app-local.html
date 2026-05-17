@@ -260,8 +260,28 @@
             }
         }
         
+        // 版本检测
+        const APP_VERSION = '4.0.0';
+        const VERSION_URL = 'https://3862242786-sudo.github.io/pan/app-version.json';
+        
+        async function checkUpdate() {
+            try {
+                const resp = await fetch(VERSION_URL + '?t=' + Date.now());
+                if (!resp.ok) return;
+                const data = await resp.json();
+                
+                if (data.version && data.version !== APP_VERSION) {
+                    const go = confirm(`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog || ''}\n\n是否更新?`);
+                    if (go && data.downloadUrl) {
+                        window.open(data.downloadUrl, '_blank');
+                    }
+                }
+            } catch (e) {}
+        }
+        
         // 初始化
         loadFiles();
+        checkUpdate();
     </script>
 </body>
 </html>
