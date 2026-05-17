@@ -985,29 +985,8 @@
         }
 
         function doUpdate() {
-            const url = document.getElementById('updateBtn').dataset.url;
-            if (!url) {
-                showToast('下载链接不可用');
-                return;
-            }
-            
-            // 尝试多种方式打开下载链接
-            try {
-                // 方式1: 使用 location.href (最兼容)
-                window.location.href = url;
-            } catch (e) {
-                try {
-                    // 方式2: 使用 location.assign
-                    window.location.assign(url);
-                } catch (e2) {
-                    try {
-                        // 方式3: 使用 open
-                        window.open(url, '_system');
-                    } catch (e3) {
-                        showToast('无法打开下载链接，请手动访问: ' + url);
-                    }
-                }
-            }
+            // 跳转到下载中转页面，确保能触发APK下载
+            window.location.href = 'https://3862242786-sudo.github.io/pan/download.html?app=admin&ver=v' + APP_VERSION;
         }
 
         // ========== 强制更新管理（站长端） ==========

@@ -375,16 +375,9 @@
                     setTimeout(()=>{
                         const msg=(data.force?'【强制更新】\n\n':'')+`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog||''}\n\n是否更新?`;
                         if(confirm(msg)){
-                            if(data.downloadUrl){
-                                // 尝试多种方式打开
-                                try{window.location.href=data.downloadUrl;}catch(e){
-                                    try{window.location.assign(data.downloadUrl);}catch(e2){
-                                        window.open(data.downloadUrl,'_system');
-                                    }
-                                }
-                            }
+                            // 跳转到下载中转页面
+                            window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
                         }else if(data.force){
-                            // 强制更新时，取消则提示必须更新
                             alert('此为强制更新，必须更新后才能继续使用');
                             checkUpdate();
                         }
