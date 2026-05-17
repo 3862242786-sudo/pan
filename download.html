@@ -8,48 +8,85 @@
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
         .box{background:#fff;border-radius:16px;padding:40px 32px;text-align:center;max-width:360px;width:100%;box-shadow:0 4px 20px rgba(0,0,0,.08)}
-        .icon{width:64px;height:64px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:18px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center}
-        .icon svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2}
-        h2{font-size:18px;margin-bottom:8px}
-        p{color:#64748b;font-size:14px;line-height:1.6;margin-bottom:24px}
-        .btn{display:inline-block;padding:12px 32px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer}
-        .btn:active{transform:scale(.98)}
         .spinner{width:24px;height:24px;border:3px solid #e2e8f0;border-top-color:#3b82f6;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 16px}
         @keyframes spin{to{transform:rotate(360deg)}}
+        h2{font-size:18px;margin-bottom:8px}
+        p{color:#64748b;font-size:14px;line-height:1.6;margin-bottom:24px}
+        .btn{display:inline-block;padding:14px 32px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;transition:all .15s}
+        .btn:active{transform:scale(.97)}
+        .btn-outline{background:transparent;color:#3b82f6;border:1.5px solid #3b82f6;margin-left:8px}
+        .btns{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}
+        .note{font-size:12px;color:#94a3b8;margin-top:20px;line-height:1.6}
     </style>
 </head>
 <body>
     <div class="box">
         <div class="spinner"></div>
         <h2 id="title">正在准备下载...</h2>
-        <p id="desc">如果下载未自动开始，请点击下方按钮</p>
-        <a class="btn" id="dlBtn" href="#">手动下载</a>
+        <p id="desc">请点击下方按钮，将使用浏览器下载安装包</p>
+        <div class="btns">
+            <a class="btn" id="browserBtn" href="#">用浏览器下载</a>
+            <a class="btn btn-outline" id="copyBtn" href="javascript:void(0)">复制链接</a>
+        </div>
+        <div class="note" id="note"></div>
     </div>
     <script>
         const params=new URLSearchParams(window.location.search);
-        const app=params.get('app')||'青柠网盘';
+        const app=params.get('app')||'qn';
         const ver=params.get('ver')||'';
         
-        let url='';
+        let url='',name='';
         if(app==='admin'){
             url='https://3862242786-sudo.github.io/pan/站长管理后台.apk';
-            document.getElementById('title').textContent='正在下载站长管理后台'+ver;
+            name='站长管理后台';
         }else{
             url='https://3862242786-sudo.github.io/pan/青柠网盘.apk';
-            document.getElementById('title').textContent='正在下载青柠网盘'+ver;
+            name='青柠网盘';
         }
-        document.getElementById('dlBtn').href=url;
         
-        // 自动触发下载
+        document.getElementById('title').textContent='下载 '+name+' '+ver;
+        document.getElementById('note').textContent='提示：点击后会在浏览器中打开下载页面，下载完成后安装即可';
+        
+        // 方式1: 使用 intent 协议调用系统浏览器（Android WebView 中最可靠）
+        const browserBtn=document.getElementById('browserBtn');
+        const intentUrl='intent:'+url+'#Intent;scheme=https;package=com.android.browser;end';
+        
+        // 尝试多种方式
+        browserBtn.href=intentUrl;
+        browserBtn.onclick=function(e){
+            e.preventDefault();
+            // 方式A: intent 协议
+            window.location.href=intentUrl;
+            // 如果 intent 失败，1秒后尝试直接打开
+            setTimeout(()=>{
+                window.open(url,'_blank');
+            },1000);
+        };
+        
+        // 复制链接按钮
+        document.getElementById('copyBtn').onclick=function(){
+            if(navigator.clipboard){
+                navigator.clipboard.writeText(url).then(()=>{
+                    this.textContent='已复制';
+                    setTimeout(()=>this.textContent='复制链接',2000);
+                });
+            }else{
+                // 降级方案
+                const ta=document.createElement('textarea');
+                ta.value=url;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                this.textContent='已复制';
+                setTimeout(()=>this.textContent='复制链接',2000);
+            }
+        };
+        
+        // 自动尝试打开
         setTimeout(()=>{
-            const a=document.createElement('a');
-            a.href=url;
-            a.download='';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            document.getElementById('title').textContent='下载已开始';
-        },500);
+            window.location.href=intentUrl;
+        },800);
     </script>
 </body>
 </html>
