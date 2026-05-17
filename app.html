@@ -2,194 +2,188 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, target-densitydpi=device-dpi">
-    <meta name="theme-color" content="#3b82f6">
-    <title>青柠网盘 APP</title>
-    <link rel="stylesheet" href="app-styles.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠网盘APP - 下载</title>
+    <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .app-hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:100px 24px 60px;text-align:center;position:relative;overflow:hidden}
+        .app-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e293b 40%,#1e1b4b 100%)}
+        .app-hero-grid{position:absolute;inset:0;opacity:.03;background-image:linear-gradient(#3b82f6 1px,transparent 1px),linear-gradient(90deg,#3b82f6 1px,transparent 1px);background-size:60px 60px}
+        .app-hero-content{position:relative;z-index:1;max-width:600px}
+        .app-hero-logo{width:88px;height:88px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;box-shadow:0 20px 50px rgba(59,130,246,.35)}
+        .app-hero-logo svg{width:48px;height:48px;stroke:#fff;fill:none;stroke-width:2}
+        .app-hero h1{font-size:44px;font-weight:800;color:#fff;margin-bottom:12px}
+        .app-hero .tagline{font-size:17px;color:#94a3b8;line-height:1.7;margin-bottom:36px}
+        .app-hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
+        .btn-app{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;transition:all .2s}
+        .btn-app:active{transform:scale(.97)}
+        .btn-app-primary{background:#3b82f6;color:#fff;box-shadow:0 4px 20px rgba(59,130,246,.35)}
+        .btn-app-secondary{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.15)}
+        .app-hero-stats{display:flex;justify-content:center;gap:40px}
+        .app-hero-stat-val{font-size:28px;font-weight:800;color:#3b82f6}
+        .app-hero-stat-label{font-size:12px;color:#64748b;margin-top:4px}
+        .app-section{padding:72px 24px;max-width:800px;margin:0 auto}
+        .app-section-title{font-size:32px;font-weight:700;text-align:center;margin-bottom:12px}
+        .app-section-desc{font-size:15px;color:#64748b;text-align:center;margin-bottom:40px;line-height:1.7}
+        .app-features{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .app-feature{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:24px 20px;transition:all .2s}
+        .app-feature:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.06);border-color:#3b82f6}
+        .app-feature-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+        .app-feature-icon svg{width:22px;height:22px;fill:none;stroke-width:2}
+        .app-feature h3{font-size:16px;font-weight:600;margin-bottom:6px}
+        .app-feature p{font-size:13px;color:#64748b;line-height:1.6}
+        .app-preview{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin:0 auto;max-width:340px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
+        .app-preview-header{background:#3b82f6;padding:12px 16px;border-radius:10px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+        .app-preview-header svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+        .app-preview-header span{color:#fff;font-size:14px;font-weight:600}
+        .app-preview-upload{border:2px dashed #e2e8f0;border-radius:10px;padding:20px;text-align:center;margin-bottom:10px}
+        .app-preview-upload svg{width:28px;height:28px;stroke:#3b82f6;fill:none;stroke-width:1.5;margin-bottom:6px}
+        .app-preview-upload p{font-size:12px;color:#94a3b8}
+        .app-preview-file{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#fff;border-radius:8px;margin-bottom:6px;border:1px solid #f1f5f9}
+        .app-preview-file-icon{width:28px;height:28px;background:#dbeafe;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .app-preview-file-icon svg{width:14px;height:14px;stroke:#3b82f6;fill:none;stroke-width:2}
+        .app-preview-file-name{font-size:12px;font-weight:500}
+        .app-preview-file-meta{font-size:10px;color:#94a3b8}
+        .app-cta{background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:16px;padding:56px 32px;text-align:center;color:#fff;margin-top:48px}
+        .app-cta h2{font-size:28px;font-weight:700;margin-bottom:10px}
+        .app-cta p{font-size:15px;opacity:.8;margin-bottom:28px}
+        .app-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 36px;background:#fff;color:#3b82f6;border:none;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s}
+        .app-cta-btn:active{transform:scale(.97)}
+        .app-back{display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:14px;margin-bottom:20px}
+        .app-back:hover{color:#3b82f6}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        .anim{opacity:0;transform:translateY(24px);transition:all .6s ease}
+        .anim.visible{opacity:1;transform:translateY(0)}
+        @media(max-width:640px){
+            .app-hero h1{font-size:32px}
+            .app-features{grid-template-columns:1fr}
+            .app-section{padding:48px 16px}
+            .app-section-title{font-size:24px}
+            .app-hero-stats{gap:20px}
+        }
+    </style>
 </head>
 <body>
-    <!-- 状态栏占位 -->
-    <div class="status-bar"></div>
-    
-    <!-- 顶部导航 -->
-    <header class="app-header">
-        <div class="app-header-content">
-            <div class="app-logo">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-                </svg>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="app.html" style="color:#3b82f6;font-weight:600">APP下载</a></li>
+                <li><a href="versions.html">历史版本</a></li>
+                <li><a href="upload.html">上传文件</a></li>
+                <li><a href="auth.html">登录</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="app-hero">
+        <div class="app-hero-grid"></div>
+        <div class="app-hero-content">
+            <div class="app-hero-logo">
+                <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <h1>青柠网盘 APP</h1>
+            <p class="tagline">简洁高效的云端存储客户端<br>上传下载一键完成，无需注册，打开即用</p>
+            <div class="app-hero-btns">
+                <a href="qingning-pan.apk" download class="btn-app btn-app-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载 APK
+                </a>
+                <a href="versions.html" class="btn-app btn-app-secondary">历史版本</a>
+            </div>
+            <div class="app-hero-stats">
+                <div><div class="app-hero-stat-val">180</div><div class="app-hero-stat-label">行代码</div></div>
+                <div><div class="app-hero-stat-val">0</div><div class="app-hero-stat-label">广告</div></div>
+                <div><div class="app-hero-stat-val">100%</div><div class="app-hero-stat-label">免费</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-section">
+        <div class="app-section-title anim">核心功能</div>
+        <p class="app-section-desc anim">去掉一切不必要的复杂功能，只保留你最需要的上传和下载</p>
+        <div class="app-features">
+            <div class="app-feature anim">
+                <div class="app-feature-icon" style="background:#dbeafe">
+                    <svg viewBox="0 0 24 24" stroke="#3b82f6"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3>极速上传</h3>
+                <p>选择文件一键上传，支持任意类型，自动处理重名文件</p>
+            </div>
+            <div class="app-feature anim">
+                <div class="app-feature-icon" style="background:#dcfce7">
+                    <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </div>
+                <h3>快速下载</h3>
+                <p>点击文件即可下载，不限速不等待，文件信息一目了然</p>
+            </div>
+            <div class="app-feature anim">
+                <div class="app-feature-icon" style="background:#ede9fe">
+                    <svg viewBox="0 0 24 24" stroke="#7c3aed"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                </div>
+                <h3>原生体验</h3>
+                <p>Android 原生应用，专为手机端优化，操作流畅直觉化</p>
+            </div>
+            <div class="app-feature anim">
+                <div class="app-feature-icon" style="background:#ffedd5">
+                    <svg viewBox="0 0 24 24" stroke="#ea580c"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3>安全可靠</h3>
+                <p>基于 Supabase 构建，数据加密传输，保障文件安全</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-section">
+        <div class="app-section-title anim">界面预览</div>
+        <p class="app-section-desc anim">清爽简洁的界面设计，没有多余的按钮和选项</p>
+        <div class="app-preview anim">
+            <div class="app-preview-header">
+                <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
                 <span>青柠网盘</span>
             </div>
-            <div class="app-version" id="versionDisplay">v1.1.0</div>
-        </div>
-    </header>
-
-    <!-- 主内容区 -->
-    <main class="app-main">
-        <!-- 搜索栏 -->
-        <div class="app-search-section">
-            <div class="app-search-box">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"/>
-                    <path d="m21 21-4.35-4.35"/>
-                </svg>
-                <input type="text" id="searchInput" placeholder="搜索文件...">
+            <div class="app-preview-upload">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <p>点击上传文件</p>
+            </div>
+            <div class="app-preview-file">
+                <div class="app-preview-file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div><div class="app-preview-file-name">项目文档.pdf</div><div class="app-preview-file-meta">2.4 MB · 5月17日</div></div>
+            </div>
+            <div class="app-preview-file">
+                <div class="app-preview-file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div><div class="app-preview-file-name">设计稿.psd</div><div class="app-preview-file-meta">18.7 MB · 5月16日</div></div>
+            </div>
+            <div class="app-preview-file">
+                <div class="app-preview-file-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+                <div><div class="app-preview-file-name">会议记录.docx</div><div class="app-preview-file-meta">156 KB · 5月15日</div></div>
             </div>
         </div>
+    </div>
 
-        <!-- 功能卡片 -->
-        <div class="app-cards">
-            <a href="upload.html" class="app-card app-card-primary">
-                <div class="app-card-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                    </svg>
-                </div>
-                <div class="app-card-text">
-                    <span class="app-card-title">上传文件</span>
-                    <span class="app-card-desc">快速分享</span>
-                </div>
-            </a>
-            
-            <a href="#files" class="app-card app-card-secondary" onclick="switchTab('files')">
-                <div class="app-card-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10 9 9 9 8 9"/>
-                    </svg>
-                </div>
-                <div class="app-card-text">
-                    <span class="app-card-title">文件列表</span>
-                    <span class="app-card-desc">浏览下载</span>
-                </div>
+    <div class="app-section">
+        <div class="app-cta anim">
+            <h2>立即下载体验</h2>
+            <p>免费、简洁、高效。你的文件，触手可及。</p>
+            <a href="qingning-pan.apk" download class="app-cta-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载青柠网盘 APK
             </a>
         </div>
+    </div>
 
-        <!-- 标签页切换 -->
-        <div class="app-tabs">
-            <button class="app-tab active" data-tab="files" onclick="switchTab('files')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                </svg>
-                <span>文件</span>
-            </button>
-            <button class="app-tab" data-tab="history" onclick="switchTab('history')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <polyline points="12 6 12 12 16 14"/>
-                </svg>
-                <span>下载记录</span>
-            </button>
-            <button class="app-tab" data-tab="me" onclick="switchTab('me')">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                <span>我的</span>
-            </button>
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 青柠网盘. All rights reserved.</p>
         </div>
+    </footer>
 
-        <!-- 文件列表页 -->
-        <div id="filesTab" class="app-tab-content active">
-            <div class="app-section-title">
-                <span>全部文件</span>
-                <span class="file-count" id="fileCount">0 个文件</span>
-            </div>
-            <div id="fileList" class="app-file-list">
-                <div class="app-loading">
-                    <div class="app-spinner"></div>
-                    <span>加载中...</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- 下载记录页 -->
-        <div id="historyTab" class="app-tab-content">
-            <div class="app-section-title">
-                <span>下载记录</span>
-                <button class="app-text-btn" onclick="clearHistory()">清空</button>
-            </div>
-            <div id="historyList" class="app-file-list">
-                <div class="app-empty">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"/>
-                        <polyline points="12 6 12 12 16 14"/>
-                    </svg>
-                    <p>暂无下载记录</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- 我的页面 -->
-        <div id="meTab" class="app-tab-content">
-            <div class="app-profile">
-                <div class="app-avatar">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </div>
-                <div class="app-profile-info">
-                    <span class="app-profile-name">青柠用户</span>
-                    <span class="app-profile-id" id="userId">ID: --</span>
-                </div>
-            </div>
-            
-            <div class="app-menu-list">
-                <a href="index.html" class="app-menu-item">
-                    <div class="app-menu-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                            <polyline points="9 22 9 12 15 12 15 22"/>
-                        </svg>
-                    </div>
-                    <span>访问网页版</span>
-                    <svg class="app-menu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </a>
-                
-                <a href="about.html" class="app-menu-item">
-                    <div class="app-menu-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="12" y1="16" x2="12" y2="12"/>
-                            <line x1="12" y1="8" x2="12.01" y2="8"/>
-                        </svg>
-                    </div>
-                    <span>关于我们</span>
-                    <svg class="app-menu-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"/>
-                    </svg>
-                </a>
-                
-                <div class="app-menu-item" onclick="checkUpdate()">
-                    <div class="app-menu-icon">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                            <polyline points="21 3 21 9 15 9"/>
-                            <line x1="12" y1="16" x2="12" y2="12"/>
-                            <line x1="8" y1="12" x2="16" y2="12"/>
-                        </svg>
-                    </div>
-                    <span>检查更新</span>
-                    <span class="app-version-tag" id="updateBadge">v1.1.0</span>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- 底部安全区占位 -->
-    <div class="safe-area-bottom"></div>
-
-    <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
-    <script src="app.js"></script>
+    <script>
+        const obs=new IntersectionObserver(e=>{e.forEach(i=>{if(i.isIntersecting)i.target.classList.add('visible')})},{threshold:.1});
+        document.querySelectorAll('.anim').forEach(el=>obs.observe(el));
+    </script>
 </body>
 </html>
