@@ -99,24 +99,13 @@
                     </a>
                     <div class="dropdown-menu" id="appDropdownMenu">
                         <div class="dropdown-header">下载青柠网盘APP</div>
-                        <a href="apk-releases/青柠网盘_v3.0.1.apk" class="dropdown-item dropdown-primary">
-                            <span class="dropdown-version">最新版 v3.0.1</span>
+                        <a href="青柠网盘.apk" download class="dropdown-item dropdown-primary">
+                            <span class="dropdown-version">最新版 v4.2.0</span>
                             <span class="dropdown-desc">推荐下载</span>
                         </a>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-header">历史版本</div>
-                        <a href="apk-releases/青柠网盘_v3.0.0.apk" class="dropdown-item">v3.0.0</a>
-                        <a href="apk-releases/青柠网盘_v2.1.0.apk" class="dropdown-item">v2.1.0</a>
-                        <a href="apk-releases/青柠网盘_v2.0.0.apk" class="dropdown-item">v2.0.0</a>
-                        <a href="apk-releases/青柠网盘_v1.3.0.apk" class="dropdown-item">v1.3.0</a>
-                        <a href="apk-releases/青柠网盘_v1.2.1.apk" class="dropdown-item">v1.2.1</a>
-                        <a href="apk-releases/青柠网盘_v1.2.0.apk" class="dropdown-item">v1.2.0</a>
-                        <a href="apk-releases/青柠网盘_v1.1.2.apk" class="dropdown-item">v1.1.2</a>
-                        <a href="apk-releases/青柠网盘_v1.1.1.apk" class="dropdown-item">v1.1.1</a>
-                        <a href="apk-releases/青柠网盘_v1.1.0.apk" class="dropdown-item">v1.1.0</a>
-                        <a href="apk-releases/青柠网盘_v1.0.0.apk" class="dropdown-item">v1.0.0</a>
-                        <div class="dropdown-divider"></div>
-                        <a href="apk-releases/" class="dropdown-item dropdown-more">查看全部版本 →</a>
+                        <a href="versions.html" class="dropdown-item dropdown-more">查看全部历史版本 →</a>
                     </div>
                 </li>
             </ul>
@@ -129,18 +118,35 @@
     </nav>
 
     <!-- 主页横幅 -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>欢迎来到青柠网盘</h1>
-            <p>简单、快速、免费的文件分享服务</p>
+    <section class="hero" style="min-height:auto;padding:80px 0 60px">
+        <div class="hero-content" style="max-width:640px;margin:0 auto;text-align:center">
+            <div style="width:72px;height:72px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 12px 32px rgba(59,130,246,.3)">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <h1 style="font-size:42px;margin-bottom:12px;background:linear-gradient(135deg,#3b82f6,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">青柠网盘</h1>
+            <p style="font-size:18px;color:#64748b;margin-bottom:32px;line-height:1.7">简洁高效的云端存储服务<br>上传下载一键完成，无需注册，打开即用</p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:40px">
+                <a href="upload.html" style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:#3b82f6;color:#fff;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 4px 16px rgba(59,130,246,.3)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    上传文件
+                </a>
+                <a href="青柠网盘.apk" download style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:transparent;color:#1e293b;border:1.5px solid #e2e8f0;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载APP
+                </a>
+            </div>
             <div class="hero-stats">
                 <div class="stat">
-                    <span class="stat-num" id="fileCount">0</span>
-                    <span class="stat-label">个文件</span>
+                    <span class="stat-num">100%</span>
+                    <span class="stat-label">免费使用</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-num">免费</span>
-                    <span class="stat-label">永久开放</span>
+                    <span class="stat-num">0</span>
+                    <span class="stat-label">广告干扰</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-num">180</span>
+                    <span class="stat-label">行代码</span>
                 </div>
             </div>
         </div>
