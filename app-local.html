@@ -76,17 +76,51 @@
         .loading-skeleton{background:linear-gradient(90deg,var(--border) 25%,var(--bg) 50%,var(--border) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:8px;height:60px;margin-bottom:8px}
         
         input[type=file]{display:none}
+        
+        /* 现代简约版弹窗 */
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
+        .modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+        .modal{background:var(--card);border-radius:16px;padding:24px;width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:slideUp .3s ease;margin:auto}
+        .modal-icon{width:56px;height:56px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+        .modal-icon svg{width:28px;height:28px;stroke:#fff;fill:none;stroke-width:2}
+        .modal-icon.info{background:linear-gradient(135deg,var(--primary),#1d4ed8)}
+        .modal-icon.success{background:linear-gradient(135deg,var(--success),#059669)}
+        .modal-icon.warning{background:linear-gradient(135deg,#f59e0b,#d97706)}
+        .modal-icon.error{background:linear-gradient(135deg,var(--error),#dc2626)}
+        .modal h3{font-size:17px;font-weight:600;text-align:center;margin-bottom:8px}
+        .modal p{font-size:14px;color:var(--text2);text-align:center;line-height:1.6;margin-bottom:20px;white-space:pre-line}
+        .modal-btns{display:flex;gap:10px}
+        .modal-btn{flex:1;padding:12px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}
+        .modal-btn:active{transform:scale(.97)}
+        .modal-btn.primary{background:var(--primary);color:#fff}
+        .modal-btn.secondary{background:var(--bg);color:var(--text);border:1.5px solid var(--border)}
+        .modal-btn.danger{background:var(--error);color:#fff}
     </style>
 </head>
 <body>
     <div class="toast" id="toast"></div>
+    
+    <!-- 现代简约版弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-icon info" id="modalIcon">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <h3 id="modalTitle">提示</h3>
+            <p id="modalMsg">确定执行此操作吗？</p>
+            <div class="modal-btns" id="modalBtns">
+                <button class="modal-btn secondary" onclick="handleModalCancel()">取消</button>
+                <button class="modal-btn primary" id="modalConfirmBtn" onclick="handleModalConfirm()">确定</button>
+            </div>
+        </div>
+    </div>
     
     <div class="header">
         <div class="logo">
             <div class="logo-icon">
                 <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
             </div>
-            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.0.1</span>
+            青柠网盘 <span style="font-size:12px;color:var(--text2);margin-left:6px">v4.0.2</span>
         </div>
     </div>
 
@@ -129,7 +163,7 @@
         const SUPABASE_URL='https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const BUCKET='files';
-        const APP_VERSION='4.0.1';
+        const APP_VERSION='4.0.2';
         
         let supabase=null;
         if(typeof window.supabase!=='undefined'){
@@ -138,6 +172,55 @@
         
         let filesData=[];
         let isUploading=false;
+        let modalCallback=null;
+        let modalCancelCallback=null;
+        
+        // ========== 现代简约版弹窗 ==========
+        function showModal(options){
+            const{title='提示',msg='',type='info',confirmText='确定',cancelText='',onConfirm,onCancel}=options;
+            
+            document.getElementById('modalTitle').textContent=title;
+            document.getElementById('modalMsg').textContent=msg;
+            
+            const iconEl=document.getElementById('modalIcon');
+            iconEl.className='modal-icon '+type;
+            iconEl.innerHTML={
+                info:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+                success:'<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+                warning:'<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+                error:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+            }[type];
+            
+            const btnsEl=document.getElementById('modalBtns');
+            const confirmBtn=document.getElementById('modalConfirmBtn');
+            
+            if(cancelText){
+                btnsEl.innerHTML=`<button class="modal-btn secondary" onclick="handleModalCancel()">${cancelText}</button><button class="modal-btn primary" id="modalConfirmBtn" onclick="handleModalConfirm()">${confirmText}</button>`;
+            }else{
+                btnsEl.innerHTML=`<button class="modal-btn primary" style="width:100%" onclick="handleModalConfirm()">${confirmText}</button>`;
+            }
+            
+            modalCallback=onConfirm||null;
+            modalCancelCallback=onCancel||null;
+            document.getElementById('modalOverlay').classList.add('show');
+        }
+        
+        function closeModal(e){
+            if(e&&e.target!==e.currentTarget)return;
+            document.getElementById('modalOverlay').classList.remove('show');
+            modalCallback=null;
+            modalCancelCallback=null;
+        }
+        
+        function handleModalConfirm(){
+            closeModal();
+            if(modalCallback)modalCallback();
+        }
+        
+        function handleModalCancel(){
+            closeModal();
+            if(modalCancelCallback)modalCancelCallback();
+        }
         
         function showToast(msg,type='info'){
             const t=document.getElementById('toast');
@@ -224,11 +307,10 @@
             document.getElementById('statToday').textContent=files.filter(f=>new Date(f.created_at).toDateString()===today).length;
         }
         
-        // 修复：点击上传区域时重置input，确保每次都能选择文件
         function selectFile(){
             if(isUploading)return;
             const input=document.getElementById('fileInput');
-            input.value=''; // 关键修复：清空值，确保onchange能触发
+            input.value='';
             input.click();
         }
         
@@ -261,7 +343,6 @@
             text.textContent='准备上传: '+file.name;
             
             try{
-                // 检查重名并生成唯一文件名
                 let fileName=file.name;
                 let counter=1;
                 const ext=file.name.includes('.')?file.name.split('.').pop():'';
@@ -272,7 +353,6 @@
                     counter++;
                 }
                 
-                // 模拟进度
                 let p=10;
                 const timer=setInterval(()=>{
                     p=Math.min(p+Math.random()*20,90);
@@ -338,7 +418,6 @@
                 showToast('准备下载...');
                 const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
                 
-                // 使用fetch获取blob确保下载成功
                 const response=await fetch(data.publicUrl);
                 if(!response.ok)throw new Error('文件获取失败');
                 
@@ -354,7 +433,6 @@
                 
                 showToast('开始下载: '+name,'success');
             }catch(e){
-                // 降级方案：直接打开链接
                 try{
                     const{data}=supabase.storage.from(BUCKET).getPublicUrl(name);
                     window.open(data.publicUrl,'_blank');
@@ -373,14 +451,28 @@
                 const data=await resp.json();
                 if(data.version&&data.version!==APP_VERSION){
                     setTimeout(()=>{
-                        const msg=(data.force?'【强制更新】\n\n':'')+`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog||''}\n\n是否更新?`;
-                        if(confirm(msg)){
-                            // 跳转到下载中转页面
-                            window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
-                        }else if(data.force){
-                            alert('此为强制更新，必须更新后才能继续使用');
-                            checkUpdate();
-                        }
+                        showModal({
+                            title:'发现新版本',
+                            msg:`最新版本: v${data.version}\n当前版本: v${APP_VERSION}\n\n${data.updateLog||''}`,
+                            type:'info',
+                            confirmText:'立即更新',
+                            cancelText:data.force?false:'稍后再说',
+                            onConfirm:()=>{
+                                window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
+                            },
+                            onCancel:data.force?()=>{
+                                showModal({
+                                    title:'强制更新',
+                                    msg:'此为强制更新，必须更新后才能继续使用',
+                                    type:'warning',
+                                    confirmText:'立即更新',
+                                    onConfirm:()=>{
+                                        window.location.href='https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v'+data.version;
+                                    },
+                                    onCancel:checkUpdate
+                                });
+                            }:null
+                        });
                     },1000);
                 }
             }catch(e){}
