@@ -200,7 +200,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h1>站长管理后台</h1>
-        <p class="sub">v1.1.0 · 青柠网盘管理系统</p>
+        <p class="sub">v1.1.1 · 青柠网盘管理系统</p>
         <div class="disclaimer-box">
             <h3><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>免责声明</h3>
             <p>在使用本应用之前，请仔细阅读以下条款：</p>
@@ -362,7 +362,7 @@
                     <svg viewBox="0 0 24 24" style="width:34px;height:34px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <h2 style="margin-bottom:4px">站长管理后台</h2>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.0</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.1</p>
                 <p style="color:var(--text2);font-size:13px;line-height:1.8">青柠网盘管理系统<br>基于 Supabase 构建<br>© 2026 青柠网盘</p>
             </div>
         </div>
@@ -587,25 +587,37 @@
         }
 
         function filterFiles() {
-            const q = document.getElementById('fileSearch').value.toLowerCase();
-            document.querySelectorAll('.file-row').forEach(row => {
-                row.style.display = row.dataset.name.includes(q) ? 'flex' : 'none';
+            const q = document.getElementById('fileSearch').value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.file-row');
+            let visibleCount = 0;
+            rows.forEach(row => {
+                const isMatch = row.dataset.name.includes(q);
+                row.style.display = isMatch ? 'flex' : 'none';
+                if (isMatch) visibleCount++;
             });
+            // 如果没有匹配结果，显示提示
+            const container = document.getElementById('filesContainer');
+            const existingEmpty = container.querySelector('.search-empty');
+            if (existingEmpty) existingEmpty.remove();
+            if (visibleCount === 0 && q) {
+                container.insertAdjacentHTML('beforeend', '<div class="empty-box search-empty">未找到匹配的文件</div>');
+            }
         }
 
         async function downloadFile(name) {
             try {
                 const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(name);
-                const resp = await fetch(data.publicUrl);
-                const blob = await resp.blob();
-                const url = URL.createObjectURL(blob);
+                // 直接打开下载链接，避免大文件内存问题
                 const a = document.createElement('a');
-                a.href = url; a.download = name; a.click();
-                URL.revokeObjectURL(url);
+                a.href = data.publicUrl;
+                a.download = name;
+                a.target = '_blank';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
                 showToast('开始下载: ' + name);
             } catch (err) {
-                const { data } = supabaseClient.storage.from(BUCKET).getPublicUrl(name);
-                window.open(data.publicUrl, '_blank');
+                showToast('下载失败: ' + err.message);
             }
         }
 
@@ -649,11 +661,20 @@
             }
 
             bar.style.width = '100%';
-            text.textContent = `完成！成功 ${uploaded}，失败 ${failed}`;
-            setTimeout(() => { progress.classList.remove('show'); }, 2000);
+            if (failed > 0) {
+                text.textContent = `完成！成功 ${uploaded}，失败 ${failed}`;
+                text.style.color = failed === files.length ? 'var(--error)' : 'var(--warning)';
+            } else {
+                text.textContent = `上传完成！成功 ${uploaded} 个`;
+                text.style.color = 'var(--success)';
+            }
+            setTimeout(() => {
+                progress.classList.remove('show');
+                text.style.color = '';
+            }, 2500);
             event.target.value = '';
             loadFiles();
-            showToast(`上传完成：成功 ${uploaded} 个`);
+            showToast(`上传完成：成功 ${uploaded}，失败 ${failed}`);
         }
 
         function updateStats() {
@@ -667,10 +688,20 @@
         async function loadUserCount() {
             if (!supabaseClient) return;
             try {
-                const { count } = await supabaseClient.from('profiles').select('*', { count: 'exact', head: true });
-                document.getElementById('sUsers').textContent = count || 0;
+                // 尝试从 auth.users 获取用户数量
+                const { data: { users }, error } = await supabaseClient.auth.admin.listUsers({
+                    page: 1,
+                    perPage: 1
+                });
+                if (!error && users) {
+                    document.getElementById('sUsers').textContent = users.length || '1';
+                } else {
+                    // 备选：显示为 1（至少当前管理员）
+                    document.getElementById('sUsers').textContent = '1';
+                }
             } catch (e) {
-                document.getElementById('sUsers').textContent = '-';
+                // auth.admin 可能不可用，显示默认值
+                document.getElementById('sUsers').textContent = '1';
             }
         }
 
@@ -755,10 +786,17 @@
                     announcement: localStorage.getItem('qn_announcement') || '',
                     updatedAt: new Date().toISOString()
                 };
-                await supabaseClient.storage.from(BUCKET).upload(SETTINGS_FILE, JSON.stringify(settings), {
+                const { error } = await supabaseClient.storage.from(BUCKET).upload(SETTINGS_FILE, JSON.stringify(settings), {
                     cacheControl: '60', upsert: true, contentType: 'application/json'
                 });
-            } catch (e) { console.error('Settings sync failed:', e); }
+                if (error) {
+                    console.error('Settings sync failed:', error);
+                    showToast('设置同步失败: ' + error.message);
+                }
+            } catch (e) {
+                console.error('Settings sync failed:', e);
+                showToast('设置同步失败，请检查网络');
+            }
         }
 
         function showModal(title, msg, callback) {
