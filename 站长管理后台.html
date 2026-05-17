@@ -195,6 +195,27 @@
         /* Toggle 开关 */
         #updateForceToggle:checked + span{background:var(--primary)!important}
         #updateForceToggle:checked ~ span:last-child{transform:translateX(22px)!important}
+
+        /* 现代简约版选择弹窗 */
+        .select-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:10000;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
+        .select-modal-overlay.show{display:flex;animation:fadeIn .2s ease}
+        .select-modal{background:var(--card);border-radius:var(--radius);width:100%;max-width:320px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;animation:slideUp .3s ease}
+        .select-modal-header{padding:20px 20px 12px;border-bottom:1px solid var(--border)}
+        .select-modal-title{font-size:16px;font-weight:600}
+        .select-modal-subtitle{font-size:12px;color:var(--text2);margin-top:4px}
+        .select-options{max-height:300px;overflow-y:auto;padding:8px}
+        .select-option{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-radius:10px;cursor:pointer;transition:all .15s;margin-bottom:4px}
+        .select-option:hover{background:var(--bg)}
+        .select-option:active{transform:scale(.98)}
+        .select-option.selected{background:var(--primary-light)}
+        .select-option-text{font-size:14px}
+        .select-option-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;transition:all .2s}
+        .select-option.selected .select-option-check{background:var(--primary);border-color:var(--primary)}
+        .select-option.selected .select-option-check::after{content:'';width:6px;height:10px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg) translate(-1px,-1px)}
+        .select-modal-footer{padding:12px 20px 20px;display:flex;justify-content:flex-end}
+        .select-modal-btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;background:var(--primary);color:#fff;transition:all .15s}
+        .select-modal-btn:active{transform:scale(.97)}
+        @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
     </style>
 </head>
 <body>
@@ -220,7 +241,7 @@
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <h3>发现新版本</h3>
-            <div class="update-ver" id="updateVerText">v1.1.2</div>
+            <div class="update-ver" id="updateVerText">v1.1.3</div>
             <div class="update-log" id="updateLogContent"></div>
             <button class="btn-update" id="updateBtn" onclick="doUpdate()">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -230,13 +251,27 @@
         </div>
     </div>
 
+    <!-- 现代简约版选择弹窗 -->
+    <div class="select-modal-overlay" id="selectModalOverlay" onclick="closeSelectModal(event)">
+        <div class="select-modal">
+            <div class="select-modal-header">
+                <div class="select-modal-title" id="selectModalTitle">选择</div>
+                <div class="select-modal-subtitle" id="selectModalSubtitle">请选择一项</div>
+            </div>
+            <div class="select-options" id="selectOptions"></div>
+            <div class="select-modal-footer">
+                <button class="select-modal-btn" onclick="closeSelectModal()">取消</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 开屏免责声明 -->
     <div class="splash" id="splash">
         <div class="splash-logo">
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h1>站长管理后台</h1>
-        <p class="sub">v1.1.2 · 青柠网盘管理系统</p>
+        <p class="sub">v1.1.3 · 青柠网盘管理系统</p>
         <div class="disclaimer-box">
             <h3><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>免责声明</h3>
             <p>在使用本应用之前，请仔细阅读以下条款：</p>
@@ -373,12 +408,10 @@
         <div class="tab-content" id="tab-settings">
             <div class="card">
                 <div class="card-head"><div class="card-title">站点设置</div></div>
-                <div class="setting-row">
+                <div class="setting-row" onclick="showSelectModal('register')">
                     <div><div class="setting-label">开放注册</div><div class="setting-desc">是否允许新用户注册</div></div>
-                    <select id="settingRegister" onchange="saveSetting('allowRegister')">
-                        <option value="true">允许</option>
-                        <option value="false">禁止</option>
-                    </select>
+                    <div id="settingRegisterDisplay" style="padding:8px 12px;background:var(--bg);border-radius:8px;font-size:14px;color:var(--text);min-width:60px;text-align:center">允许</div>
+                    <input type="hidden" id="settingRegister" value="true">
                 </div>
                 <div class="setting-row">
                     <div><div class="setting-label">联系邮箱</div><div class="setting-desc">站长联系邮箱</div></div>
@@ -433,7 +466,7 @@
                     <svg viewBox="0 0 24 24" style="width:34px;height:34px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <h2 style="margin-bottom:4px">站长管理后台</h2>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.2</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.3</p>
                 <p style="color:var(--text2);font-size:13px;line-height:1.8">青柠网盘管理系统<br>基于 Supabase 构建<br>© 2026 青柠网盘</p>
             </div>
         </div>
@@ -462,8 +495,8 @@
         const ADMIN_EMAIL = '3862242786@qq.com';
         const BUCKET = 'files';
         const SETTINGS_FILE = 'site_settings.json';
-        const APP_VERSION = '1.1.2';
-        const APP_VERSION_CODE = 4;
+        const APP_VERSION = '1.1.3';
+        const APP_VERSION_CODE = 5;
         const VERSION_CHECK_URL = 'https://3862242786-sudo.github.io/pan/admin-version.json';
 
         let supabaseClient = null;
@@ -814,7 +847,10 @@
         function loadSettings() {
             const reg = localStorage.getItem('qn_allow_register');
             const contact = localStorage.getItem('qn_admin_contact');
-            if (reg !== null) document.getElementById('settingRegister').value = reg;
+            if (reg !== null) {
+                document.getElementById('settingRegister').value = reg;
+                document.getElementById('settingRegisterDisplay').textContent = reg === 'true' ? '允许' : '禁止';
+            }
             if (contact) document.getElementById('settingContact').value = contact;
             loadSettingsFromCloud();
         }
@@ -827,8 +863,10 @@
                 if (resp.ok) {
                     const settings = await resp.json();
                     if (settings.allowRegister !== undefined) {
-                        document.getElementById('settingRegister').value = settings.allowRegister ? 'true' : 'false';
-                        localStorage.setItem('qn_allow_register', settings.allowRegister ? 'true' : 'false');
+                        const val = settings.allowRegister ? 'true' : 'false';
+                        document.getElementById('settingRegister').value = val;
+                        document.getElementById('settingRegisterDisplay').textContent = settings.allowRegister ? '允许' : '禁止';
+                        localStorage.setItem('qn_allow_register', val);
                     }
                     if (settings.contact) {
                         document.getElementById('settingContact').value = settings.contact;
@@ -1075,6 +1113,76 @@
         document.getElementById('loginPassword').addEventListener('keydown', e => {
             if (e.key === 'Enter') handleLogin();
         });
+
+        // ========== 现代简约版选择弹窗 ==========
+        let selectModalCallback = null;
+        let currentSelectValue = '';
+
+        function showSelectModal(type) {
+            const overlay = document.getElementById('selectModalOverlay');
+            const title = document.getElementById('selectModalTitle');
+            const subtitle = document.getElementById('selectModalSubtitle');
+            const optionsContainer = document.getElementById('selectOptions');
+            
+            let options = [];
+            let currentValue = '';
+            
+            if (type === 'register') {
+                title.textContent = '开放注册';
+                subtitle.textContent = '选择是否允许新用户注册';
+                currentValue = document.getElementById('settingRegister').value;
+                options = [
+                    { value: 'true', label: '允许', desc: '新用户可以自由注册' },
+                    { value: 'false', label: '禁止', desc: '关闭新用户注册入口' }
+                ];
+                selectModalCallback = (val) => {
+                    document.getElementById('settingRegister').value = val;
+                    document.getElementById('settingRegisterDisplay').textContent = val === 'true' ? '允许' : '禁止';
+                    saveSetting('allowRegister');
+                };
+            }
+            
+            currentSelectValue = currentValue;
+            
+            optionsContainer.innerHTML = options.map(opt => `
+                <div class="select-option ${opt.value === currentValue ? 'selected' : ''}" onclick="selectOption('${opt.value}')">
+                    <div>
+                        <div class="select-option-text">${opt.label}</div>
+                        <div style="font-size:12px;color:var(--text2);margin-top:2px">${opt.desc}</div>
+                    </div>
+                    <div class="select-option-check"></div>
+                </div>
+            `).join('');
+            
+            overlay.classList.add('show');
+        }
+
+        function selectOption(value) {
+            currentSelectValue = value;
+            document.querySelectorAll('.select-option').forEach(el => {
+                el.classList.toggle('selected', el.onclick.toString().includes(value));
+            });
+            // 更新选中状态显示
+            document.querySelectorAll('.select-option').forEach((el, idx) => {
+                const optValue = el.getAttribute('onclick').match(/selectOption\('(.+?)'\)/)?.[1];
+                if (optValue === value) {
+                    el.classList.add('selected');
+                } else {
+                    el.classList.remove('selected');
+                }
+            });
+            
+            if (selectModalCallback) {
+                selectModalCallback(value);
+            }
+            closeSelectModal();
+        }
+
+        function closeSelectModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('selectModalOverlay').classList.remove('show');
+            selectModalCallback = null;
+        }
     </script>
 </body>
 </html>
