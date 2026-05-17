@@ -1,8 +1,8 @@
 {
-  "version": "4.0.2",
-  "versionCode": 14,
-  "downloadUrl": "https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v4.0.2",
-  "updateLog": "v4.0.2 修复更新下载\n修复点击更新无响应问题\n新增下载中转页面确保APK下载成功",
+  "version": "4.0.1",
+  "versionCode": 13,
+  "downloadUrl": "https://3862242786-sudo.github.io/pan/download.html?app=qn&ver=v4.0.1",
+  "updateLog": "v4.0.1 Bug修复\n修复文件上传功能（可重复选择同一文件）\n修复文件下载功能（双重保障机制）\n添加入场动画和交互动画\n优化上传进度显示\n修复重名文件处理逻辑",
   "force": false,
   "minVersion": "4.0.0"
 }
