@@ -152,9 +152,9 @@
         .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
         /* 确认弹窗 */
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9990;display:none;align-items:center;justify-content:center;padding:24px}
+        .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:9990;display:none;align-items:center;justify-content:center;padding:24px}
         .modal-overlay.show{display:flex}
-        .modal{background:var(--card);border-radius:var(--radius);padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .25s ease}
+        .modal{background:var(--card);border-radius:var(--radius);padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:modalIn .25s ease;margin:auto}
         @keyframes modalIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
         .modal h3{font-size:16px;margin-bottom:8px}
         .modal p{font-size:14px;color:var(--text2);margin-bottom:20px;line-height:1.6}
@@ -178,9 +178,9 @@
         .hidden-input{display:none}
 
         /* 强制更新弹窗 */
-        .update-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:99999;display:none;align-items:center;justify-content:center;padding:24px}
+        .update-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:99999;display:none;align-items:center;justify-content:center;padding:24px}
         .update-overlay.show{display:flex}
-        .update-box{background:var(--card);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .3s ease;text-align:center}
+        .update-box{background:var(--card);border-radius:var(--radius);padding:28px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.3);animation:modalIn .3s ease;text-align:center;margin:auto}
         .update-box .update-icon{width:64px;height:64px;margin:0 auto 16px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:18px;display:flex;align-items:center;justify-content:center}
         .update-box .update-icon svg{width:32px;height:32px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
         .update-box h3{font-size:18px;font-weight:700;margin-bottom:4px}
@@ -220,7 +220,7 @@
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <h3>发现新版本</h3>
-            <div class="update-ver" id="updateVerText">v1.1.1</div>
+            <div class="update-ver" id="updateVerText">v1.1.2</div>
             <div class="update-log" id="updateLogContent"></div>
             <button class="btn-update" id="updateBtn" onclick="doUpdate()">
                 <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -236,7 +236,7 @@
             <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         </div>
         <h1>站长管理后台</h1>
-        <p class="sub">v1.1.1 · 青柠网盘管理系统</p>
+        <p class="sub">v1.1.2 · 青柠网盘管理系统</p>
         <div class="disclaimer-box">
             <h3><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>免责声明</h3>
             <p>在使用本应用之前，请仔细阅读以下条款：</p>
@@ -433,7 +433,7 @@
                     <svg viewBox="0 0 24 24" style="width:34px;height:34px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                 </div>
                 <h2 style="margin-bottom:4px">站长管理后台</h2>
-                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.1</p>
+                <p style="color:var(--text2);font-size:13px;margin-bottom:20px">v1.1.2</p>
                 <p style="color:var(--text2);font-size:13px;line-height:1.8">青柠网盘管理系统<br>基于 Supabase 构建<br>© 2026 青柠网盘</p>
             </div>
         </div>
