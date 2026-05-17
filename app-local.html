@@ -373,8 +373,20 @@
                 const data=await resp.json();
                 if(data.version&&data.version!==APP_VERSION){
                     setTimeout(()=>{
-                        if(confirm(`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog||''}\n\n是否更新?`)){
-                            if(data.downloadUrl)window.open(data.downloadUrl,'_blank');
+                        const msg=(data.force?'【强制更新】\n\n':'')+`发现新版本 v${data.version}\n\n当前: v${APP_VERSION}\n\n${data.updateLog||''}\n\n是否更新?`;
+                        if(confirm(msg)){
+                            if(data.downloadUrl){
+                                // 尝试多种方式打开
+                                try{window.location.href=data.downloadUrl;}catch(e){
+                                    try{window.location.assign(data.downloadUrl);}catch(e2){
+                                        window.open(data.downloadUrl,'_system');
+                                    }
+                                }
+                            }
+                        }else if(data.force){
+                            // 强制更新时，取消则提示必须更新
+                            alert('此为强制更新，必须更新后才能继续使用');
+                            checkUpdate();
                         }
                     },1000);
                 }

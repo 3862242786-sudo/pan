@@ -948,10 +948,27 @@
 
         function doUpdate() {
             const url = document.getElementById('updateBtn').dataset.url;
-            if (url) {
-                window.open(url, '_blank');
-            } else {
+            if (!url) {
                 showToast('下载链接不可用');
+                return;
+            }
+            
+            // 尝试多种方式打开下载链接
+            try {
+                // 方式1: 使用 location.href (最兼容)
+                window.location.href = url;
+            } catch (e) {
+                try {
+                    // 方式2: 使用 location.assign
+                    window.location.assign(url);
+                } catch (e2) {
+                    try {
+                        // 方式3: 使用 open
+                        window.open(url, '_system');
+                    } catch (e3) {
+                        showToast('无法打开下载链接，请手动访问: ' + url);
+                    }
+                }
             }
         }
 
