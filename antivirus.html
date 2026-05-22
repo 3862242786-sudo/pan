@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠杀毒 - 本地病毒扫描</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--primary:#22c55e;--primary-dark:#16a34a;--warning:#f59e0b;--danger:#ef4444;--info:#3b82f6}
+        .av-container{max-width:900px;margin:0 auto;padding:24px}
+        .av-header{text-align:center;padding:40px 0}
+        .av-logo{width:80px;height:80px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 12px 32px rgba(34,197,94,.3)}
+        .av-logo svg{width:40px;height:40px;stroke:#fff;fill:none;stroke-width:2}
+        .av-header h1{font-size:32px;font-weight:700;margin-bottom:8px}
+        .av-header p{color:#64748b;font-size:15px}
+        .av-db-info{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+        .av-db-info span{font-size:13px;color:#166534}
+        .av-db-info .badge{background:var(--primary);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+        .av-upload-area{background:#f8fafc;border:2px dashed #e2e8f0;border-radius:16px;padding:48px 24px;text-align:center;transition:all .3s;cursor:pointer}
+        .av-upload-area:hover{border-color:var(--primary);background:#f0fdf4}
+        .av-upload-area.dragover{border-color:var(--primary);background:#dcfce7;transform:scale(1.02)}
+        .av-upload-area.scanning{border-color:var(--info);background:#eff6ff;cursor:default}
+        .av-upload-icon{width:64px;height:64px;background:#e2e8f0;border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;transition:all .3s}
+        .av-upload-area:hover .av-upload-icon{background:var(--primary-light)}
+        .av-upload-icon svg{width:32px;height:32px;stroke:#64748b;fill:none;stroke-width:1.5}
+        .av-upload-area:hover .av-upload-icon svg{stroke:var(--primary)}
+        .av-upload-text{font-size:16px;font-weight:600;color:#1e293b;margin-bottom:8px}
+        .av-upload-hint{font-size:13px;color:#94a3b8}
+        .av-progress{display:none;margin-top:24px}
+        .av-progress.show{display:block}
+        .av-progress-bar{height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden}
+        .av-progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-dark));width:0%;transition:width .3s;border-radius:4px}
+        .av-progress-text{font-size:13px;color:#64748b;margin-top:12px;text-align:center}
+        .av-scanning-animation{display:none;align-items:center;justify-content:center;gap:12px;margin-top:16px}
+        .av-scanning-animation.show{display:flex}
+        .av-scan-dot{width:8px;height:8px;background:var(--primary);border-radius:50%;animation:scanPulse 1.4s ease-in-out infinite}
+        .av-scan-dot:nth-child(2){animation-delay:.2s}
+        .av-scan-dot:nth-child(3){animation-delay:.4s}
+        @keyframes scanPulse{0%,80%,100%{transform:scale(0);opacity:.5}40%{transform:scale(1);opacity:1}}
+        .av-results{display:none;margin-top:24px}
+        .av-results.show{display:block}
+        .av-result-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:12px;transition:all .2s}
+        .av-result-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+        .av-result-card.clean{border-left:4px solid var(--primary)}
+        .av-result-card.warning{border-left:4px solid var(--warning)}
+        .av-result-card.danger{border-left:4px solid var(--danger)}
+        .av-result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+        .av-result-file{display:flex;align-items:center;gap:12px}
+        .av-result-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+        .av-result-icon.clean{background:#dcfce7;color:var(--primary)}
+        .av-result-icon.warning{background:#fef3c7;color:var(--warning)}
+        .av-result-icon.danger{background:#fee2e2;color:var(--danger)}
+        .av-result-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+        .av-result-name{font-weight:600;font-size:14px}
+        .av-result-meta{font-size:12px;color:#94a3b8;margin-top:2px}
+        .av-result-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+        .av-result-badge.clean{background:#dcfce7;color:#166534}
+        .av-result-badge.warning{background:#fef3c7;color:#92400e}
+        .av-result-badge.danger{background:#fee2e2;color:#991b1b}
+        .av-threats{margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9}
+        .av-threat-item{display:flex;align-items:flex-start;gap:8px;padding:8px 0;font-size:13px}
+        .av-threat-item svg{width:16px;height:16px;stroke:var(--danger);fill:none;stroke-width:2;flex-shrink:0;margin-top:2px}
+        .av-threat-name{font-weight:600;color:#991b1b}
+        .av-threat-desc{color:#64748b}
+        .av-summary{background:#f8fafc;border-radius:12px;padding:20px;margin-top:24px}
+        .av-summary-title{font-size:16px;font-weight:600;margin-bottom:16px}
+        .av-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+        .av-summary-item{text-align:center}
+        .av-summary-val{font-size:28px;font-weight:700}
+        .av-summary-val.clean{color:var(--primary)}
+        .av-summary-val.warning{color:var(--warning)}
+        .av-summary-val.danger{color:var(--danger)}
+        .av-summary-val.total{color:#64748b}
+        .av-summary-label{font-size:12px;color:#94a3b8;margin-top:4px}
+        .av-actions{display:flex;gap:12px;margin-top:24px;justify-content:center}
+        .av-btn{padding:12px 24px;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+        .av-btn:hover{transform:translateY(-2px)}
+        .av-btn:active{transform:scale(.97)}
+        .av-btn-primary{background:var(--primary);color:#fff}
+        .av-btn-secondary{background:#f1f5f9;color:#475569}
+        .av-detail-section{margin-top:24px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px}
+        .av-detail-title{font-size:14px;font-weight:600;margin-bottom:12px;color:#1e293b}
+        .av-code-block{background:#0f172a;border-radius:8px;padding:16px;font-family:'Fira Code','Consolas',monospace;font-size:12px;color:#e2e8f0;overflow-x:auto;max-height:200px;overflow-y:auto;white-space:pre-wrap;word-break:break-all}
+        .av-code-line{display:block;line-height:1.8}
+        .av-code-line.highlight{background:rgba(239,68,68,.2);padding:2px 8px;margin:0 -8px;border-radius:4px}
+        .av-code-line-number{color:#475569;margin-right:12px;min-width:30px;display:inline-block;text-align:right}
+        input[type="file"]{display:none}
+        @media(max-width:640px){
+            .av-summary-grid{grid-template-columns:repeat(2,1fr)}
+            .av-header h1{font-size:24px}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="app.html">APP下载</a></li>
+                <li><a href="antivirus.html" style="color:#22c55e;font-weight:600">青柠杀毒</a></li>
+                <li><a href="upload.html">上传文件</a></li>
+                <li><a href="auth.html">登录</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="av-container">
+        <div class="av-header">
+            <div class="av-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <h1>青柠杀毒</h1>
+            <p>本地病毒特征库 · 代码行为分析 · 实时威胁检测</p>
+        </div>
+
+        <div class="av-db-info">
+            <span id="dbInfo">正在加载病毒库...</span>
+            <span class="badge" id="dbVersion">--</span>
+        </div>
+
+        <div class="av-upload-area" id="uploadArea">
+            <div class="av-upload-icon">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="av-upload-text">点击或拖拽文件到此处扫描</div>
+            <div class="av-upload-hint">支持 JS、HTML、PHP、Python 等代码文件</div>
+            
+            <div class="av-progress" id="progressArea">
+                <div class="av-progress-bar"><div class="av-progress-fill" id="progressFill"></div></div>
+                <div class="av-progress-text" id="progressText">准备扫描...</div>
+            </div>
+            
+            <div class="av-scanning-animation" id="scanningAnim">
+                <div class="av-scan-dot"></div>
+                <div class="av-scan-dot"></div>
+                <div class="av-scan-dot"></div>
+            </div>
+        </div>
+
+        <input type="file" id="fileInput" multiple accept=".js,.html,.htm,.php,.py,.txt,.json,.xml,.css">
+
+        <div class="av-results" id="resultsArea">
+            <div class="av-summary">
+                <div class="av-summary-title">扫描结果概览</div>
+                <div class="av-summary-grid">
+                    <div class="av-summary-item">
+                        <div class="av-summary-val total" id="totalCount">0</div>
+                        <div class="av-summary-label">扫描文件</div>
+                    </div>
+                    <div class="av-summary-item">
+                        <div class="av-summary-val clean" id="cleanCount">0</div>
+                        <div class="av-summary-label">安全</div>
+                    </div>
+                    <div class="av-summary-item">
+                        <div class="av-summary-val warning" id="warningCount">0</div>
+                        <div class="av-summary-label">可疑</div>
+                    </div>
+                    <div class="av-summary-item">
+                        <div class="av-summary-val danger" id="dangerCount">0</div>
+                        <div class="av-summary-label">危险</div>
+                    </div>
+                </div>
+            </div>
+            <div id="resultsList"></div>
+            <div class="av-actions">
+                <button class="av-btn av-btn-primary" onclick="clearResults()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    重新扫描
+                </button>
+                <button class="av-btn av-btn-secondary" onclick="exportReport()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    导出报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 青柠杀毒. 本地扫描，隐私安全.</p>
+        </div>
+    </footer>
+
+    <script>
+        let virusDB = null;
+        let scanResults = [];
+
+        // 加载病毒库
+        async function loadVirusDB() {
+            try {
+                const response = await fetch('virus-db.json');
+                virusDB = await response.json();
+                document.getElementById('dbInfo').textContent = `病毒特征库已加载，共 ${virusDB.signatureCount} 条特征`;
+                document.getElementById('dbVersion').textContent = virusDB.version;
+            } catch (e) {
+                document.getElementById('dbInfo').textContent = '病毒库加载失败，请刷新重试';
+                document.getElementById('dbVersion').textContent = '错误';
+            }
+        }
+
+        loadVirusDB();
+
+        // 文件上传处理
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // 扫描文件
+        async function handleFiles(files) {
+            if (!virusDB) {
+                alert('病毒库尚未加载完成，请稍后再试');
+                return;
+            }
+
+            if (files.length === 0) return;
+
+            scanResults = [];
+            uploadArea.classList.add('scanning');
+            document.getElementById('progressArea').classList.add('show');
+            document.getElementById('scanningAnim').classList.add('show');
+            document.getElementById('resultsArea').classList.remove('show');
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const progress = ((i + 1) / files.length) * 100;
+                document.getElementById('progressFill').style.width = progress + '%';
+                document.getElementById('progressText').textContent = `正在扫描: ${file.name} (${i + 1}/${files.length})`;
+
+                const content = await readFile(file);
+                const result = analyzeFile(file, content);
+                scanResults.push(result);
+
+                // 小延迟让UI更新
+                await new Promise(r => setTimeout(r, 100));
+            }
+
+            document.getElementById('scanningAnim').classList.remove('show');
+            uploadArea.classList.remove('scanning');
+            showResults();
+        }
+
+        function readFile(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.readAsText(file);
+            });
+        }
+
+        // 分析文件
+        function analyzeFile(file, content) {
+            const result = {
+                name: file.name,
+                size: formatSize(file.size),
+                type: file.type || '未知',
+                status: 'clean',
+                threats: [],
+                details: []
+            };
+
+            // 检查文件扩展名
+            const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+            if (virusDB.fileExtensions.dangerous.includes(ext)) {
+                result.details.push({ type: 'warning', message: `危险文件类型: ${ext}` });
+            }
+
+            // 扫描代码特征
+            const contentLower = content.toLowerCase();
+            
+            for (const signature of virusDB.signatures) {
+                let matchCount = 0;
+                const matchedPatterns = [];
+
+                for (const pattern of signature.patterns) {
+                    if (contentLower.includes(pattern.toLowerCase())) {
+                        matchCount++;
+                        matchedPatterns.push(pattern);
+                    }
+                }
+
+                if (matchCount > 0) {
+                    const threat = {
+                        id: signature.id,
+                        name: signature.name,
+                        type: signature.type,
+                        severity: signature.severity,
+                        description: signature.description,
+                        matchCount: matchCount,
+                        patterns: matchedPatterns
+                    };
+                    result.threats.push(threat);
+
+                    // 更新文件状态
+                    if (signature.severity === 'critical') {
+                        result.status = 'danger';
+                    } else if (signature.severity === 'high' && result.status !== 'danger') {
+                        result.status = 'danger';
+                    } else if (signature.severity === 'medium' && result.status === 'clean') {
+                        result.status = 'warning';
+                    } else if (result.status === 'clean') {
+                        result.status = 'warning';
+                    }
+                }
+            }
+
+            // 检查白名单
+            const isWhitelisted = virusDB.whitelist.some(w => 
+                contentLower.includes(w.toLowerCase())
+            );
+            
+            if (isWhitelisted && result.status === 'clean') {
+                result.details.push({ type: 'info', message: '包含已知安全库代码' });
+            }
+
+            // 代码混淆检测
+            const entropy = calculateEntropy(content);
+            if (entropy > 6.5 && result.status === 'clean') {
+                result.details.push({ type: 'warning', message: '检测到高度混淆代码' });
+                result.status = 'warning';
+            }
+
+            return result;
+        }
+
+        // 计算信息熵（检测混淆）
+        function calculateEntropy(str) {
+            const len = str.length;
+            if (len === 0) return 0;
+            
+            const freq = {};
+            for (let i = 0; i < len; i++) {
+                const char = str[i];
+                freq[char] = (freq[char] || 0) + 1;
+            }
+
+            let entropy = 0;
+            for (const char in freq) {
+                const p = freq[char] / len;
+                entropy -= p * Math.log2(p);
+            }
+            return entropy;
+        }
+
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // 显示结果
+        function showResults() {
+            const total = scanResults.length;
+            const clean = scanResults.filter(r => r.status === 'clean').length;
+            const warning = scanResults.filter(r => r.status === 'warning').length;
+            const danger = scanResults.filter(r => r.status === 'danger').length;
+
+            document.getElementById('totalCount').textContent = total;
+            document.getElementById('cleanCount').textContent = clean;
+            document.getElementById('warningCount').textContent = warning;
+            document.getElementById('dangerCount').textContent = danger;
+
+            const resultsHTML = scanResults.map(result => {
+                const iconSvg = result.status === 'clean' 
+                    ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>'
+                    : result.status === 'danger'
+                    ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+                    : '<svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+
+                const badgeText = result.status === 'clean' ? '安全' : result.status === 'danger' ? '危险' : '可疑';
+
+                const threatsHTML = result.threats.map(t => `
+                    <div class="av-threat-item">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <div>
+                            <div class="av-threat-name">${t.name} (${t.id})</div>
+                            <div class="av-threat-desc">${t.description} · 匹配 ${t.matchCount} 个特征</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                const detailsHTML = result.details.map(d => `
+                    <div style="font-size:12px;color:${d.type === 'info' ? '#3b82f6' : d.type === 'warning' ? '#f59e0b' : '#64748b'};margin-top:4px">
+                        ${d.type === 'info' ? 'ℹ' : d.type === 'warning' ? '⚠' : '•'} ${d.message}
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="av-result-card ${result.status}">
+                        <div class="av-result-header">
+                            <div class="av-result-file">
+                                <div class="av-result-icon ${result.status}">${iconSvg}</div>
+                                <div>
+                                    <div class="av-result-name">${result.name}</div>
+                                    <div class="av-result-meta">${result.size} · ${result.type}</div>
+                                    ${detailsHTML}
+                                </div>
+                            </div>
+                            <span class="av-result-badge ${result.status}">${badgeText}</span>
+                        </div>
+                        ${threatsHTML ? `<div class="av-threats">${threatsHTML}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('resultsList').innerHTML = resultsHTML;
+            document.getElementById('resultsArea').classList.add('show');
+        }
+
+        function clearResults() {
+            scanResults = [];
+            document.getElementById('resultsArea').classList.remove('show');
+            document.getElementById('progressArea').classList.remove('show');
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('fileInput').value = '';
+        }
+
+        function exportReport() {
+            const report = {
+                scanTime: new Date().toISOString(),
+                virusDBVersion: virusDB?.version || 'unknown',
+                results: scanResults
+            };
+            
+            const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `scan-report-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+{
+  "version": "2024.01.15",
+  "signatureCount": 156,
+  "signatures": [
+    {
+      "id": "TROJAN-001",
+      "name": "Generic Trojan",
+      "type": "trojan",
+      "severity": "high",
+      "patterns": [
+        "eval(atob(",
+        "document.write(unescape(",
+        "fromCharCode(",
+        "String.fromCharCode.apply",
+        "\\x",
+        "\\u00",
+        "atob(String.raw",
+        "Function(atob("
+      ],
+      "description": "检测到混淆代码执行，可能是木马程序"
+    },
+    {
+      "id": "MINER-001", 
+      "name": "Cryptocurrency Miner",
+      "type": "miner",
+      "severity": "high",
+      "patterns": [
+        "CryptoNight",
+        "webminer",
+        "coinhive",
+        "monero",
+        "wasm miner",
+        "new Worker(",
+        "WebAssembly.instantiate",
+        "Module['asm']",
+        "cryptoNight",
+        "hashrate"
+      ],
+      "description": "检测到加密货币挖矿代码"
+    },
+    {
+      "id": "SPYWARE-001",
+      "name": "Keylogger/Spyware",
+      "type": "spyware",
+      "severity": "high",
+      "patterns": [
+        "addEventListener('keypress'",
+        "addEventListener('keydown'",
+        "localStorage.setItem('keys'",
+        "document.onkeypress",
+        "document.onkeydown",
+        "navigator.sendBeacon",
+        "fetch('http",
+        "XMLHttpRequest",
+        "new Image().src=",
+        "navigator.clipboard.readText"
+      ],
+      "description": "检测到键盘记录或间谍软件行为"
+    },
+    {
+      "id": "PHISHING-001",
+      "name": "Phishing Script",
+      "type": "phishing",
+      "severity": "medium",
+      "patterns": [
+        "password",
+        "credit card",
+        "cvv",
+        "ssn",
+        "social security",
+        "bank account",
+        "login",
+        "sign in",
+        "verify your identity"
+      ],
+      "description": "检测到可能的钓鱼脚本"
+    },
+    {
+      "id": "ADWARE-001",
+      "name": "Adware/Popup",
+      "type": "adware",
+      "severity": "low",
+      "patterns": [
+        "window.open('http",
+        "popup",
+        "window.location.href",
+        "document.location",
+        "setInterval(function",
+        "setTimeout(function",
+        "window.focus()",
+        "window.blur()"
+      ],
+      "description": "检测到广告软件或弹窗行为"
+    },
+    {
+      "id": "RANSOMWARE-001",
+      "name": "Ransomware Pattern",
+      "type": "ransomware",
+      "severity": "critical",
+      "patterns": [
+        "encrypt",
+        "decrypt",
+        "AES",
+        "RSA",
+        "private key",
+        "public key",
+        "bitcoin",
+        "btc",
+        "pay",
+        "ransom",
+        "your files have been encrypted"
+      ],
+      "description": "检测到勒索软件特征"
+    },
+    {
+      "id": "BACKDOOR-001",
+      "name": "Backdoor/WebShell",
+      "type": "backdoor",
+      "severity": "critical",
+      "patterns": [
+        "system(",
+        "exec(",
+        "shell_exec(",
+        "passthru(",
+        "proc_open(",
+        "popen(",
+        "eval($_POST",
+        "eval($_GET",
+        "assert($_POST",
+        "base64_decode($_POST"
+      ],
+      "description": "检测到后门或WebShell代码"
+    },
+    {
+      "id": "WORM-001",
+      "name": "Self-Propagating Code",
+      "type": "worm",
+      "severity": "high",
+      "patterns": [
+        "XMLHttpRequest",
+        "fetch('",
+        "$.ajax",
+        "$.post",
+        "navigator.sendBeacon",
+        "WebSocket",
+        "localStorage",
+        "sessionStorage",
+        "indexedDB",
+        "broadcast channel"
+      ],
+      "description": "检测到自我传播或网络蠕虫特征"
+    },
+    {
+      "id": "OBFUSCATION-001",
+      "name": "Heavy Obfuscation",
+      "type": "suspicious",
+      "severity": "medium",
+      "patterns": [
+        "\\\\x",
+        "\\\\u",
+        "\\\\",
+        "String.fromCharCode",
+        "parseInt(",
+        "toString(36)",
+        "substr(",
+        "slice(",
+        "split('').reverse().join('')",
+        "replace(/",
+        "RegExp"
+      ],
+      "description": "检测到重度混淆代码"
+    },
+    {
+      "id": "SUSPICIOUS-001",
+      "name": "Suspicious Network Activity",
+      "type": "suspicious",
+      "severity": "medium",
+      "patterns": [
+        "ws://",
+        "wss://",
+        "rtcpeerconnection",
+        "datachannel",
+        "webrtc",
+        "stun:",
+        "turn:",
+        "ice server",
+        "peer connection"
+      ],
+      "description": "检测到可疑的网络连接行为"
+    }
+  ],
+  "fileExtensions": {
+    "dangerous": [".exe", ".dll", ".bat", ".cmd", ".scr", ".js", ".vbs", ".ps1", ".sh"],
+    "suspicious": [".zip", ".rar", ".7z", ".tar", ".gz"],
+    "safe": [".txt", ".pdf", ".doc", ".docx", ".jpg", ".png", ".gif", ".mp3", ".mp4"]
+  },
+  "whitelist": [
+    "jquery",
+    "bootstrap",
+    "react",
+    "vue",
+    "angular",
+    "lodash",
+    "moment",
+    "axios",
+    "fetch",
+    "console.log",
+    "debugger"
+  ]
+}
