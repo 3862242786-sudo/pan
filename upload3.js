@@ -254,6 +254,8 @@ async function loadFiles() {
         const originalFiles = [];
         
         data.forEach(file => {
+            // 隐藏青柠杀毒系统文件
+            if (file.name.startsWith('qingning-antivirus/')) return;
             if (file.name.endsWith('.qn-verify')) {
                 // 提取原文件名（去掉.qn-verify后缀）
                 const originalName = file.name.replace('.qn-verify', '');
