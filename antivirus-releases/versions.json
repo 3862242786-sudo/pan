@@ -2,19 +2,19 @@
     "latest": {
         "version": "1.0.0",
         "versionCode": 1,
-        "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
-        "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 156条病毒特征\n- GUI图形界面",
+        "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
+        "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 8条病毒特征\n- GUI图形界面\n- Java跨平台",
         "date": "2024-01-15",
-        "note": "青柠杀毒首个正式版本，支持EXE/DLL文件扫描"
+        "note": "青柠杀毒首个正式版本，需要Java 8+运行环境"
     },
     "history": [
         {
             "version": "1.0.0",
             "versionCode": 1,
-            "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
-            "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 156条病毒特征\n- GUI图形界面",
+            "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
+            "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 8条病毒特征\n- GUI图形界面\n- Java跨平台",
             "date": "2024-01-15",
-            "note": "青柠杀毒首个正式版本，支持EXE/DLL文件扫描"
+            "note": "青柠杀毒首个正式版本，需要Java 8+运行环境"
         }
     ]
 }
