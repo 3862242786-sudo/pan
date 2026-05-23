@@ -1,8 +1,8 @@
 {
-    "version": "1.0.0",
-    "versionCode": 1,
-    "downloadUrl": "qingning-antivirus/dist/青柠杀毒",
-    "updateLog": "首次发布 - PE文件分析、字节码匹配、熵值检测、156条特征",
+    "version": "2.0.0",
+    "versionCode": 2,
+    "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
+    "updateLog": "v2.0.0 重大更新 - 主动防御、被动防御、ZIP病毒库扩展、全新暗色UI、12条内置特征",
     "forceUpdate": false,
-    "date": "2024-01-15"
+    "date": "2026-05-23"
 }

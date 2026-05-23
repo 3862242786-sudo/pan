@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>青柠杀毒 - 下载</title>
+    <title>青柠杀毒 v2.0 - 下载</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -20,6 +20,8 @@
         .btn-av:active{transform:scale(.97)}
         .btn-av-primary{background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.35)}
         .btn-av-secondary{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.15)}
+        .btn-av-outline{background:transparent;color:#22c55e;border:1.5px solid #22c55e}
+        .btn-av-outline:hover{background:rgba(34,197,94,.1)}
         .av-hero-stats{display:flex;justify-content:center;gap:40px}
         .av-hero-stat-val{font-size:28px;font-weight:800;color:#22c55e}
         .av-hero-stat-label{font-size:12px;color:#64748b;margin-top:4px}
@@ -38,6 +40,11 @@
         .av-cta p{font-size:15px;opacity:.8;margin-bottom:28px}
         .av-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 36px;background:#fff;color:#22c55e;border:none;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s}
         .av-cta-btn:active{transform:scale(.97)}
+        .av-cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .av-cta-btn-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 36px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.5);border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;transition:all .2s}
+        .av-cta-btn-secondary:hover{background:rgba(255,255,255,.15)}
+        .av-cta-btn-secondary:active{transform:scale(.97)}
+        .av-version-badge{display:inline-block;background:rgba(34,197,94,.2);color:#22c55e;font-size:13px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:16px;border:1px solid rgba(34,197,94,.3)}
         .av-back{display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:14px;margin-bottom:20px}
         .av-back:hover{color:#22c55e}
         @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
@@ -49,6 +56,7 @@
             .av-section{padding:48px 16px}
             .av-section-title{font-size:24px}
             .av-hero-stats{gap:20px}
+            .av-cta-btns{flex-direction:column;align-items:center}
         }
     </style>
 </head>
@@ -72,17 +80,22 @@
             <div class="av-hero-logo">
                 <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
             </div>
+            <div class="av-version-badge">v2.0.0</div>
             <h1>青柠杀毒</h1>
-            <p class="tagline">本地文件安全扫描工具<br>分析程序代码和文件特征，精准检测病毒威胁</p>
+            <p class="tagline">全新2.0版本 — 主动防御 + 被动防御双引擎<br>暗色UI、ZIP病毒库扩展，安全再升级</p>
             <div class="av-hero-btns">
-                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe" download="青柠杀毒.exe" class="btn-av btn-av-primary">
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar" download="青柠杀毒.jar" class="btn-av btn-av-primary">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    下载 EXE
+                    下载 JAR
                 </a>
-                <a href="antivirus-versions.html" class="btn-av btn-av-secondary">历史版本</a>
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extension-sample.zip" download="扩展病毒库.zip" class="btn-av btn-av-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载扩展病毒库
+                </a>
+                <a href="antivirus-versions.html" class="btn-av btn-av-outline">历史版本</a>
             </div>
             <div class="av-hero-stats">
-                <div><div class="av-hero-stat-val">156</div><div class="av-hero-stat-label">条特征</div></div>
+                <div><div class="av-hero-stat-val">12+</div><div class="av-hero-stat-label">内置特征</div></div>
                 <div><div class="av-hero-stat-val">0</div><div class="av-hero-stat-label">广告</div></div>
                 <div><div class="av-hero-stat-val">100%</div><div class="av-hero-stat-label">离线</div></div>
             </div>
@@ -91,47 +104,67 @@
 
     <div class="av-section">
         <div class="av-section-title anim">核心功能</div>
-        <p class="av-section-desc anim">本地离线运行，无需联网，保护您的文件隐私安全</p>
+        <p class="av-section-desc anim">v2.0 全新升级，双引擎防御体系，支持扩展病毒库</p>
         <div class="av-features">
             <div class="av-feature anim">
                 <div class="av-feature-icon" style="background:#dcfce7">
-                    <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 3-3 3 3"/></svg>
+                    <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
                 </div>
-                <h3>PE文件分析</h3>
-                <p>深度解析EXE/DLL文件结构，检测加壳、异常节区和可疑导入</p>
+                <h3>主动防御</h3>
+                <p>实时监控文件系统，自动拦截可疑文件操作，在威胁到达前完成防护</p>
             </div>
             <div class="av-feature anim">
                 <div class="av-feature-icon" style="background:#dbeafe">
-                    <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    <svg viewBox="0 0 24 24" stroke="#2563eb"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 </div>
-                <h3>特征码匹配</h3>
-                <p>内置156条病毒特征码，覆盖木马、勒索、挖矿、后门等威胁</p>
+                <h3>被动防御</h3>
+                <p>手动选择文件或目录进行深度扫描，灵活掌控安全检查节奏</p>
             </div>
             <div class="av-feature anim">
                 <div class="av-feature-icon" style="background:#fef3c7">
-                    <svg viewBox="0 0 24 24" stroke="#d97706"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <svg viewBox="0 0 24 24" stroke="#d97706"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 3-3 3 3"/></svg>
                 </div>
-                <h3>熵值分析</h3>
-                <p>通过信息熵计算检测加密和压缩数据，发现隐藏的恶意代码</p>
+                <h3>ZIP病毒库扩展</h3>
+                <p>支持导入ZIP格式的扩展病毒库，灵活扩展检测能力，持续更新特征</p>
             </div>
             <div class="av-feature anim">
                 <div class="av-feature-icon" style="background:#ede9fe">
                     <svg viewBox="0 0 24 24" stroke="#7c3aed"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                 </div>
-                <h3>桌面应用</h3>
-                <p>原生Windows桌面程序，独立运行无需安装，双击即用</p>
+                <h3>全新暗色UI</h3>
+                <p>采用深色主题界面设计，护眼舒适，专业感更强，长时间使用不疲劳</p>
+            </div>
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#fce7f3">
+                    <svg viewBox="0 0 24 24" stroke="#db2777"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 3-3 3 3"/></svg>
+                </div>
+                <h3>12条内置特征</h3>
+                <p>内置12条精选病毒特征码，覆盖常见威胁类型，可扩展至更多</p>
+            </div>
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#e0f2fe">
+                    <svg viewBox="0 0 24 24" stroke="#0284c7"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3>Java跨平台</h3>
+                <p>基于Java运行，支持Windows、Linux、macOS多平台使用</p>
             </div>
         </div>
     </div>
 
     <div class="av-section">
         <div class="av-cta anim">
-            <h2>立即下载体验</h2>
-            <p>免费、离线、安全。你的文件安全，由青柠守护。</p>
-            <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar" download="青柠杀毒.jar" class="av-cta-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                下载青柠杀毒
-            </a>
+            <h2>立即下载体验 v2.0</h2>
+            <p>免费、离线、安全。双引擎防御，你的文件安全由青柠守护。</p>
+            <div class="av-cta-btns">
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar" download="青柠杀毒.jar" class="av-cta-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载青柠杀毒 JAR
+                </a>
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extension-sample.zip" download="扩展病毒库.zip" class="av-cta-btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载扩展病毒库
+                </a>
+            </div>
         </div>
     </div>
 

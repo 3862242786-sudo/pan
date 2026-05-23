@@ -1,11 +1,11 @@
 {
     "latest": {
-        "version": "1.0.0",
-        "versionCode": 1,
+        "version": "2.0.0",
+        "versionCode": 2,
         "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
-        "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 8条病毒特征\n- GUI图形界面\n- Java跨平台",
-        "date": "2024-01-15",
-        "note": "青柠杀毒首个正式版本，需要Java 8+运行环境"
+        "updateLog": "v2.0.0 重大更新\n- 主动防御：实时监控文件系统，自动拦截可疑操作\n- 被动防御：手动选择文件或目录进行深度扫描\n- ZIP病毒库扩展：支持导入ZIP格式扩展病毒库\n- 全新暗色UI：深色主题界面，护眼舒适\n- 12条内置特征码：精选病毒特征，可扩展\n- Java跨平台：支持Windows、Linux、macOS",
+        "date": "2026-05-23",
+        "note": "青柠杀毒2.0全新版本，双引擎防御体系，需要Java 8+运行环境"
     },
     "history": [
         {
