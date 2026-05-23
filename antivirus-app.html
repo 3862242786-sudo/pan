@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠杀毒 - 下载</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .av-hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:100px 24px 60px;text-align:center;position:relative;overflow:hidden}
+        .av-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,#052e16 0%,#14532d 40%,#064e3b 100%)}
+        .av-hero-grid{position:absolute;inset:0;opacity:.03;background-image:linear-gradient(#22c55e 1px,transparent 1px),linear-gradient(90deg,#22c55e 1px,transparent 1px);background-size:60px 60px}
+        .av-hero-content{position:relative;z-index:1;max-width:600px}
+        .av-hero-logo{width:88px;height:88px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 28px;box-shadow:0 20px 50px rgba(34,197,94,.35)}
+        .av-hero-logo svg{width:48px;height:48px;stroke:#fff;fill:none;stroke-width:2}
+        .av-hero h1{font-size:44px;font-weight:800;color:#fff;margin-bottom:12px}
+        .av-hero .tagline{font-size:17px;color:#86efac;line-height:1.7;margin-bottom:36px}
+        .av-hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px}
+        .btn-av{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;transition:all .2s}
+        .btn-av:active{transform:scale(.97)}
+        .btn-av-primary{background:#22c55e;color:#fff;box-shadow:0 4px 20px rgba(34,197,94,.35)}
+        .btn-av-secondary{background:rgba(255,255,255,.08);color:#fff;border:1.5px solid rgba(255,255,255,.15)}
+        .av-hero-stats{display:flex;justify-content:center;gap:40px}
+        .av-hero-stat-val{font-size:28px;font-weight:800;color:#22c55e}
+        .av-hero-stat-label{font-size:12px;color:#64748b;margin-top:4px}
+        .av-section{padding:72px 24px;max-width:800px;margin:0 auto}
+        .av-section-title{font-size:32px;font-weight:700;text-align:center;margin-bottom:12px}
+        .av-section-desc{font-size:15px;color:#64748b;text-align:center;margin-bottom:40px;line-height:1.7}
+        .av-features{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+        .av-feature{background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;padding:24px 20px;transition:all .2s}
+        .av-feature:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.06);border-color:#22c55e}
+        .av-feature-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+        .av-feature-icon svg{width:22px;height:22px;fill:none;stroke-width:2}
+        .av-feature h3{font-size:16px;font-weight:600;margin-bottom:6px}
+        .av-feature p{font-size:13px;color:#64748b;line-height:1.6}
+        .av-cta{background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:16px;padding:56px 32px;text-align:center;color:#fff;margin-top:48px}
+        .av-cta h2{font-size:28px;font-weight:700;margin-bottom:10px}
+        .av-cta p{font-size:15px;opacity:.8;margin-bottom:28px}
+        .av-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:14px 36px;background:#fff;color:#22c55e;border:none;border-radius:12px;font-size:16px;font-weight:700;text-decoration:none;transition:all .2s}
+        .av-cta-btn:active{transform:scale(.97)}
+        .av-back{display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:14px;margin-bottom:20px}
+        .av-back:hover{color:#22c55e}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        .anim{opacity:0;transform:translateY(24px);transition:all .6s ease}
+        .anim.visible{opacity:1;transform:translateY(0)}
+        @media(max-width:640px){
+            .av-hero h1{font-size:32px}
+            .av-features{grid-template-columns:1fr}
+            .av-section{padding:48px 16px}
+            .av-section-title{font-size:24px}
+            .av-hero-stats{gap:20px}
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="antivirus-app.html" style="color:#22c55e;font-weight:600">青柠杀毒</a></li>
+                <li><a href="antivirus-versions.html">历史版本</a></li>
+                <li><a href="antivirus.html">在线扫描</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="av-hero">
+        <div class="av-hero-grid"></div>
+        <div class="av-hero-content">
+            <div class="av-hero-logo">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            </div>
+            <h1>青柠杀毒</h1>
+            <p class="tagline">本地文件安全扫描工具<br>分析程序代码和文件特征，精准检测病毒威胁</p>
+            <div class="av-hero-btns">
+                <a href="qingning-antivirus/dist/青柠杀毒" download class="btn-av btn-av-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载 EXE
+                </a>
+                <a href="antivirus-versions.html" class="btn-av btn-av-secondary">历史版本</a>
+            </div>
+            <div class="av-hero-stats">
+                <div><div class="av-hero-stat-val">156</div><div class="av-hero-stat-label">条特征</div></div>
+                <div><div class="av-hero-stat-val">0</div><div class="av-hero-stat-label">广告</div></div>
+                <div><div class="av-hero-stat-val">100%</div><div class="av-hero-stat-label">离线</div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="av-section">
+        <div class="av-section-title anim">核心功能</div>
+        <p class="av-section-desc anim">本地离线运行，无需联网，保护您的文件隐私安全</p>
+        <div class="av-features">
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#dcfce7">
+                    <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="m9 15 3-3 3 3"/></svg>
+                </div>
+                <h3>PE文件分析</h3>
+                <p>深度解析EXE/DLL文件结构，检测加壳、异常节区和可疑导入</p>
+            </div>
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#dbeafe">
+                    <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <h3>特征码匹配</h3>
+                <p>内置156条病毒特征码，覆盖木马、勒索、挖矿、后门等威胁</p>
+            </div>
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#fef3c7">
+                    <svg viewBox="0 0 24 24" stroke="#d97706"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </div>
+                <h3>熵值分析</h3>
+                <p>通过信息熵计算检测加密和压缩数据，发现隐藏的恶意代码</p>
+            </div>
+            <div class="av-feature anim">
+                <div class="av-feature-icon" style="background:#ede9fe">
+                    <svg viewBox="0 0 24 24" stroke="#7c3aed"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3>桌面应用</h3>
+                <p>原生Windows桌面程序，独立运行无需安装，双击即用</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="av-section">
+        <div class="av-cta anim">
+            <h2>立即下载体验</h2>
+            <p>免费、离线、安全。你的文件安全，由青柠守护。</p>
+            <a href="qingning-antivirus/dist/青柠杀毒" download class="av-cta-btn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载青柠杀毒
+            </a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 青柠杀毒. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const obs=new IntersectionObserver(e=>{e.forEach(i=>{if(i.isIntersecting)i.target.classList.add('visible')})},{threshold:.1});
+        document.querySelectorAll('.anim').forEach(el=>obs.observe(el));
+    </script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+{
+    "version": "1.0.0",
+    "versionCode": 1,
+    "downloadUrl": "qingning-antivirus/dist/青柠杀毒",
+    "updateLog": "首次发布 - PE文件分析、字节码匹配、熵值检测、156条特征",
+    "forceUpdate": false,
+    "date": "2024-01-15"
+}

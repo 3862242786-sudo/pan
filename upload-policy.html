@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件保护政策 - 青柠网盘</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .policy-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+        .policy-header {
+            text-align: center;
+            padding: 40px 0;
+        }
+        .policy-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1e293b;
+        }
+        .policy-header p {
+            color: #64748b;
+            font-size: 16px;
+        }
+        .policy-section {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .policy-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .policy-section h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #334155;
+            margin: 20px 0 12px;
+        }
+        .policy-section p {
+            color: #475569;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+        .policy-section ul {
+            padding-left: 24px;
+            color: #475569;
+            line-height: 1.8;
+        }
+        .policy-section li {
+            margin-bottom: 8px;
+        }
+        .highlight-box {
+            background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+            border: 1px solid #bbf7d0;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .highlight-box h4 {
+            color: #166534;
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .highlight-box p {
+            color: #15803d;
+            margin: 0;
+        }
+        .code-block {
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 16px 0;
+        }
+        .code-block pre {
+            color: #e2e8f0;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            margin: 0;
+        }
+        .code-block .key {
+            color: #7dd3fc;
+        }
+        .code-block .string {
+            color: #86efac;
+        }
+        .code-block .number {
+            color: #fca5a5;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .feature-item {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .feature-item .icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .feature-item .icon svg {
+            width: 24px;
+            height: 24px;
+            stroke: #fff;
+        }
+        .feature-item h4 {
+            font-size: 15px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 6px;
+        }
+        .feature-item p {
+            font-size: 13px;
+            color: #64748b;
+            margin: 0;
+        }
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .back-link:hover {
+            color: #3b82f6;
+        }
+        @media (max-width: 640px) {
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+            .policy-header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
+            <ul class="nav-links">
+                <li><a href="index.html">首页</a></li>
+                <li><a href="upload.html">上传文件</a></li>
+                <li><a href="about.html">关于</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="菜单"><span></span><span></span><span></span></button>
+        </div>
+    </nav>
+
+    <div class="policy-container">
+        <a href="upload.html" class="back-link">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+            返回上传页面
+        </a>
+
+        <div class="policy-header">
+            <h1>📋 青柠网盘文件保护政策</h1>
+            <p>了解我们如何保护您的文件安全，防止误删和数据丢失</p>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #22c55e;">🛡️</span> 什么是文件保护政策？</h2>
+            <p>青柠网盘文件保护政策是一项自动化的文件安全措施。每当您上传文件时，系统会自动生成一个专属的确认文件（<code>.qn-verify</code>），作为该文件的"数字身份证"。</p>
+            
+            <div class="highlight-box">
+                <h4>核心目标</h4>
+                <p>防止文件被误删、误改，并在发生数据异常时提供恢复依据。</p>
+            </div>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #3b82f6;">📄</span> 确认文件包含什么？</h2>
+            <p>每个确认文件都是一个 JSON 格式的文本文件，包含以下信息：</p>
+            
+            <div class="code-block">
+                <pre>{
+  <span class="key">"policy"</span>: <span class="string">"QINGNING_FILE_PROTECTION_POLICY"</span>,
+  <span class="key">"version"</span>: <span class="string">"1.0"</span>,
+  <span class="key">"originalFile"</span>: {
+    <span class="key">"name"</span>: <span class="string">"您的原始文件名.pdf"</span>,
+    <span class="key">"storedName"</span>: <span class="string">"1234567890_abc123.pdf"</span>,
+    <span class="key">"size"</span>: <span class="number">1048576</span>,
+    <span class="key">"uploadedAt"</span>: <span class="string">"2024-01-15T08:30:00.000Z"</span>
+  },
+  <span class="key">"verification"</span>: {
+    <span class="key">"status"</span>: <span class="string">"VERIFIED"</span>,
+    <span class="key">"method"</span>: <span class="string">"QN_AUTO_VERIFY"</span>,
+    <span class="key">"timestamp"</span>: <span class="number">1705312200000</span>,
+    <span class="key">"message"</span>: <span class="string">"此文件已通过青柠网盘安全上传验证"</span>
+  },
+  <span class="key">"protection"</span>: {
+    <span class="key">"type"</span>: <span class="string">"FILE_INTEGRITY_PROTECTION"</span>,
+    <span class="key">"description"</span>: <span class="string">"该确认文件用于防止原始文件被误删或篡改"</span>,
+    <span class="key">"restoreInfo"</span>: <span class="string">"如原文件丢失，可凭此确认文件联系管理员恢复"</span>
+  }
+}</pre>
+            </div>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #f59e0b;">⚙️</span> 工作原理</h2>
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <div class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <h4>1. 文件上传</h4>
+                    <p>您选择文件并点击上传，文件被传输到青柠网盘服务器</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <h4>2. 生成确认文件</h4>
+                    <p>系统自动创建包含文件信息的 .qn-verify 确认文件</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <h4>3. 安全存储</h4>
+                    <p>原文件和确认文件同时存储，相互关联保护</p>
+                </div>
+                <div class="feature-item">
+                    <div class="icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </div>
+                    <h4>4. 验证显示</h4>
+                    <p>文件列表中显示"✓ 已验证"徽章，表明受保护状态</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #ef4444;">🚨</span> 文件恢复流程</h2>
+            <p>如果您的文件不幸被误删或损坏，可以通过以下步骤申请恢复：</p>
+            <ul>
+                <li><strong>查找确认文件</strong>：在文件列表中找到同名但后缀为 <code>.qn-verify</code> 的确认文件</li>
+                <li><strong>下载确认文件</strong>：保存该文件到本地，其中包含恢复所需的所有信息</li>
+                <li><strong>联系管理员</strong>：通过关于页面的联系方式，向管理员提供确认文件</li>
+                <li><strong>等待恢复</strong>：管理员核实信息后，将尽力恢复您的原始文件</li>
+            </ul>
+            
+            <div class="highlight-box">
+                <h4>重要提示</h4>
+                <p>确认文件本身不包含原始文件内容，仅包含元数据信息。如果原文件和确认文件同时丢失，将无法恢复。</p>
+            </div>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #8b5cf6;">❓</span> 常见问题</h2>
+            
+            <h3>确认文件会占用额外空间吗？</h3>
+            <p>确认文件通常只有几百字节到几千字节，占用空间极小，对您的存储配额影响可以忽略不计。</p>
+            
+            <h3>我可以删除确认文件吗？</h3>
+            <p>可以，但不建议。删除确认文件后，该文件将失去保护，被误删后无法恢复。</p>
+            
+            <h3>确认文件包含我的隐私信息吗？</h3>
+            <p>不包含。确认文件只包含文件名、大小、上传时间等基础元数据，不包含文件内容本身。</p>
+            
+            <h3>所有文件都会生成确认文件吗？</h3>
+            <p>是的，从政策实施之日起，所有通过青柠网盘上传的文件都会自动生成对应的确认文件。</p>
+        </div>
+
+        <div class="policy-section">
+            <h2><span style="color: #06b6d4;">📅</span> 政策更新记录</h2>
+            <ul>
+                <li><strong>2024-01-15</strong> - 文件保护政策 v1.0 正式实施，开始为所有上传文件生成确认文件</li>
+            </ul>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 青柠网盘. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

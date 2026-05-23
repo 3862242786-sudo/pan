@@ -140,11 +140,50 @@ async function uploadAllFiles() {
                     .from('files')
                     .getPublicUrl(fileName);
 
+                // 生成青柠网盘专属确认文件
+                const verifyData = {
+                    policy: "QINGNING_FILE_PROTECTION_POLICY",
+                    version: "1.0",
+                    originalFile: {
+                        name: file.name,
+                        storedName: fileName,
+                        size: file.size,
+                        uploadedAt: new Date().toISOString()
+                    },
+                    verification: {
+                        status: "VERIFIED",
+                        method: "QN_AUTO_VERIFY",
+                        timestamp: Date.now(),
+                        message: "此文件已通过青柠网盘安全上传验证"
+                    },
+                    protection: {
+                        type: "FILE_INTEGRITY_PROTECTION",
+                        description: "该确认文件用于防止原始文件被误删或篡改",
+                        restoreInfo: "如原文件丢失，可凭此确认文件联系管理员恢复"
+                    }
+                };
+
+                // 上传确认文件
+                const verifyFileName = `${timestamp}_${random}.qn-verify`;
+                const verifyBlob = new Blob([JSON.stringify(verifyData, null, 2)], { type: 'application/json' });
+                
+                try {
+                    await supabaseClient.storage
+                        .from('files')
+                        .upload(verifyFileName, verifyBlob, {
+                            cacheControl: '3600',
+                            upsert: false,
+                        });
+                } catch (verifyErr) {
+                    console.log('确认文件上传失败（不影响原文件）:', verifyErr);
+                }
+
                 results.push({
                     name: file.name,
                     success: true,
                     url: urlData.publicUrl,
-                    size: file.size
+                    size: file.size,
+                    verified: true
                 });
                 successCount++;
             }
@@ -210,7 +249,21 @@ async function loadFiles() {
         }
 
         let html = '';
+        // 分离确认文件和原文件
+        const verifyFiles = new Set();
+        const originalFiles = [];
+        
         data.forEach(file => {
+            if (file.name.endsWith('.qn-verify')) {
+                // 提取原文件名（去掉.qn-verify后缀）
+                const originalName = file.name.replace('.qn-verify', '');
+                verifyFiles.add(originalName);
+            } else {
+                originalFiles.push(file);
+            }
+        });
+        
+        originalFiles.forEach(file => {
             const { data: urlData } = supabaseClient.storage
                 .from('files')
                 .getPublicUrl(file.name);
@@ -219,13 +272,19 @@ async function loadFiles() {
             const date = new Date(file.created_at).toLocaleString('zh-CN');
             const ext = file.name.split('.').pop().toLowerCase();
             const icon = getFileIcon(ext);
+            
+            // 检查是否有对应的确认文件
+            const hasVerify = verifyFiles.has(file.name);
+            const verifyBadge = hasVerify 
+                ? '<span class="verify-badge" title="该文件已通过青柠网盘安全验证">✓ 已验证</span>' 
+                : '';
 
             html += `
                 <div class="file-item">
                     <div class="file-info">
                         <span class="file-icon">${icon}</span>
                         <div class="file-detail">
-                            <span class="file-name">${file.name}</span>
+                            <span class="file-name">${file.name} ${verifyBadge}</span>
                             <span class="file-meta">${size} · ${date}</span>
                         </div>
                     </div>

@@ -1,0 +1,20 @@
+{
+    "latest": {
+        "version": "1.0.0",
+        "versionCode": 1,
+        "downloadUrl": "qingning-antivirus/dist/青柠杀毒",
+        "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 156条病毒特征\n- GUI图形界面",
+        "date": "2024-01-15",
+        "note": "青柠杀毒首个正式版本，支持EXE/DLL文件扫描"
+    },
+    "history": [
+        {
+            "version": "1.0.0",
+            "versionCode": 1,
+            "downloadUrl": "qingning-antivirus/dist/青柠杀毒",
+            "updateLog": "首次发布\n- PE文件结构分析\n- 字节码模式匹配\n- 信息熵检测\n- 156条病毒特征\n- GUI图形界面",
+            "date": "2024-01-15",
+            "note": "青柠杀毒首个正式版本，支持EXE/DLL文件扫描"
+        }
+    ]
+}
