@@ -7,21 +7,32 @@
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        .version-list{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
-        .version-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;transition:all .2s}
-        .version-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);transform:translateY(-2px)}
+        .version-list{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+        .version-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;transition:all .2s}
+        .version-card:hover{box-shadow:0 8px 24px rgba(0,0,0,.1);transform:translateY(-2px)}
         .version-card.latest{border-color:#22c55e;background:#f0fdf4}
-        .version-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-        .version-num{font-size:18px;font-weight:700;color:#1e293b}
+        .version-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+        .version-num{font-size:20px;font-weight:700;color:#1e293b}
         .version-date{font-size:13px;color:#94a3b8}
-        .version-badge{display:inline-block;font-size:11px;font-weight:600;color:#fff;background:#22c55e;padding:2px 10px;border-radius:20px;margin-left:8px}
-        .version-note{font-size:13px;color:#64748b;margin-bottom:10px}
-        .version-log{font-size:12px;color:#94a3b8;line-height:1.8;white-space:pre-line;background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:12px}
-        .version-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 20px;background:#22c55e;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s}
-        .version-btn:hover{background:#16a34a}
+        .version-badge{display:inline-block;font-size:11px;font-weight:600;color:#fff;background:#22c55e;padding:3px 12px;border-radius:20px;margin-left:8px}
+        .version-note{font-size:14px;color:#64748b;margin-bottom:12px;font-weight:500}
+        .version-log{font-size:13px;color:#475569;line-height:1.8;white-space:pre-line;background:#f8fafc;padding:16px;border-radius:10px;margin-bottom:16px;border-left:3px solid #22c55e}
+        .version-meta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;font-size:12px;color:#64748b}
+        .version-meta span{display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;padding:4px 10px;border-radius:6px}
+        .version-actions{display:flex;gap:10px;flex-wrap:wrap}
+        .version-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;background:#22c55e;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;transition:all .15s}
+        .version-btn:hover{background:#16a34a;transform:translateY(-1px)}
         .version-btn:active{transform:scale(.97)}
+        .version-btn.secondary{background:#f1f5f9;color:#475569}
+        .version-btn.secondary:hover{background:#e2e8f0}
         .back-link{display:inline-flex;align-items:center;gap:6px;color:#64748b;text-decoration:none;font-size:14px;margin-bottom:24px}
         .back-link:hover{color:#22c55e}
+        .sys-req{background:#fffbeb;border:1px solid #fcd34d;border-radius:12px;padding:20px;margin-bottom:32px}
+        .sys-req h3{color:#92400e;font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .sys-req ul{margin:0;padding-left:20px;color:#78350f;font-size:14px;line-height:2}
+        .sys-req li{margin-bottom:4px}
+        .loading{text-align:center;padding:40px;color:#94a3b8}
+        .error{text-align:center;padding:40px;color:#ef4444}
     </style>
 </head>
 <body>
@@ -45,8 +56,27 @@
                 返回青柠杀毒
             </a>
             <h2 class="section-title">历史版本</h2>
-            <p style="color:#64748b;margin-bottom:32px">青柠杀毒所有已发布的版本记录</p>
-            <div class="version-list" id="versionList"></div>
+            <p style="color:#64748b;margin-bottom:24px">青柠杀毒所有已发布的版本记录，支持下载任意历史版本</p>
+            
+            <!-- 系统要求 -->
+            <div class="sys-req">
+                <h3>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    运行环境要求
+                </h3>
+                <ul>
+                    <li><strong>操作系统：</strong>Windows 7 / 8 / 8.1 / 10 / 11 (64位)</li>
+                    <li><strong>运行库：</strong>需要安装 Visual C++ Redistributable 2015-2022 (x64)</li>
+                    <li><strong>内存：</strong>最低 2GB RAM，推荐 4GB 以上</li>
+                    <li><strong>硬盘：</strong>需要 100MB 可用空间</li>
+                    <li><strong>网络：</strong>需要联网用于病毒库更新和在线扫描</li>
+                    <li><strong>权限：</strong>建议以管理员身份运行以获得最佳防护效果</li>
+                </ul>
+            </div>
+            
+            <div class="version-list" id="versionList">
+                <div class="loading">正在加载版本列表...</div>
+            </div>
         </div>
     </section>
 
@@ -58,10 +88,17 @@
 
     <script>
         fetch('antivirus-releases/versions.json')
-            .then(r=>r.json())
+            .then(r=>{
+                if(!r.ok) throw new Error('加载失败');
+                return r.json();
+            })
             .then(data=>{
                 const list=document.getElementById('versionList');
                 const versions=data.history||[];
+                if(versions.length===0){
+                    list.innerHTML='<div class="error">暂无版本记录</div>';
+                    return;
+                }
                 list.innerHTML=versions.map((v,i)=>`
                     <div class="version-card ${i===0?'latest':''}">
                         <div class="version-header">
@@ -69,18 +106,27 @@
                                 <span class="version-num">v${v.version}</span>
                                 ${i===0?'<span class="version-badge">最新</span>':''}
                             </div>
-                            <span class="version-date">${v.date||''}</span>
+                            <span class="version-date">${v.date||'未知日期'}</span>
                         </div>
                         <div class="version-note">${v.note||''}</div>
                         <div class="version-log">${v.updateLog||'暂无更新说明'}</div>
-                        <a href="${v.downloadUrl}" class="version-btn">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                            下载 v${v.version}
-                        </a>
+                        <div class="version-meta">
+                            ${v.size?`<span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> ${v.size}</span>`:''}
+                            ${v.versionCode?`<span>版本号: ${v.versionCode}</span>`:''}
+                        </div>
+                        <div class="version-actions">
+                            <a href="${v.downloadUrl}" class="version-btn" download="qingning-antivirus-v${v.version}.exe">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                下载 v${v.version}
+                            </a>
+                            ${i===0?`<a href="antivirus-app.html" class="version-btn secondary">查看详情</a>`:''}
+                        </div>
                     </div>
                 `).join('');
             })
-            .catch(()=>{document.getElementById('versionList').innerHTML='<p style="color:#94a3b8;text-align:center">加载失败，请刷新重试</p>'});
+            .catch(e=>{
+                document.getElementById('versionList').innerHTML=`<div class="error">加载失败: ${e.message}<br>请刷新页面重试</div>`;
+            });
     </script>
 </body>
 </html>
