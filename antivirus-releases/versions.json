@@ -1,6 +1,15 @@
 {
   "history": [
     {
+      "version": "5.0.0",
+      "versionCode": "20",
+      "date": "2026-05-24",
+      "note": "全新现代化UI",
+      "updateLog": "青柠杀毒v5.0重磅更新：\n1. 全新现代化UI设计 - 深绿色主题\n2. 中央大圆圈状态显示（绿色勾/红色叉）\n3. 主动防御复选框 + 保护状态提示\n4. 右上角四等分菱形状态指示器\n5. 右侧功能按钮：更多、扫描文件、扫描文件夹、文件粉碎机、通知\n6. 关闭时询问是否后台运行\n7. 通知弹窗（从右往左滑入动画）\n8. 系统托盘后台监控",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus-v5.0.exe",
+      "size": "3.2 MB"
+    },
+    {
       "version": "4.0.2",
       "versionCode": "12",
       "date": "2024-05-24",
