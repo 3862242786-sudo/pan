@@ -4,8 +4,8 @@
       "version": "4.0.2",
       "versionCode": "12",
       "date": "2024-05-24",
-      "note": "修复模块加载 - 增强调试",
-      "updateLog": "修复内容：\n1. 修复模块加载失败的详细错误提示\n2. 修复UTF-8中文JSON解析问题\n3. 修复文件选择器过滤问题\n4. 新增模块解析错误诊断信息",
+      "note": "修复模块加载 - 支持.qnext格式",
+      "updateLog": "修复内容：\n1. 修复模块加载失败问题\n2. 支持同时加载.qnmod和.qnext格式\n3. 修复UTF-8中文JSON解析问题\n4. 修复文件选择器过滤问题\n5. 新增彩虹猫、WannaCry、LockBit等病毒检测\n6. 新增ZIP压缩包内文件扫描",
       "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
       "size": "3.1 MB"
     },
