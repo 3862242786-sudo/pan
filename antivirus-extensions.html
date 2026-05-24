@@ -148,6 +148,7 @@
                     <li>导入成功后会显示特征数量，开始扫描即可生效</li>
                 </ol>
                 <div class="tip">.qnext 是青柠专属二进制格式，只有青柠杀毒能识别，加载速度更快，不会被误识别。</div>
+                <div class="warn" style="margin-top:12px">📥 <strong>下载提示：</strong>点击下载按钮后，如果页面显示内容而非下载，请按 <strong>Ctrl+S</strong> 保存，或在按钮上<strong>右键→链接另存为</strong>。</div>
             </div>
 
             <div class="tutorial">
@@ -463,21 +464,8 @@
         }
         
         // 跨域下载文件
-        async function downloadFile(url, filename) {
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            } catch (e) {
-                // 降级：直接打开链接
-                window.open(url, '_blank');
-            }
+        function downloadFile(url, filename) {
+            window.open(url, '_blank');
         }
     </script>
 
