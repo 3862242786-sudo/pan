@@ -446,6 +446,21 @@
                 if (error) throw error;
                 
                 filesData = data || [];
+                // 过滤系统文件
+                const systemFiles = new Set([
+                    'about.html','admin.html','antivirus-app.html','antivirus-extensions.html',
+                    'antivirus-versions.html','app.html','auth.html','download.html','index.html',
+                    'qingning-antivirus.exe','qingning-antivirus','site_settings.json','styles.css',
+                    'upload-policy.html','upload.html','versions.html','test.txt'
+                ]);
+                filesData = filesData.filter(f => {
+                    if (systemFiles.has(f.name)) return false;
+                    if (f.name.startsWith('qingning-antivirus/')) return false;
+                    if (f.name.startsWith('antivirus-releases/')) return false;
+                    if (f.name.startsWith('apk-releases/')) return false;
+                    if (f.name.endsWith('.qn-verify')) return false;
+                    return true;
+                });
                 renderFiles(filesData);
                 renderRecent(filesData.slice(0, 5));
                 updateStats(filesData);

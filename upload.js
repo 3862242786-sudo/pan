@@ -196,7 +196,20 @@ async function loadFiles() {
         }
 
         let html = '';
+        // 系统文件列表（非用户上传，不显示）
+        const systemFiles = new Set([
+            'about.html','admin.html','antivirus-app.html','antivirus-extensions.html',
+            'antivirus-versions.html','app.html','auth.html','download.html','index.html',
+            'qingning-antivirus.exe','qingning-antivirus','site_settings.json','styles.css',
+            'upload-policy.html','upload.html','versions.html','test.txt'
+        ]);
         data.forEach(file => {
+            // 隐藏系统文件和系统目录
+            if (systemFiles.has(file.name)) return;
+            if (file.name.startsWith('qingning-antivirus/')) return;
+            if (file.name.startsWith('antivirus-releases/')) return;
+            if (file.name.startsWith('apk-releases/')) return;
+            if (file.name.endsWith('.qn-verify')) return;
             const { data: urlData } = supabaseClient.storage
                 .from(BUCKET_NAME)
                 .getPublicUrl(file.name);

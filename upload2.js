@@ -197,7 +197,18 @@ async function loadFiles() {
         }
 
         let html = '';
+        const systemFiles = new Set([
+            'about.html','admin.html','antivirus-app.html','antivirus-extensions.html',
+            'antivirus-versions.html','app.html','auth.html','download.html','index.html',
+            'qingning-antivirus.exe','qingning-antivirus','site_settings.json','styles.css',
+            'upload-policy.html','upload.html','versions.html','test.txt'
+        ]);
         data.forEach(file => {
+            if (systemFiles.has(file.name)) return;
+            if (file.name.startsWith('qingning-antivirus/')) return;
+            if (file.name.startsWith('antivirus-releases/')) return;
+            if (file.name.startsWith('apk-releases/')) return;
+            if (file.name.endsWith('.qn-verify')) return;
             const { data: urlData } = supabaseClient.storage
                 .from('files')
                 .getPublicUrl(file.name);

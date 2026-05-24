@@ -116,7 +116,18 @@ async function loadFiles() {
         fileCount.textContent = files.length + ' 个文件';
         
         let html = '';
+        const systemFiles = new Set([
+            'about.html','admin.html','antivirus-app.html','antivirus-extensions.html',
+            'antivirus-versions.html','app.html','auth.html','download.html','index.html',
+            'qingning-antivirus.exe','qingning-antivirus','site_settings.json','styles.css',
+            'upload-policy.html','upload.html','versions.html','test.txt'
+        ]);
         for (const file of files) {
+            if (systemFiles.has(file.name)) continue;
+            if (file.name.startsWith('qingning-antivirus/')) continue;
+            if (file.name.startsWith('antivirus-releases/')) continue;
+            if (file.name.startsWith('apk-releases/')) continue;
+            if (file.name.endsWith('.qn-verify')) continue;
             const { data: urlData } = supabaseClient.storage.from(BUCKET_NAME).getPublicUrl(file.name);
             const icon = getFileIcon(file.name);
             const size = formatSize(file.metadata?.size || 0);
