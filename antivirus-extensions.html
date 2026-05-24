@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠杀毒 - 扩展模块下载与教程</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Noto Sans SC',system-ui,-apple-system,sans-serif;background:#f8fafc;color:#1e293b;line-height:1.6}
+        .container{max-width:900px;margin:0 auto;padding:0 20px}
+
+        /* 顶部导航 */
+        .ext-nav{background:#fff;border-bottom:1px solid #e2e8f0;padding:12px 20px;position:sticky;top:0;z-index:100;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+        .ext-nav-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .ext-nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:#1e293b;font-weight:700;font-size:16px}
+        .ext-nav-logo .logo-icon{width:32px;height:32px;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:8px;display:flex;align-items:center;justify-content:center}
+        .ext-nav-logo .logo-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2}
+        .ext-nav-back{font-size:13px;color:#64748b;text-decoration:none;display:flex;align-items:center;gap:4px}
+        .ext-nav-back:hover{color:#22c55e}
+
+        /* Hero */
+        .ext-hero{background:linear-gradient(135deg,#052e16 0%,#14532d 40%,#064e3b 100%);padding:60px 20px;text-align:center;color:#fff}
+        .ext-hero h1{font-size:36px;font-weight:800;margin-bottom:12px}
+        .ext-hero p{font-size:16px;color:#86efac;max-width:500px;margin:0 auto}
+        .ext-hero .badge{display:inline-block;background:rgba(34,197,94,.2);color:#4ade80;font-size:12px;font-weight:600;padding:4px 14px;border-radius:20px;margin-bottom:16px;border:1px solid rgba(34,197,94,.3)}
+
+        /* 版本选择 */
+        .version-select{padding:40px 20px;max-width:900px;margin:0 auto}
+        .version-select-title{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px}
+        .version-select-desc{font-size:14px;color:#64748b;text-align:center;margin-bottom:28px}
+        .version-tabs{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+        .version-tab{padding:12px 28px;border-radius:12px;font-size:15px;font-weight:600;cursor:pointer;border:2px solid #e2e8f0;background:#fff;color:#64748b;transition:all .2s;text-decoration:none}
+        .version-tab:hover{border-color:#22c55e;color:#22c55e}
+        .version-tab.active{background:#22c55e;color:#fff;border-color:#22c55e;box-shadow:0 4px 16px rgba(34,197,94,.3)}
+        .version-tab .tab-badge{display:block;font-size:11px;font-weight:400;margin-top:2px;opacity:.8}
+
+        /* 内容区 */
+        .ext-content{padding:0 20px 60px;max-width:900px;margin:0 auto}
+        .ext-panel{display:none}
+        .ext-panel.active{display:block}
+
+        /* 卡片 */
+        .ext-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;margin-bottom:16px;transition:all .2s}
+        .ext-card:hover{box-shadow:0 4px 20px rgba(0,0,0,.06);border-color:#22c55e}
+        .ext-card-header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+        .ext-card-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .ext-card-icon svg{width:22px;height:22px;stroke-width:2;fill:none}
+        .ext-card-title{font-size:17px;font-weight:700}
+        .ext-card-desc{font-size:13px;color:#64748b;margin-top:2px}
+        .ext-card-meta{display:flex;gap:16px;font-size:12px;color:#94a3b8;margin-bottom:14px;flex-wrap:wrap}
+        .ext-card-meta span{display:flex;align-items:center;gap:4px}
+        .ext-card-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+        /* 按钮 */
+        .btn-ext{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s;border:none;cursor:pointer}
+        .btn-ext:active{transform:scale(.97)}
+        .btn-ext svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2}
+        .btn-ext-primary{background:#22c55e;color:#fff;box-shadow:0 3px 12px rgba(34,197,94,.25)}
+        .btn-ext-primary:hover{background:#16a34a}
+        .btn-ext-secondary{background:#f1f5f9;color:#475569}
+        .btn-ext-secondary:hover{background:#e2e8f0}
+        .btn-ext-outline{background:transparent;color:#22c55e;border:1.5px solid #22c55e}
+        .btn-ext-outline:hover{background:rgba(34,197,94,.06)}
+
+        /* 教程 */
+        .tutorial{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:28px;margin-bottom:20px}
+        .tutorial h3{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+        .tutorial h3 .step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#22c55e;color:#fff;border-radius:50%;font-size:13px;font-weight:700}
+        .tutorial ol{padding-left:20px}
+        .tutorial ol li{margin-bottom:10px;font-size:14px;color:#475569;line-height:1.7}
+        .tutorial ol li strong{color:#1e293b}
+        .tutorial .tip{background:#f0fdf4;border-left:4px solid #22c55e;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:14px;font-size:13px;color:#166534}
+        .tutorial .warn{background:#fefce8;border-left:4px solid #eab308;padding:12px 16px;border-radius:0 8px 8px 0;margin-top:14px;font-size:13px;color:#854d0e}
+
+        /* 格式说明 */
+        .format-box{background:linear-gradient(135deg,#f0fdf4,#ecfdf5);border:1.5px solid #bbf7d0;border-radius:12px;padding:20px;margin-top:16px}
+        .format-box h4{font-size:14px;font-weight:700;color:#166534;margin-bottom:8px}
+        .format-box p{font-size:13px;color:#15803d;line-height:1.7}
+        .format-box code{background:rgba(0,0,0,.06);padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace}
+
+        /* Footer */
+        .ext-footer{text-align:center;padding:30px 20px;font-size:13px;color:#94a3b8;border-top:1px solid #e2e8f0}
+
+        @media(max-width:640px){
+            .ext-hero h1{font-size:28px}
+            .version-tabs{flex-direction:column;align-items:center}
+            .ext-card-header{flex-direction:column;text-align:center}
+            .ext-card-actions{justify-content:center}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 导航 -->
+    <nav class="ext-nav">
+        <div class="ext-nav-inner">
+            <a href="antivirus-app.html" class="ext-nav-logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                青柠杀毒
+            </a>
+            <a href="antivirus-app.html" class="ext-nav-back">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+                返回首页
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="ext-hero">
+        <div class="badge">扩展模块中心</div>
+        <h1>扩展模块下载与教程</h1>
+        <p>下载青柠专属扩展模块，增强杀毒检测能力</p>
+    </div>
+
+    <!-- 版本选择 -->
+    <div class="version-select">
+        <div class="version-select-title">选择你的版本</div>
+        <div class="version-select-desc">不同版本使用不同格式的扩展模块，请根据你的版本选择</div>
+        <div class="version-tabs">
+            <div class="version-tab active" onclick="switchPanel('new')">
+                v3.6 新版本
+                <span class="tab-badge">推荐 · .qnext格式</span>
+            </div>
+            <div class="version-tab" onclick="switchPanel('old')">
+                v3.5 及以下旧版本
+                <span class="tab-badge">.csv / .zip格式</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 内容 -->
+    <div class="ext-content">
+
+        <!-- ========== 新版本面板 ========== -->
+        <div class="ext-panel active" id="panel-new">
+
+            <div class="tutorial">
+                <h3><span class="step-num">1</span> 安装教程</h3>
+                <ol>
+                    <li>先下载并安装 <strong>青柠杀毒 v3.6</strong>（如已安装请忽略）</li>
+                    <li>在下方选择需要的 <strong>.qnext 扩展模块</strong> 并下载</li>
+                    <li>打开青柠杀毒，点击左侧 <strong>「导入扩展」</strong> 按钮</li>
+                    <li>选择下载好的 <strong>.qnext 文件</strong>，即可自动导入</li>
+                    <li>导入成功后会显示特征数量，开始扫描即可生效</li>
+                </ol>
+                <div class="tip">.qnext 是青柠专属二进制格式，只有青柠杀毒能识别，加载速度更快，不会被误识别。</div>
+            </div>
+
+            <div class="tutorial">
+                <h3><span class="step-num">2</span> 选择扩展模块</h3>
+            </div>
+
+            <!-- 新版本扩展卡片 -->
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#dcfce7">
+                        <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">基础版扩展包</div>
+                        <div class="ext-card-desc">日常使用必备，PE文件检测、加壳识别、可疑脚本</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>10 条特征</span>
+                    <span>.qnext 格式</span>
+                    <span>v1.0</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-basic.qnext" download="ext-basic.qnext" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .qnext
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#dbeafe">
+                        <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">青柠网盘认证版</div>
+                        <div class="ext-card-desc">识别青柠网盘官方认证文件和安全令牌</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>7 条特征</span>
+                    <span>.qnext 格式</span>
+                    <span>v1.0</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-qingning-pan.qnext" download="ext-qingning-pan.qnext" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .qnext
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#fef2f2">
+                        <svg viewBox="0 0 24 24" stroke="#dc2626"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">恶意软件版</div>
+                        <div class="ext-card-desc">检测勒索软件、木马、挖矿程序、键盘记录器、后门</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>10 条特征</span>
+                    <span>.qnext 格式</span>
+                    <span>v1.0</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-malware.qnext" download="ext-malware.qnext" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .qnext
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#ede9fe">
+                        <svg viewBox="0 0 24 24" stroke="#7c3aed"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">高级威胁版</div>
+                        <div class="ext-card-desc">内存注入、Rootkit、反调试、持久化、无文件攻击</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>11 条特征</span>
+                    <span>.qnext 格式</span>
+                    <span>v1.0</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-apt.qnext" download="ext-apt.qnext" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .qnext
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#e0f2fe">
+                        <svg viewBox="0 0 24 24" stroke="#0284c7"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">网络威胁版</div>
+                        <div class="ext-card-desc">网络API检测、钓鱼识别、数据窃取、C2通信特征</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>8 条特征</span>
+                    <span>.qnext 格式</span>
+                    <span>v1.0</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-network.qnext" download="ext-network.qnext" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .qnext
+                    </a>
+                </div>
+            </div>
+
+            <div class="format-box">
+                <h4>关于 .qnext 格式</h4>
+                <p>.qnext 是青柠杀毒专属的二进制扩展格式，文件头为 <code>QNEXT</code> 魔数。只有青柠杀毒 v3.6+ 能识别和解析此格式，其他软件打开会显示乱码。相比旧版 CSV/ZIP 格式，加载速度更快、更安全。</p>
+            </div>
+
+        </div>
+
+        <!-- ========== 旧版本面板 ========== -->
+        <div class="ext-panel" id="panel-old">
+
+            <div class="tutorial">
+                <h3><span class="step-num">1</span> 安装教程</h3>
+                <ol>
+                    <li>确认你的青柠杀毒版本为 <strong>v3.5 或更低版本</strong></li>
+                    <li>在下方选择需要的 <strong>.csv 扩展文件</strong> 并下载</li>
+                    <li>打开青柠杀毒，点击左侧 <strong>「导入扩展」</strong> 按钮</li>
+                    <li>文件类型选择 <strong>「所有文件」</strong>，然后选择下载的 .csv 文件</li>
+                    <li>导入成功后会显示特征数量</li>
+                </ol>
+                <div class="warn">旧版本不支持 .qnext 格式。如果你使用的是 v3.6，请切换到上方「新版本」选项卡下载 .qnext 格式的扩展包。</div>
+            </div>
+
+            <div class="tutorial">
+                <h3><span class="step-num">2</span> 选择扩展模块</h3>
+            </div>
+
+            <!-- 旧版本扩展卡片 -->
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#dcfce7">
+                        <svg viewBox="0 0 24 24" stroke="#16a34a"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">基础版扩展包</div>
+                        <div class="ext-card-desc">日常使用必备，PE文件检测、加壳识别、可疑脚本</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>15 条特征</span>
+                    <span>.csv 格式</span>
+                    <span>适用 v3.3+</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-basic.csv" download="ext-basic.csv" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .csv
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#dbeafe">
+                        <svg viewBox="0 0 24 24" stroke="#2563eb"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">青柠网盘认证版</div>
+                        <div class="ext-card-desc">识别青柠网盘官方认证文件和安全令牌</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>10 条特征</span>
+                    <span>.csv 格式</span>
+                    <span>适用 v3.3+</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-qingning-pan.csv" download="ext-qingning-pan.csv" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .csv
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#fef2f2">
+                        <svg viewBox="0 0 24 24" stroke="#dc2626"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">恶意软件版</div>
+                        <div class="ext-card-desc">检测勒索软件、木马、挖矿程序、键盘记录器、后门</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>20 条特征</span>
+                    <span>.csv 格式</span>
+                    <span>适用 v3.3+</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-malware.csv" download="ext-malware.csv" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .csv
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#ede9fe">
+                        <svg viewBox="0 0 24 24" stroke="#7c3aed"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">高级威胁版</div>
+                        <div class="ext-card-desc">内存注入、Rootkit、反调试、持久化、无文件攻击</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>18 条特征</span>
+                    <span>.csv 格式</span>
+                    <span>适用 v3.3+</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-apt.csv" download="ext-apt.csv" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .csv
+                    </a>
+                </div>
+            </div>
+
+            <div class="ext-card">
+                <div class="ext-card-header">
+                    <div class="ext-card-icon" style="background:#e0f2fe">
+                        <svg viewBox="0 0 24 24" stroke="#0284c7"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    </div>
+                    <div>
+                        <div class="ext-card-title">网络威胁版</div>
+                        <div class="ext-card-desc">网络API检测、钓鱼识别、数据窃取、C2通信特征</div>
+                    </div>
+                </div>
+                <div class="ext-card-meta">
+                    <span>15 条特征</span>
+                    <span>.csv 格式</span>
+                    <span>适用 v3.3+</span>
+                </div>
+                <div class="ext-card-actions">
+                    <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/extensions/ext-network.csv" download="ext-network.csv" class="btn-ext btn-ext-primary">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        下载 .csv
+                    </a>
+                </div>
+            </div>
+
+            <div class="format-box" style="background:linear-gradient(135deg,#fefce8,#fef9c3);border-color:#fde047">
+                <h4 style="color:#854d0e">旧版本说明</h4>
+                <p style="color:#a16207">旧版本（v3.5及以下）使用 .csv 文本格式扩展。如果你使用的是 v3.6 新版本，强烈建议切换到上方的「新版本」选项卡，使用 .qnext 格式，加载更快更安全。</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="ext-footer">
+        &copy; 2026 青柠杀毒 · 扩展模块中心
+    </div>
+
+    <script>
+        function switchPanel(type) {
+            document.querySelectorAll('.version-tab').forEach((t, i) => {
+                t.classList.toggle('active', (type === 'new' && i === 0) || (type === 'old' && i === 1));
+            });
+            document.querySelectorAll('.ext-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById('panel-' + type).classList.add('active');
+        }
+    </script>
+
+</body>
+</html>
