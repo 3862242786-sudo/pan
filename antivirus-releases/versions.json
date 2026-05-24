@@ -1,58 +1,67 @@
 {
-  "latest": {
-    "version": "3.2.0",
-    "versionCode": 5,
-    "date": "2024-05-23",
-    "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
-    "updateLog": "C++重写，修复中文显示，添加主动防御功能，内置网盘认证特征",
-    "platform": "Windows EXE (C++)",
-    "size": "3.0 MB"
-  },
   "history": [
     {
-      "version": "3.1.0",
-      "versionCode": 4,
-      "date": "2024-05-23",
+      "version": "4.0.1",
+      "versionCode": "11",
+      "date": "2024-05-24",
+      "note": "修复模块加载问题",
+      "updateLog": "修复内容：\n1. 修复模块加载失败（UTF-8中文编码问题）\n2. 修复文件选择器看不到模块文件的问题\n3. 新增彩虹猫、WannaCry、LockBit等病毒检测\n4. 新增ZIP压缩包内文件扫描",
       "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
-      "updateLog": "尝试修复UTF-8中文显示（未成功）",
-      "platform": "Windows EXE (C++)",
+      "size": "3.1 MB"
+    },
+    {
+      "version": "4.0.0",
+      "versionCode": "10",
+      "date": "2024-05-24",
+      "note": "重大更新 - 模块系统",
+      "updateLog": "青柠杀毒v4.0重磅更新：\n1. 新增模块系统 - 支持UI主题和功能模块扩展\n2. ZIP压缩包扫描 - 自动解压检测压缩包内病毒\n3. 新增彩虹猫病毒检测\n4. 新增WannaCry、LockBit、黑猫勒索软件检测\n5. 新增文件粉碎机、密码生成器、启动项管理、进程管理功能",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
       "size": "3.0 MB"
+    },
+    {
+      "version": "3.6.0",
+      "versionCode": "9",
+      "date": "2024-05-23",
+      "note": "新增二进制扩展格式",
+      "updateLog": "新增.qnext二进制扩展格式，提升扩展包加载性能",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
+      "size": "2.8 MB"
+    },
+    {
+      "version": "3.5.0",
+      "versionCode": "8",
+      "date": "2024-05-22",
+      "note": "扩展系统优化",
+      "updateLog": "优化扩展系统，支持更多病毒特征",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
+      "size": "2.7 MB"
     },
     {
       "version": "3.0.0",
-      "versionCode": 3,
-      "date": "2024-05-23",
+      "versionCode": "7",
+      "date": "2024-05-20",
+      "note": "C++重构版本",
+      "updateLog": "全新C++重构版本，性能大幅提升，新增主动防御功能",
       "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
-      "updateLog": "C++重写，原生Windows EXE，无需Java运行环境",
-      "platform": "Windows EXE (C++)",
-      "size": "3.0 MB"
-    },
-    {
-      "version": "2.0.1",
-      "versionCode": 2,
-      "date": "2024-05-23",
-      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
-      "updateLog": "修复扫描逻辑，修复线程安全问题，读取完整文件内容",
-      "platform": "Java JAR",
-      "size": "29 KB"
+      "size": "2.5 MB"
     },
     {
       "version": "2.0.0",
-      "versionCode": 1,
-      "date": "2024-05-23",
-      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
-      "updateLog": "全新暗色主题UI，主动防御+被动防御双引擎，ZIP病毒库扩展，12条内置特征",
-      "platform": "Java JAR",
-      "size": "27 KB"
+      "versionCode": "5",
+      "date": "2024-05-15",
+      "note": "第二代版本",
+      "updateLog": "第二代版本，新增扩展系统、暗色UI",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
+      "size": "2.2 MB"
     },
     {
       "version": "1.0.0",
-      "versionCode": 0,
-      "date": "2024-05-23",
-      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.jar",
-      "updateLog": "首次发布，Java Swing GUI，8条病毒特征，PE分析+字节扫描+熵分析",
-      "platform": "Java JAR",
-      "size": "14 KB"
+      "versionCode": "1",
+      "date": "2024-05-01",
+      "note": "初代版本",
+      "updateLog": "青柠杀毒初代版本发布，基础病毒扫描功能",
+      "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
+      "size": "1.8 MB"
     }
   ]
 }
