@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠桌面 - Windows桌面环境替换</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2'%3E%3Cpath d='M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z'/%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* 导航栏 */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid #334155;
+            padding: 0 40px;
+            height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 20px; font-weight: 700; color: #22c55e;
+            text-decoration: none;
+        }
+        .nav-logo svg { width: 28px; height: 28px; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a {
+            color: #94a3b8; text-decoration: none; font-size: 15px;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: #22c55e; }
+        
+        /* Hero区域 */
+        .hero {
+            padding: 140px 40px 80px;
+            text-align: center;
+            background: radial-gradient(ellipse at center top, rgba(34,197,94,0.08) 0%, transparent 60%);
+        }
+        .hero-badge {
+            display: inline-block; padding: 6px 16px;
+            background: rgba(34,197,94,0.15); color: #22c55e;
+            border: 1px solid rgba(34,197,94,0.3); border-radius: 20px;
+            font-size: 13px; margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: 56px; font-weight: 800; margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff, #22c55e);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 20px; color: #94a3b8; max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        .hero-btns {
+            display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 12px; font-size: 16px;
+            font-weight: 600; text-decoration: none; transition: all 0.3s;
+            cursor: pointer; border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff; box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34,197,94,0.4);
+        }
+        .btn-secondary {
+            background: #1e293b; color: #e2e8f0;
+            border: 1px solid #334155;
+        }
+        .btn-secondary:hover { background: #334155; }
+        
+        /* 预览区域 */
+        .preview {
+            padding: 60px 40px;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .preview-frame {
+            background: #1e293b; border-radius: 16px;
+            border: 1px solid #334155; overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .preview-header {
+            background: #0f172a; padding: 12px 20px;
+            display: flex; align-items: center; gap: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .preview-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .preview-dot.red { background: #ef4444; }
+        .preview-dot.yellow { background: #f59e0b; }
+        .preview-dot.green { background: #22c55e; }
+        .preview-title { color: #64748b; font-size: 13px; margin-left: 8px; }
+        .preview-content {
+            height: 500px; position: relative;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+        }
+        .preview-desktop {
+            position: absolute; top: 20px; left: 20px;
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .preview-icon {
+            width: 64px; text-align: center;
+        }
+        .preview-icon svg {
+            width: 40px; height: 40px; margin-bottom: 4px;
+        }
+        .preview-icon span {
+            font-size: 11px; color: #e2e8f0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+        .preview-taskbar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 48px; background: rgba(30,41,59,0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #334155;
+            display: flex; align-items: center; padding: 0 16px;
+        }
+        .preview-start {
+            display: flex; align-items: center; gap: 8px;
+            color: #22c55e; font-weight: 600; font-size: 14px;
+        }
+        .preview-start svg { width: 24px; height: 24px; }
+        .preview-clock {
+            margin-left: auto; color: #94a3b8; font-size: 13px;
+        }
+        
+        /* 功能区域 */
+        .features {
+            padding: 80px 40px; max-width: 1200px; margin: 0 auto;
+        }
+        .section-title {
+            text-align: center; font-size: 36px; font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .section-desc {
+            text-align: center; color: #64748b; font-size: 18px;
+            margin-bottom: 60px;
+        }
+        .feature-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: #1e293b; border-radius: 16px; padding: 32px;
+            border: 1px solid #334155; transition: all 0.3s;
+        }
+        .feature-card:hover {
+            border-color: #22c55e;
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(34,197,94,0.1);
+        }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: rgba(34,197,94,0.15);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 20px;
+        }
+        .feature-icon svg { width: 24px; height: 24px; stroke: #22c55e; fill: none; stroke-width: 2; }
+        .feature-card h3 { font-size: 20px; margin-bottom: 12px; }
+        .feature-card p { color: #64748b; font-size: 15px; }
+        
+        /* 下载区域 */
+        .download {
+            padding: 80px 40px; text-align: center;
+            background: radial-gradient(ellipse at center, rgba(34,197,94,0.05) 0%, transparent 60%);
+        }
+        .download-card {
+            background: #1e293b; border-radius: 20px; padding: 48px;
+            border: 1px solid #334155; max-width: 600px; margin: 0 auto;
+        }
+        .download-card h2 { font-size: 28px; margin-bottom: 16px; }
+        .download-card p { color: #64748b; margin-bottom: 32px; }
+        .download-btns { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+        .download-info {
+            margin-top: 24px; padding-top: 24px;
+            border-top: 1px solid #334155;
+            display: flex; justify-content: center; gap: 40px;
+            flex-wrap: wrap;
+        }
+        .download-info div { text-align: center; }
+        .download-info .val { font-size: 24px; font-weight: 700; color: #22c55e; }
+        .download-info .label { font-size: 13px; color: #64748b; }
+        
+        /* 警告区域 */
+        .warning {
+            padding: 40px; max-width: 800px; margin: 0 auto;
+        }
+        .warning-box {
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px; padding: 24px;
+        }
+        .warning-box h3 { color: #ef4444; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .warning-box ul { color: #94a3b8; padding-left: 20px; }
+        .warning-box li { margin-bottom: 8px; }
+        
+        /* 页脚 */
+        .footer {
+            padding: 40px; text-align: center;
+            border-top: 1px solid #334155; color: #64748b;
+        }
+        .footer a { color: #22c55e; text-decoration: none; }
+        
+        /* 动画 */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .anim { animation: fadeInUp 0.6s ease-out forwards; opacity: 0; }
+        .anim:nth-child(1) { animation-delay: 0.1s; }
+        .anim:nth-child(2) { animation-delay: 0.2s; }
+        .anim:nth-child(3) { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="nav">
+        <a href="index.html" class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            </svg>
+            青柠桌面
+        </a>
+        <div class="nav-links">
+            <a href="index.html">青柠网盘</a>
+            <a href="antivirus-app.html">青柠杀毒</a>
+            <a href="#features">功能</a>
+            <a href="#download">下载</a>
+        </div>
+    </nav>
+
+    <!-- Hero区域 -->
+    <section class="hero">
+        <div class="hero-badge anim">全新桌面环境</div>
+        <h1 class="anim">青柠桌面</h1>
+        <p class="anim">完全替换Windows桌面环境 · SVG矢量图标 · 自定义任务栏 · 内置文件管理器</p>
+        <div class="hero-btns anim">
+            <a href="#download" class="btn btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                立即下载
+            </a>
+            <a href="https://github.com/3862242786-sudo/pan" class="btn btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                GitHub
+            </a>
+        </div>
+    </section>
+
+    <!-- 预览区域 -->
+    <section class="preview">
+        <div class="preview-frame anim">
+            <div class="preview-header">
+                <div class="preview-dot red"></div>
+                <div class="preview-dot yellow"></div>
+                <div class="preview-dot green"></div>
+                <span class="preview-title">青柠桌面 v1.0</span>
+            </div>
+            <div class="preview-content">
+                <div class="preview-desktop">
+                    <div class="preview-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                        <span>此电脑</span>
+                    </div>
+                    <div class="preview-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M20 18H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/></svg>
+                        <span>回收站</span>
+                    </div>
+                    <div class="preview-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                        <span>青柠网盘</span>
+                    </div>
+                </div>
+                <div class="preview-taskbar">
+                    <div class="preview-start">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                        青柠桌面
+                    </div>
+                    <div class="preview-clock">12:00</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 功能区域 -->
+    <section class="features" id="features">
+        <h2 class="section-title anim">核心功能</h2>
+        <p class="section-desc anim">完整的桌面环境替换方案，保留Windows稳定性</p>
+        <div class="feature-grid">
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><line x1="4" y1="9" x2="20" y2="9"/></svg>
+                </div>
+                <h3>自定义桌面</h3>
+                <p>全屏覆盖桌面，网格排列图标，右键菜单支持，实时时钟显示，深色主题背景</p>
+            </div>
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3>自定义任务栏</h3>
+                <p>底部半透明任务栏，开始菜单按钮，窗口列表切换，系统托盘（时间/音量/网络）</p>
+            </div>
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <h3>文件管理器</h3>
+                <p>内置文件管理器，树形目录导航，列表视图，地址栏，双击打开文件，右键菜单</p>
+            </div>
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <h3>开始菜单</h3>
+                <p>常用应用快捷方式，搜索框，电源按钮（关机/重启/注销），一键切换回Windows桌面</p>
+            </div>
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <h3>安全恢复机制</h3>
+                <p>Ctrl+Shift+Esc打开任务管理器，右键切换回Windows桌面，自动生成恢复脚本</p>
+            </div>
+            <div class="feature-card anim">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                </div>
+                <h3>SVG矢量图标</h3>
+                <p>所有图标采用SVG矢量风格，云朵Logo、文件夹、显示器、WiFi、电源等，清晰锐利</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 下载区域 -->
+    <section class="download" id="download">
+        <div class="download-card anim">
+            <h2>下载青柠桌面</h2>
+            <p>建议在虚拟机中测试使用，安装前请备份重要数据</p>
+            <div class="download-btns">
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/desktop/QingningDesktop.exe" download="QingningDesktop.exe" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载桌面程序
+                </a>
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/desktop/install.bat" download="install.bat" class="btn btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                    下载安装脚本
+                </a>
+            </div>
+            <div class="download-info">
+                <div><div class="val">1.05 MB</div><div class="label">文件大小</div></div>
+                <div><div class="val">x64</div><div class="label">系统架构</div></div>
+                <div><div class="val">Win7+</div><div class="label">支持系统</div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 警告区域 -->
+    <section class="warning">
+        <div class="warning-box anim">
+            <h3>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                使用警告
+            </h3>
+            <ul>
+                <li>此程序会修改Windows注册表中的Shell值，替换默认桌面环境</li>
+                <li><strong>强烈建议在虚拟机（VMware/VirtualBox）中测试</strong></li>
+                <li>安装前会自动在桌面生成"恢复Windows桌面.bat"恢复脚本</li>
+                <li>在青柠桌面中右键可选择"切换回Windows桌面"</li>
+                <li>如果出现问题，可在安全模式下运行恢复脚本</li>
+                <li>请确保已备份重要数据</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>青柠桌面 v1.0 · 由 <a href="https://3862242786-sudo.github.io/pan/">青柠网盘</a> 开发</p>
+        <p style="margin-top:8px;font-size:13px">建议在虚拟机中测试使用</p>
+    </footer>
+</body>
+</html>
