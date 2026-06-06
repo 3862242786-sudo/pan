@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠应用商店 - 下载青柠系列应用</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2'%3E%3Cpath d='M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z'/%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0f172a; color: #e2e8f0; line-height: 1.6;
+        }
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15,23,42,0.9); backdrop-filter: blur(20px);
+            border-bottom: 1px solid #334155; padding: 0 40px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; color: #22c55e; text-decoration: none; }
+        .nav-logo svg { width: 28px; height: 28px; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a { color: #94a3b8; text-decoration: none; font-size: 15px; transition: color 0.3s; }
+        .nav-links a:hover { color: #22c55e; }
+        .hero { padding: 120px 40px 60px; text-align: center; background: radial-gradient(ellipse at center top, rgba(34,197,94,0.08) 0%, transparent 60%); }
+        .hero h1 { font-size: 48px; font-weight: 800; margin-bottom: 12px; background: linear-gradient(135deg,#fff,#22c55e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { font-size: 18px; color: #94a3b8; }
+        .apps { max-width: 1100px; margin: 0 auto; padding: 40px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+        .app-card {
+            background: #1e293b; border-radius: 16px; padding: 28px; border: 1px solid #334155;
+            transition: all 0.3s; position: relative; overflow: hidden;
+        }
+        .app-card:hover { border-color: #22c55e; transform: translateY(-4px); box-shadow: 0 12px 40px rgba(34,197,94,0.1); }
+        .app-card.coming-soon { opacity: 0.6; }
+        .app-header { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; }
+        .app-icon {
+            width: 56px; height: 56px; border-radius: 14px; display: flex;
+            align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .app-icon svg { width: 28px; height: 28px; stroke-width: 2; fill: none; }
+        .app-icon.green { background: rgba(34,197,94,0.15); }
+        .app-icon.green svg { stroke: #22c55e; }
+        .app-icon.blue { background: rgba(59,130,246,0.15); }
+        .app-icon.blue svg { stroke: #3b82f6; }
+        .app-icon.purple { background: rgba(168,85,247,0.15); }
+        .app-icon.purple svg { stroke: #a855f7; }
+        .app-icon.orange { background: rgba(249,115,22,0.15); }
+        .app-icon.orange svg { stroke: #f97316; }
+        .app-icon.pink { background: rgba(236,72,153,0.15); }
+        .app-icon.pink svg { stroke: #ec4899; }
+        .app-info h3 { font-size: 20px; font-weight: 700; }
+        .app-info .version { font-size: 12px; color: #64748b; }
+        .app-desc { color: #94a3b8; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .app-tags { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .tag { padding: 4px 10px; border-radius: 6px; font-size: 11px; background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .tag.blue { background: rgba(59,130,246,0.1); color: #3b82f6; border-color: rgba(59,130,246,0.2); }
+        .tag.orange { background: rgba(249,115,22,0.1); color: #f97316; border-color: rgba(249,115,22,0.2); }
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+            border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none;
+            transition: all 0.3s; cursor: pointer; border: none;
+        }
+        .btn-primary { background: linear-gradient(135deg,#22c55e,#16a34a); color: #fff; }
+        .btn-primary:hover { box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
+        .btn-secondary { background: #334155; color: #94a3b8; }
+        .btn-disabled { background: #1e293b; color: #475569; cursor: not-allowed; }
+        .badge { position: absolute; top: 16px; right: 16px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+        .badge.available { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .badge.soon { background: rgba(249,115,22,0.15); color: #f97316; }
+        .tools-section { max-width: 1100px; margin: 0 auto; padding: 40px; }
+        .tools-section h2 { font-size: 28px; font-weight: 700; margin-bottom: 24px; text-align: center; }
+        .tools-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+        .tool-card {
+            background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155;
+            text-align: center; transition: all 0.3s;
+        }
+        .tool-card:hover { border-color: #22c55e; }
+        .tool-card svg { width: 32px; height: 32px; stroke: #22c55e; fill: none; stroke-width: 2; margin-bottom: 12px; }
+        .tool-card h4 { font-size: 16px; margin-bottom: 8px; }
+        .tool-card p { font-size: 13px; color: #64748b; margin-bottom: 12px; }
+        .footer { padding: 40px; text-align: center; border-top: 1px solid #334155; color: #64748b; }
+        .footer a { color: #22c55e; text-decoration: none; }
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        .anim { animation: fadeInUp 0.5s ease-out forwards; opacity: 0; }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="index.html" class="nav-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            青柠应用商店
+        </a>
+        <div class="nav-links">
+            <a href="index.html">青柠网盘</a>
+            <a href="antivirus-app.html">青柠杀毒</a>
+            <a href="qingning-desktop.html">青柠桌面</a>
+            <a href="index.html">返回首页</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <h1>青柠应用商店</h1>
+        <p>一站式下载所有青柠系列应用</p>
+    </section>
+
+    <section class="apps">
+        <!-- 青柠杀毒 -->
+        <div class="app-card anim">
+            <span class="badge available">v6.0.0 可下载</span>
+            <div class="app-header">
+                <div class="app-icon green">
+                    <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>青柠杀毒</h3>
+                    <span class="version">v6.0.0 · Windows</span>
+                </div>
+            </div>
+            <p class="app-desc">简洁高效的Windows安全防护工具。EXE/DLL文件扫描、系统环境检测、文件粉碎机、密码生成器，SVG矢量图标，深色主题。</p>
+            <div class="app-tags">
+                <span class="tag">安全</span>
+                <span class="tag">杀毒</span>
+                <span class="tag blue">扫描</span>
+            </div>
+            <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus-v6.0.exe" download="青柠杀毒v6.0.exe" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载 Windows 版
+            </a>
+        </div>
+
+        <!-- 青柠桌面 -->
+        <div class="app-card anim">
+            <span class="badge available">v1.0 可下载</span>
+            <div class="app-header">
+                <div class="app-icon blue">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>青柠桌面</h3>
+                    <span class="version">v1.0 · Windows</span>
+                </div>
+            </div>
+            <p class="app-desc">完全替换Windows桌面环境。自定义桌面、Dock栏任务栏、内置文件管理器、开始菜单、开机Logo。一键安装，安全恢复。</p>
+            <div class="app-tags">
+                <span class="tag blue">桌面</span>
+                <span class="tag">Dock栏</span>
+                <span class="tag">文件管理</span>
+            </div>
+            <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/desktop/QingningDesktop.exe" download="QingningDesktop.exe" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载 Windows 版
+            </a>
+        </div>
+
+        <!-- 青柠网盘 -->
+        <div class="app-card anim">
+            <span class="badge available">在线版</span>
+            <div class="app-header">
+                <div class="app-icon green">
+                    <svg viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>青柠网盘</h3>
+                    <span class="version">在线版 · Web</span>
+                </div>
+            </div>
+            <p class="app-desc">简洁高效的云端存储服务。上传下载一键完成，无需注册，打开即用。支持文件管理、分享、历史版本。</p>
+            <div class="app-tags">
+                <span class="tag">网盘</span>
+                <span class="tag">云存储</span>
+                <span class="tag blue">在线</span>
+            </div>
+            <a href="https://3862242786-sudo.github.io/pan/" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                打开网页版
+            </a>
+        </div>
+
+        <!-- Windows魔改工具 -->
+        <div class="app-card anim">
+            <span class="badge available">v1.0 可下载</span>
+            <div class="app-header">
+                <div class="app-icon blue">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>Windows魔改工具</h3>
+                    <span class="version">v1.0 · Windows</span>
+                </div>
+            </div>
+            <p class="app-desc">深度定制Windows系统。开机界面替换为青柠OS风格、锁屏壁纸定制、右键菜单添加青柠快捷入口。支持一键恢复。</p>
+            <div class="app-tags">
+                <span class="tag blue">魔改</span>
+                <span class="tag">开机界面</span>
+                <span class="tag">锁屏</span>
+                <span class="tag">右键菜单</span>
+            </div>
+            <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/store/QingningCustomizer.exe" download="QingningCustomizer.exe" class="btn btn-primary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载 Windows 版
+            </a>
+        </div>
+
+        <!-- 青柠浏览器 -->
+        <div class="app-card coming-soon anim">
+            <span class="badge soon">即将推出</span>
+            <div class="app-header">
+                <div class="app-icon purple">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>青柠浏览器</h3>
+                    <span class="version">开发中</span>
+                </div>
+            </div>
+            <p class="app-desc">轻量级浏览器，注重隐私保护。简洁界面，快速启动，内置广告拦截和追踪防护。</p>
+            <div class="app-tags">
+                <span class="tag orange">浏览器</span>
+                <span class="tag orange">隐私</span>
+            </div>
+            <button class="btn btn-disabled" disabled>即将推出</button>
+        </div>
+
+        <!-- 青柠笔记 -->
+        <div class="app-card coming-soon anim">
+            <span class="badge soon">即将推出</span>
+            <div class="app-header">
+                <div class="app-icon orange">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                </div>
+                <div class="app-info">
+                    <h3>青柠笔记</h3>
+                    <span class="version">开发中</span>
+                </div>
+            </div>
+            <p class="app-desc">极简便签工具。快速记录灵感，支持Markdown语法，本地存储，无需联网。</p>
+            <div class="app-tags">
+                <span class="tag orange">笔记</span>
+                <span class="tag">Markdown</span>
+            </div>
+            <button class="btn btn-disabled" disabled>即将推出</button>
+        </div>
+    </section>
+
+    <section class="tools-section">
+        <h2>Windows 魔改工具</h2>
+        <div class="tools-grid">
+            <div class="tool-card anim">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <h4>青柠应用商店</h4>
+                <p>下载和管理所有青柠应用</p>
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/store/QingningStore.exe" download="QingningStore.exe" class="btn btn-secondary" style="font-size:12px;padding:8px 16px">下载</a>
+            </div>
+            <div class="tool-card anim">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                <h4>Windows 魔改工具</h4>
+                <p>开机界面、锁屏、右键菜单</p>
+                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/store/QingningCustomizer.exe" download="QingningCustomizer.exe" class="btn btn-secondary" style="font-size:12px;padding:8px 16px">下载</a>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <p>青柠应用商店 · 由 <a href="https://3862242786-sudo.github.io/pan/">青柠网盘</a> 开发</p>
+    </footer>
+</body>
+</html>
