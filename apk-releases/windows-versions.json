@@ -1,0 +1,35 @@
+{
+  "version": "4.0.2",
+  "versionCode": "12",
+  "date": "2024-05-24",
+  "downloadUrl": "https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe",
+  "updateLog": "青柠杀毒v4.0.2更新：\n1. 修复模块加载失败问题\n2. 支持同时加载.qnmod和.qnext格式\n3. 修复UTF-8中文JSON解析问题\n4. 修复文件选择器过滤问题\n5. 新增彩虹猫、WannaCry、LockBit等病毒检测\n6. 新增ZIP压缩包内文件扫描",
+  "forceUpdate": false,
+  "minVersionCode": "10",
+  "history": [
+    {
+      "version": "4.0.2",
+      "versionCode": "12",
+      "date": "2024-05-24",
+      "updateLog": "修复模块加载、支持.qnext格式"
+    },
+    {
+      "version": "4.0.1",
+      "versionCode": "11",
+      "date": "2024-05-24",
+      "updateLog": "修复模块加载UTF-8编码问题"
+    },
+    {
+      "version": "4.0.0",
+      "versionCode": "10",
+      "date": "2024-05-24",
+      "updateLog": "模块系统、ZIP扫描、彩虹猫检测"
+    },
+    {
+      "version": "3.6.0",
+      "versionCode": "9",
+      "date": "2024-05-23",
+      "updateLog": "新增.qnext二进制扩展格式"
+    }
+  ]
+}
