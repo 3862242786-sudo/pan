@@ -612,11 +612,11 @@
                 <rect x="45" y="105" width="30" height="4" rx="2" fill="rgba(34,197,94,0.3)"/>
             </svg>
             <h1>QingningOS</h1>
-            <p class="subtitle">Powered by XUbuntu · Material Design · 为虚拟机而生</p>
+            <p class="subtitle">Alex版 · Linux内核+自主GUI / Windows版 · 基于Windows封装</p>
             <div class="hero-buttons">
-                <a href="qingning-os-v2.0.0-src.zip" class="btn btn-primary" download>
+                <a href="qingning-os-builder-v3.0.zip" class="btn btn-primary" download>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    下载源码包 v2.0.0
+                    下载统一构建工具 v3.0
                 </a>
                 <a href="#install" class="btn btn-secondary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -728,13 +728,17 @@
         <p class="section-subtitle">选择适合你的系统和需求</p>
         <div class="download-card">
             <div class="download-links">
+                <a href="qingning-os-builder-v3.0.zip" class="download-link github" download style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    统一构建工具 v3.0 (推荐)
+                </a>
                 <a href="qingning-os-win-iso-builder.zip" class="download-link github" download style="background: linear-gradient(135deg, #0078d4, #005a9e);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    Windows ISO 构建器
+                    Windows ISO 构建器 (旧版)
                 </a>
                 <a href="qingning-os-win-builder.zip" class="download-link docs" download style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    XUbuntu ISO 构建器
+                    XUbuntu ISO 构建器 (旧版)
                 </a>
                 <a href="qingning-os-v2.0.0-src.zip" class="download-link github" download>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -743,7 +747,7 @@
             </div>
             <div class="download-note">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                <strong>想要 Windows 版青柠OS？</strong>下载"Windows ISO 构建器"，放入 Windows 10/11 ISO，运行 PowerShell 脚本即可生成可安装的青柠OS Windows ISO！<strong>想要 Linux 版？</strong>下载 XUbuntu 构建器或 Linux 源码包。
+                <strong>统一构建工具 v3.0</strong> 支持双版本：Alex版（Linux内核+自主GUI）和 Windows版（基于Windows ISO封装）。右键 PowerShell 运行，一键构建！
             </div>
         </div>
     </section>
@@ -751,38 +755,38 @@
     <!-- Installation Guide -->
     <section class="section" id="install">
         <h2 class="section-title">安装指南</h2>
-        <p class="section-subtitle">支持 Windows 和 Linux 两种构建方式</p>
+        <p class="section-subtitle">统一构建工具 v3.0 - 一个脚本构建双版本</p>
         <div class="install-steps">
             <div class="step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                    <h4>Windows 方式（推荐）</h4>
-                    <p>下载 Windows 构建工具，解压后右键管理员运行 build-qingning-os.bat</p>
-                    <code>qingning-os-win-builder.zip → 解压 → 右键管理员运行 build-qingning-os.bat</code>
+                    <h4>下载统一构建工具</h4>
+                    <p>下载 qingning-os-builder-v3.0.zip 并解压到任意文件夹</p>
+                    <code>qingning-os-builder-v3.0.zip → 解压</code>
                 </div>
             </div>
             <div class="step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                    <h4>Linux 方式</h4>
-                    <p>下载源码包，在 Debian/Ubuntu 环境中运行 build.sh</p>
-                    <code>unzip qingning-os-v2.0.0-src.zip && cd qingning-os && sudo ./build.sh</code>
+                    <h4>选择版本并构建</h4>
+                    <p>右键 Build-QingningOS.ps1 → 使用 PowerShell 运行，选择 Alex版(1) 或 Windows版(2)</p>
+                    <code>右键 Build-QingningOS.ps1 → 使用 PowerShell 运行 → 输入 1 或 2</code>
                 </div>
             </div>
             <div class="step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                    <h4>准备 XUbuntu ISO</h4>
-                    <p>下载 XUbuntu 24.04 ISO 放到构建工具目录</p>
-                    <code>https://cdimage.ubuntu.com/xubuntu/releases/24.04/release/</code>
+                    <h4>Alex版 - 自动下载内核</h4>
+                    <p>脚本自动从 Alpine Linux 镜像下载内核，编译 GUI，生成约25MB的可启动ISO</p>
+                    <code>输出: output/QingningOS-Alex-v3.0.iso</code>
                 </div>
             </div>
             <div class="step">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                    <h4>生成 ISO 镜像</h4>
-                    <p>构建完成后，ISO 文件输出到 output 目录</p>
-                    <code>output/qingning-os-2.0.0-amd64.iso</code>
+                    <h4>Windows版 - 放入Windows ISO</h4>
+                    <p>将 Windows 10/11 ISO 放到工具目录，脚本自动应用青柠主题并生成ISO</p>
+                    <code>放入 Windows.iso → 选择 2 → 输出: output/QingningOS-Windows-v3.0.iso</code>
                 </div>
             </div>
             <div class="step">
