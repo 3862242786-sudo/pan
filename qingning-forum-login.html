@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录/注册 - 青柠论坛</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 50%, #f0fdf4 100%);
+            padding: 20px;
+        }
+        
+        .auth-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+        }
+        
+        .auth-header {
+            text-align: center;
+            padding: 32px 32px 0;
+        }
+        
+        .auth-logo {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-radius: 14px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .auth-logo svg {
+            width: 28px;
+            height: 28px;
+            stroke: white;
+            stroke-width: 2.5;
+            fill: none;
+        }
+        
+        .auth-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .auth-subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        
+        /* 标签切换 */
+        .auth-tabs {
+            display: flex;
+            margin: 24px 32px 0;
+            border-bottom: 2px solid #f1f5f9;
+        }
+        
+        .auth-tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #94a3b8;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+        
+        .auth-tab:hover {
+            color: #64748b;
+        }
+        
+        .auth-tab.active {
+            color: #22c55e;
+            border-bottom-color: #22c55e;
+        }
+        
+        /* 表单 */
+        .auth-form {
+            padding: 24px 32px 32px;
+        }
+        
+        .form-group {
+            margin-bottom: 16px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .form-input::placeholder {
+            color: #cbd5e1;
+        }
+        
+        .form-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        
+        /* 记住我/忘记密码 */
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+        
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            cursor: pointer;
+        }
+        
+        .remember-me input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #22c55e;
+            cursor: pointer;
+        }
+        
+        .forgot-password {
+            color: #22c55e;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .forgot-password:hover {
+            color: #16a34a;
+        }
+        
+        /* 提交按钮 */
+        .auth-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .auth-submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        
+        /* 分隔线 */
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: #e2e8f0;
+        }
+        
+        .auth-divider span {
+            padding: 0 12px;
+        }
+        
+        /* 社交登录 */
+        .social-login {
+            display: flex;
+            gap: 12px;
+        }
+        
+        .social-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #64748b;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .social-btn:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        
+        .social-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* 底部链接 */
+        .auth-footer {
+            text-align: center;
+            padding: 0 32px 32px;
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        .auth-footer a {
+            color: #22c55e;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .auth-footer a:hover {
+            color: #16a34a;
+        }
+        
+        /* 协议 */
+        .agreement {
+            font-size: 12px;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 16px;
+        }
+        
+        .agreement a {
+            color: #22c55e;
+            text-decoration: none;
+        }
+        
+        /* 隐藏/显示 */
+        .form-section {
+            display: none;
+        }
+        
+        .form-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                    </svg>
+                </div>
+                <h1 class="auth-title">青柠论坛</h1>
+                <p class="auth-subtitle">登录青柠账号，参与讨论</p>
+            </div>
+            
+            <div class="auth-tabs">
+                <div class="auth-tab active" onclick="switchTab('login')">登录</div>
+                <div class="auth-tab" onclick="switchTab('register')">注册</div>
+            </div>
+            
+            <!-- 登录表单 -->
+            <div id="loginForm" class="form-section active">
+                <form class="auth-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label class="form-label">青柠账号</label>
+                        <input type="text" class="form-input" placeholder="请输入用户名/邮箱/手机号" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-input" placeholder="请输入密码" required>
+                    </div>
+                    <div class="form-options">
+                        <label class="remember-me">
+                            <input type="checkbox">
+                            <span>记住我</span>
+                        </label>
+                        <a href="#" class="forgot-password">忘记密码？</a>
+                    </div>
+                    <button type="submit" class="auth-submit">登录</button>
+                    
+                    <div class="auth-divider">
+                        <span>或</span>
+                    </div>
+                    
+                    <div class="social-login">
+                        <button type="button" class="social-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+                            微信登录
+                        </button>
+                        <button type="button" class="social-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 0 0-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+                            QQ登录
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- 注册表单 -->
+            <div id="registerForm" class="form-section">
+                <form class="auth-form" onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-input" placeholder="设置用户名" required>
+                        <div class="form-hint">用户名由2-20位字母、数字或下划线组成</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">邮箱</label>
+                        <input type="email" class="form-input" placeholder="请输入邮箱" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">密码</label>
+                        <input type="password" class="form-input" placeholder="设置密码（6-20位）" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">确认密码</label>
+                        <input type="password" class="form-input" placeholder="再次输入密码" required>
+                    </div>
+                    <button type="submit" class="auth-submit">注册</button>
+                    <p class="agreement">注册即表示同意 <a href="#">用户协议</a> 和 <a href="#">隐私政策</a></p>
+                </form>
+            </div>
+            
+            <div class="auth-footer">
+                <a href="qingning-forum.html">返回论坛首页</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
+            
+            if (tab === 'login') {
+                document.querySelectorAll('.auth-tab')[0].classList.add('active');
+                document.getElementById('loginForm').classList.add('active');
+            } else {
+                document.querySelectorAll('.auth-tab')[1].classList.add('active');
+                document.getElementById('registerForm').classList.add('active');
+            }
+        }
+        
+        function handleLogin(e) {
+            e.preventDefault();
+            alert('登录功能演示 - 实际开发需要后端支持');
+            location.href = 'qingning-forum.html';
+        }
+        
+        function handleRegister(e) {
+            e.preventDefault();
+            alert('注册功能演示 - 实际开发需要后端支持');
+            location.href = 'qingning-forum.html';
+        }
+        
+        // URL参数判断
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('register') === '1') {
+            switchTab('register');
+        }
+    </script>
+</body>
+</html>

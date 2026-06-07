@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠论坛 - 青柠OS官方社区</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 论坛专用样式 */
+        .forum-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 200px 1fr 300px;
+            gap: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .forum-container {
+                grid-template-columns: 1fr;
+            }
+            .forum-sidebar-left, .forum-sidebar-right {
+                display: none;
+            }
+        }
+        
+        /* 左侧导航 */
+        .forum-sidebar-left {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+        }
+        
+        .forum-nav-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .forum-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #64748b;
+            font-size: 14px;
+        }
+        
+        .forum-nav-item:hover, .forum-nav-item.active {
+            background: #f0fdf4;
+            color: #22c55e;
+        }
+        
+        .forum-nav-item svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* 中间内容区 */
+        .forum-main {
+            min-width: 0;
+        }
+        
+        .forum-header {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .forum-tabs {
+            display: flex;
+            gap: 24px;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 12px;
+        }
+        
+        .forum-tab {
+            font-size: 15px;
+            font-weight: 500;
+            color: #64748b;
+            cursor: pointer;
+            padding: 4px 0;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -14px;
+            transition: all 0.2s;
+        }
+        
+        .forum-tab:hover, .forum-tab.active {
+            color: #22c55e;
+            border-bottom-color: #22c55e;
+        }
+        
+        /* 发帖按钮 */
+        .forum-post-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        
+        .forum-post-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        
+        /* 帖子列表 */
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .post-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .post-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .post-meta {
+            flex: 1;
+        }
+        
+        .post-author {
+            font-weight: 600;
+            color: #1e293b;
+            font-size: 14px;
+        }
+        
+        .post-time {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        .post-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .post-tag.tech { background: #dbeafe; color: #2563eb; }
+        .post-tag.news { background: #fef3c7; color: #d97706; }
+        .post-tag.help { background: #fce7f3; color: #db2777; }
+        .post-tag.discuss { background: #f0fdf4; color: #16a34a; }
+        
+        .post-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .post-summary {
+            font-size: 14px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 12px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 20px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .post-action:hover {
+            color: #22c55e;
+        }
+        
+        .post-action svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* 右侧边栏 */
+        .forum-sidebar-right {
+            position: sticky;
+            top: 80px;
+            height: fit-content;
+        }
+        
+        .sidebar-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .hot-topic {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8fafc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .hot-topic:hover {
+            color: #22c55e;
+        }
+        
+        .hot-topic:last-child {
+            border-bottom: none;
+        }
+        
+        .hot-rank {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        
+        .hot-rank.top3 {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .hot-rank.normal {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+        
+        .hot-title {
+            font-size: 14px;
+            color: #334155;
+            line-height: 1.4;
+            flex: 1;
+        }
+        
+        .hot-count {
+            font-size: 12px;
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+        
+        /* 用户信息卡片 */
+        .user-card {
+            text-align: center;
+        }
+        
+        .user-card-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+        
+        .user-card-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+        
+        .user-card-level {
+            font-size: 12px;
+            color: #22c55e;
+            background: #f0fdf4;
+            padding: 2px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 16px;
+        }
+        
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .user-stat {
+            text-align: center;
+        }
+        
+        .user-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+        
+        .user-stat-label {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        /* 登录提示 */
+        .login-prompt {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .login-prompt-text {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 16px;
+        }
+        
+        .login-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            padding: 10px 32px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        
+        /* 页脚 */
+        .forum-footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                </svg>
+                <span>青柠网盘</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">首页</a>
+                <a href="qingning-os.html">青柠OS</a>
+                <a href="qingning-store.html">应用商店</a>
+                <a href="qingning-guide.html">使用教程</a>
+                <a href="qingning-forum.html" class="active">论坛</a>
+            </div>
+            <div class="nav-actions">
+                <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
+                <a href="qingning-forum-login.html?register=1" class="btn btn-primary">注册</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 论坛主体 -->
+    <div style="padding-top: 72px;">
+        <div class="forum-container">
+            <!-- 左侧导航 -->
+            <aside class="forum-sidebar-left">
+                <div class="forum-nav-card">
+                    <div class="forum-nav-item active">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        全部帖子
+                    </div>
+                    <div class="forum-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        技术讨论
+                    </div>
+                    <div class="forum-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        新闻资讯
+                    </div>
+                    <div class="forum-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                        求助问答
+                    </div>
+                    <div class="forum-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                        综合讨论
+                    </div>
+                    <div class="forum-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                        我的收藏
+                    </div>
+                </div>
+            </aside>
+
+            <!-- 中间内容区 -->
+            <main class="forum-main">
+                <div class="forum-header">
+                    <div class="forum-tabs">
+                        <div class="forum-tab active">最新</div>
+                        <div class="forum-tab">热门</div>
+                        <div class="forum-tab">精华</div>
+                        <div class="forum-tab">关注</div>
+                    </div>
+                </div>
+
+                <button class="forum-post-btn" onclick="location.href='qingning-forum-post.html'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    发布新帖
+                </button>
+
+                <div class="post-list">
+                    <!-- 帖子1 -->
+                    <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=1'">
+                        <div class="post-header">
+                            <div class="post-avatar">A</div>
+                            <div class="post-meta">
+                                <div class="post-author">Alex</div>
+                                <div class="post-time">2小时前</div>
+                            </div>
+                            <span class="post-tag tech">技术</span>
+                        </div>
+                        <div class="post-title">青柠OS v3.0 统一构建工具发布，支持Windows/Linux双平台</div>
+                        <div class="post-summary">全新的统一构建工具来了！一个压缩包，Windows和Linux都能构建出相同的青柠OS ISO。包含纯CMD批处理脚本，无需PowerShell...</div>
+                        <div class="post-actions">
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                128
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                                45
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                收藏
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                                分享
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 帖子2 -->
+                    <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=2'">
+                        <div class="post-header">
+                            <div class="post-avatar" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">L</div>
+                            <div class="post-meta">
+                                <div class="post-author">Linux爱好者</div>
+                                <div class="post-time">5小时前</div>
+                            </div>
+                            <span class="post-tag discuss">讨论</span>
+                        </div>
+                        <div class="post-title">关于青柠OS图形界面的讨论，大家觉得还需要加什么功能？</div>
+                        <div class="post-summary">目前的GUI已经有任务栏、Dock、桌面图标和窗口管理。大家觉得还需要添加开始菜单、右键菜单、还是文件管理器？欢迎讨论...</div>
+                        <div class="post-actions">
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                89
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                                67
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                收藏
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                                分享
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 帖子3 -->
+                    <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=3'">
+                        <div class="post-header">
+                            <div class="post-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">Q</div>
+                            <div class="post-meta">
+                                <div class="post-author">青柠用户123</div>
+                                <div class="post-time">昨天</div>
+                            </div>
+                            <span class="post-tag help">求助</span>
+                        </div>
+                        <div class="post-title">Windows 11 上构建ISO失败，7-Zip报错"尚未实现"，求解决</div>
+                        <div class="post-summary">按照教程下载了统一构建工具，安装了7-Zip，但是运行Build-Windows-CMD.bat时7-Zip报错"尚未实现"，ISO生成失败。有人遇到过吗...</div>
+                        <div class="post-actions">
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                56
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                                34
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                收藏
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                                分享
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 帖子4 -->
+                    <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=4'">
+                        <div class="post-header">
+                            <div class="post-avatar" style="background: linear-gradient(135deg, #ec4899, #db2777);">M</div>
+                            <div class="post-meta">
+                                <div class="post-author">MinGW开发者</div>
+                                <div class="post-time">2天前</div>
+                            </div>
+                            <span class="post-tag news">资讯</span>
+                        </div>
+                        <div class="post-title">青柠OS论坛正式上线！欢迎所有用户加入讨论</div>
+                        <div class="post-summary">青柠OS官方论坛今天正式上线啦！在这里你可以讨论技术、分享经验、求助问题、关注开发者。登录青柠账号即可发帖、评论、收藏...</div>
+                        <div class="post-actions">
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                                256
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                                128
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                                收藏
+                            </div>
+                            <div class="post-action">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                                分享
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- 右侧边栏 -->
+            <aside class="forum-sidebar-right">
+                <!-- 用户信息（未登录） -->
+                <div class="sidebar-card login-prompt">
+                    <div class="login-prompt-text">登录青柠账号，参与讨论、收藏帖子、关注用户</div>
+                    <a href="qingning-forum-login.html" class="login-btn">立即登录</a>
+                </div>
+
+                <!-- 热门话题 -->
+                <div class="sidebar-card">
+                    <div class="sidebar-title">热门话题</div>
+                    <div class="hot-topic">
+                        <div class="hot-rank top3">1</div>
+                        <div class="hot-title">青柠OS v3.0 统一构建工具发布</div>
+                        <div class="hot-count">1.2k</div>
+                    </div>
+                    <div class="hot-topic">
+                        <div class="hot-rank top3">2</div>
+                        <div class="hot-title">Windows 11 构建ISO常见问题汇总</div>
+                        <div class="hot-count">856</div>
+                    </div>
+                    <div class="hot-topic">
+                        <div class="hot-rank top3">3</div>
+                        <div class="hot-title">图形界面功能需求征集</div>
+                        <div class="hot-count">643</div>
+                    </div>
+                    <div class="hot-topic">
+                        <div class="hot-rank normal">4</div>
+                        <div class="hot-title">Linux内核版本选择讨论</div>
+                        <div class="hot-count">432</div>
+                    </div>
+                    <div class="hot-topic">
+                        <div class="hot-rank normal">5</div>
+                        <div class="hot-title">虚拟机安装教程</div>
+                        <div class="hot-count">389</div>
+                    </div>
+                </div>
+
+                <!-- 社区统计 -->
+                <div class="sidebar-card">
+                    <div class="sidebar-title">社区统计</div>
+                    <div class="user-stats">
+                        <div class="user-stat">
+                            <div class="user-stat-value">1,234</div>
+                            <div class="user-stat-label">用户</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-value">5,678</div>
+                            <div class="user-stat-label">帖子</div>
+                        </div>
+                        <div class="user-stat">
+                            <div class="user-stat-value">12k</div>
+                            <div class="user-stat-label">评论</div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- 页脚 -->
+        <div class="forum-footer">
+            <p>青柠OS官方论坛 · 基于青柠账号系统</p>
+            <p style="margin-top: 8px;"> 2025 青柠OS · <a href="qingning-os.html" style="color: #22c55e;">官网</a> · <a href="qingning-guide.html" style="color: #22c55e;">使用教程</a></p>
+        </div>
+    </div>
+
+    <script>
+        // 标签切换
+        document.querySelectorAll('.forum-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.forum-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+
+        // 左侧导航切换
+        document.querySelectorAll('.forum-nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.forum-nav-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

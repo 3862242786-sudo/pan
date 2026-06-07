@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布新帖 - 青柠论坛</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        .post-page {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .post-editor {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .post-editor-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 20px;
+        }
+        
+        .post-form-group {
+            margin-bottom: 16px;
+        }
+        
+        .post-form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #334155;
+            margin-bottom: 6px;
+        }
+        
+        .post-form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        
+        .post-form-input:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .post-form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 200px;
+            font-family: inherit;
+            line-height: 1.6;
+        }
+        
+        .post-form-textarea:focus {
+            outline: none;
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        
+        .post-tag-select {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .post-tag-option {
+            padding: 6px 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: white;
+        }
+        
+        .post-tag-option:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        
+        .post-tag-option.selected {
+            background: #f0fdf4;
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        
+        .post-toolbar {
+            display: flex;
+            gap: 8px;
+            padding: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .toolbar-btn {
+            padding: 6px 10px;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        
+        .toolbar-btn:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        
+        .post-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        
+        .post-btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .post-btn.cancel {
+            background: #f1f5f9;
+            color: #64748b;
+            border: none;
+        }
+        
+        .post-btn.cancel:hover {
+            background: #e2e8f0;
+        }
+        
+        .post-btn.submit {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            border: none;
+        }
+        
+        .post-btn.submit:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+        
+        .post-hint {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                </svg>
+                <span>青柠网盘</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html">首页</a>
+                <a href="qingning-os.html">青柠OS</a>
+                <a href="qingning-store.html">应用商店</a>
+                <a href="qingning-guide.html">使用教程</a>
+                <a href="qingning-forum.html" class="active">论坛</a>
+            </div>
+            <div class="nav-actions">
+                <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
+                <a href="qingning-forum-login.html?register=1" class="btn btn-primary">注册</a>
+            </div>
+        </div>
+    </nav>
+
+    <div style="padding-top: 72px;">
+        <div class="post-page">
+            <div class="post-editor">
+                <h1 class="post-editor-title">发布新帖</h1>
+                
+                <form onsubmit="handlePost(event)">
+                    <div class="post-form-group">
+                        <label class="post-form-label">标题</label>
+                        <input type="text" class="post-form-input" placeholder="请输入帖子标题（5-50字）" required minlength="5" maxlength="50">
+                    </div>
+                    
+                    <div class="post-form-group">
+                        <label class="post-form-label">分类</label>
+                        <div class="post-tag-select">
+                            <div class="post-tag-option selected" onclick="selectTag(this)">技术讨论</div>
+                            <div class="post-tag-option" onclick="selectTag(this)">新闻资讯</div>
+                            <div class="post-tag-option" onclick="selectTag(this)">求助问答</div>
+                            <div class="post-tag-option" onclick="selectTag(this)">综合讨论</div>
+                        </div>
+                    </div>
+                    
+                    <div class="post-form-group">
+                        <label class="post-form-label">内容</label>
+                        <div class="post-toolbar">
+                            <button type="button" class="toolbar-btn" title="加粗"><b>B</b></button>
+                            <button type="button" class="toolbar-btn" title="斜体"><i>I</i></button>
+                            <button type="button" class="toolbar-btn" title="链接">🔗</button>
+                            <button type="button" class="toolbar-btn" title="图片">🖼️</button>
+                            <button type="button" class="toolbar-btn" title="代码">&lt;/&gt;</button>
+                        </div>
+                        <textarea class="post-form-textarea" placeholder="写下你的内容...&#10;&#10;支持 Markdown 格式&#10;- 列表项&#10;**粗体**&#10;`代码`" required></textarea>
+                        <div class="post-hint">支持 Markdown 格式，最少 10 个字</div>
+                    </div>
+                    
+                    <div class="post-actions">
+                        <button type="button" class="post-btn cancel" onclick="history.back()">取消</button>
+                        <button type="submit" class="post-btn submit">发布帖子</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function selectTag(el) {
+            document.querySelectorAll('.post-tag-option').forEach(t => t.classList.remove('selected'));
+            el.classList.add('selected');
+        }
+        
+        function handlePost(e) {
+            e.preventDefault();
+            alert('发帖功能演示 - 实际开发需要后端支持');
+            location.href = 'qingning-forum.html';
+        }
+    </script>
+</body>
+</html>
