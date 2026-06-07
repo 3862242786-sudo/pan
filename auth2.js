@@ -122,6 +122,28 @@ async function handleRegister(e) {
         showMessage('registerMessage', '登录成功！正在跳转...');
         saveLoginState(email);
 
+        // 自动创建用户主页数据（如果不存在）
+        try {
+            const { data: existingProfile } = await supabaseClient
+                .from('profiles')
+                .select('id')
+                .eq('id', loginData.user.id)
+                .single();
+            if (!existingProfile) {
+                await supabaseClient.from('profiles').insert({
+                    id: loginData.user.id,
+                    email: email,
+                    username: email.split('@')[0],
+                    bio: '',
+                    avatar_url: '',
+                    bg_url: '',
+                    verified: false,
+                    role: email === ADMIN_EMAIL ? 'admin' : 'user',
+                    favorites_public: false
+                });
+            }
+        } catch (pe) { console.warn('Profile creation:', pe); }
+
         if (email === ADMIN_EMAIL) {
             setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
         } else {
@@ -175,6 +197,28 @@ async function handleLogin(e) {
 
         showMessage('loginMessage', '登录成功！正在跳转...');
         saveLoginState(email);
+
+        // 确保用户主页数据存在
+        try {
+            const { data: existingProfile } = await supabaseClient
+                .from('profiles')
+                .select('id')
+                .eq('id', data.user.id)
+                .single();
+            if (!existingProfile) {
+                await supabaseClient.from('profiles').insert({
+                    id: data.user.id,
+                    email: email,
+                    username: email.split('@')[0],
+                    bio: '',
+                    avatar_url: '',
+                    bg_url: '',
+                    verified: false,
+                    role: email === ADMIN_EMAIL ? 'admin' : 'user',
+                    favorites_public: false
+                });
+            }
+        } catch (pe) { console.warn('Profile check:', pe); }
 
         // 管理员跳转到管理后台，普通用户跳转到首页
         if (email === ADMIN_EMAIL) {

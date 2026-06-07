@@ -87,6 +87,12 @@
                 <li><a href="about.html">关于</a></li>
                 <li><a href="#contact">联系我</a></li>
                 <li><a href="auth.html" id="navLoginBtn">登录</a></li>
+                <li id="navProfileArea" style="display:none">
+                    <a href="profile.html" id="navMyProfile" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.15);color:#60a5fa;font-size:.85rem;font-weight:600;text-decoration:none">
+                        <span id="navAvatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700"></span>
+                        <span id="navUsername">我的</span>
+                    </a>
+                </li>
                 <li><a href="admin.html" class="nav-admin-btn" id="navAdminBtn" style="display:none">管理后台</a></li>
                 <li><a href="javascript:void(0)" id="navLogoutBtn" style="display:none" onclick="handleLogout()">退出</a></li>
                 <li class="nav-dropdown">
@@ -286,6 +292,9 @@
             const loginBtn = document.getElementById('navLoginBtn');
             const adminBtn = document.getElementById('navAdminBtn');
             const logoutBtn = document.getElementById('navLogoutBtn');
+            const profileArea = document.getElementById('navProfileArea');
+            const navAvatar = document.getElementById('navAvatar');
+            const navUsername = document.getElementById('navUsername');
             
             if (typeof supabaseClient === 'undefined') return;
             
@@ -295,15 +304,37 @@
                 
                 if (session) {
                     // Session有效，显示已登录状态
-                    const isAdmin = session.user.email === '3862242786@qq.com';
+                    const email = session.user.email;
+                    const isAdmin = email === '3862242786@qq.com';
                     loginBtn.style.display = 'none';
                     logoutBtn.style.display = 'block';
+                    profileArea.style.display = 'block';
                     if (isAdmin) {
                         adminBtn.style.display = 'block';
                     }
+                    // 显示用户头像首字母
+                    const letter = email ? email.charAt(0).toUpperCase() : '?';
+                    navAvatar.textContent = letter;
+                    // 尝试从 profiles 表加载用户名
+                    try {
+                        const { data: profile } = await supabaseClient
+                            .from('profiles')
+                            .select('username, avatar_url')
+                            .eq('id', session.user.id)
+                            .single();
+                        if (profile) {
+                            navUsername.textContent = profile.username || '我的';
+                            if (profile.avatar_url) {
+                                navAvatar.innerHTML = '';
+                                navAvatar.style.backgroundImage = 'url(' + profile.avatar_url + ')';
+                                navAvatar.style.backgroundSize = 'cover';
+                                navAvatar.style.backgroundPosition = 'center';
+                            }
+                        }
+                    } catch(pe) {}
                     // 同步localStorage
                     localStorage.setItem('qn_logged_in', 'true');
-                    localStorage.setItem('qn_user_email', session.user.email);
+                    localStorage.setItem('qn_user_email', email);
                     localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
                 } else {
                     // Session无效，清除本地状态
