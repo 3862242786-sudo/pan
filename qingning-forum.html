@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>青柠论坛 - 青柠OS官方社区</title>
+    <title>青柠社区 - 青柠网盘官方社区</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -188,6 +188,65 @@
         .post-tag.news { background: #fef3c7; color: #d97706; }
         .post-tag.help { background: #fce7f3; color: #db2777; }
         .post-tag.discuss { background: #f0fdf4; color: #16a34a; }
+        
+        /* 官方标签 */
+        .post-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        
+        .post-badge.official {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .post-badge.station-master {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .post-badge.verified {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .post-badge svg {
+            width: 12px;
+            height: 12px;
+        }
+        
+        /* 认证标识 */
+        .verified-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+        
+        .station-master-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #f59e0b;
+            color: white;
+            font-size: 10px;
+            margin-left: 4px;
+        }
         
         .post-title {
             font-size: 16px;
@@ -419,7 +478,7 @@
                 <a href="qingning-os.html">青柠OS</a>
                 <a href="qingning-store.html">应用商店</a>
                 <a href="qingning-guide.html">使用教程</a>
-                <a href="qingning-forum.html" class="active">论坛</a>
+                <a href="qingning-forum.html" class="active">社区</a>
             </div>
             <div class="nav-actions">
                 <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
@@ -428,7 +487,7 @@
         </div>
     </nav>
 
-    <!-- 论坛主体 -->
+    <!-- 社区主体 -->
     <div style="padding-top: 72px;">
         <div class="forum-container">
             <!-- 左侧导航 -->
@@ -481,15 +540,17 @@
                 </button>
 
                 <div class="post-list">
-                    <!-- 帖子1 -->
+                    <!-- 帖子1 - 官方+站长 -->
                     <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=1'">
                         <div class="post-header">
                             <div class="post-avatar">A</div>
                             <div class="post-meta">
-                                <div class="post-author">Alex</div>
+                                <div class="post-author">Alex<span class="station-master-icon">站</span></div>
                                 <div class="post-time">2小时前</div>
                             </div>
                             <span class="post-tag tech">技术</span>
+                            <span class="post-badge official">官方</span>
+                            <span class="post-badge station-master">站长</span>
                         </div>
                         <div class="post-title">青柠OS v3.0 统一构建工具发布，支持Windows/Linux双平台</div>
                         <div class="post-summary">全新的统一构建工具来了！一个压缩包，Windows和Linux都能构建出相同的青柠OS ISO。包含纯CMD批处理脚本，无需PowerShell...</div>
@@ -577,7 +638,7 @@
                         </div>
                     </div>
 
-                    <!-- 帖子4 -->
+                    <!-- 帖子4 - 官方 -->
                     <div class="post-card" onclick="location.href='qingning-forum-detail.html?id=4'">
                         <div class="post-header">
                             <div class="post-avatar" style="background: linear-gradient(135deg, #ec4899, #db2777);">M</div>
@@ -586,9 +647,10 @@
                                 <div class="post-time">2天前</div>
                             </div>
                             <span class="post-tag news">资讯</span>
+                            <span class="post-badge official">官方</span>
                         </div>
-                        <div class="post-title">青柠OS论坛正式上线！欢迎所有用户加入讨论</div>
-                        <div class="post-summary">青柠OS官方论坛今天正式上线啦！在这里你可以讨论技术、分享经验、求助问题、关注开发者。登录青柠账号即可发帖、评论、收藏...</div>
+                        <div class="post-title">青柠社区正式上线！欢迎所有用户加入讨论</div>
+                        <div class="post-summary">青柠社区今天正式上线啦！在这里你可以讨论技术、分享经验、求助问题、关注开发者。登录青柠账号即可发帖、评论、收藏...</div>
                         <div class="post-actions">
                             <div class="post-action">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
@@ -672,8 +734,8 @@
 
         <!-- 页脚 -->
         <div class="forum-footer">
-            <p>青柠OS官方论坛 · 基于青柠账号系统</p>
-            <p style="margin-top: 8px;"> 2025 青柠OS · <a href="qingning-os.html" style="color: #22c55e;">官网</a> · <a href="qingning-guide.html" style="color: #22c55e;">使用教程</a></p>
+            <p>青柠社区 · 基于青柠账号系统</p>
+            <p style="margin-top: 8px;"> 2025 青柠网盘 · <a href="qingning-os.html" style="color: #22c55e;">青柠OS</a> · <a href="qingning-guide.html" style="color: #22c55e;">使用教程</a></p>
         </div>
     </div>
 

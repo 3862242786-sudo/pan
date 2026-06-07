@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>帖子详情 - 青柠论坛</title>
+    <title>帖子详情 - 青柠社区</title>
     <link rel="stylesheet" href="styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -64,6 +64,59 @@
             font-weight: 500;
             background: #dbeafe;
             color: #2563eb;
+        }
+        
+        /* 官方/站长/认证标签 */
+        .detail-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+        
+        .detail-badge.official {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+        }
+        
+        .detail-badge.station-master {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .detail-badge.verified {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+        }
+        
+        .station-master-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #f59e0b;
+            color: white;
+            font-size: 10px;
+            margin-left: 4px;
+        }
+        
+        .verified-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: white;
+            font-size: 10px;
+            margin-left: 4px;
         }
         
         .detail-title {
@@ -424,7 +477,7 @@
                 <a href="qingning-os.html">青柠OS</a>
                 <a href="qingning-store.html">应用商店</a>
                 <a href="qingning-guide.html">使用教程</a>
-                <a href="qingning-forum.html" class="active">论坛</a>
+                <a href="qingning-forum.html" class="active">社区</a>
             </div>
             <div class="nav-actions">
                 <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
@@ -440,10 +493,12 @@
                 <div class="detail-post-header">
                     <div class="detail-avatar">A</div>
                     <div class="detail-meta">
-                        <div class="detail-author">Alex</div>
+                        <div class="detail-author">Alex<span class="station-master-icon">站</span></div>
                         <div class="detail-time">2小时前 · 技术讨论</div>
                     </div>
                     <span class="detail-tag">技术</span>
+                    <span class="detail-badge official">官方</span>
+                    <span class="detail-badge station-master">站长</span>
                 </div>
                 
                 <h1 class="detail-title">青柠OS v3.0 统一构建工具发布，支持Windows/Linux双平台</h1>
@@ -455,7 +510,7 @@
                     <p>2. 纯CMD批处理脚本 - 无需PowerShell</p>
                     <p>3. 自动错误诊断 - 构建失败时自动检测问题</p>
                     <p>4. 支持WinRAR和7-Zip</p>
-                    <p>欢迎大家下载测试，有问题请在论坛反馈！</p>
+                    <p>欢迎大家下载测试，有问题请在社区反馈！</p>
                 </div>
                 
                 <div class="detail-actions">
