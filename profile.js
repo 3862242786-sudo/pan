@@ -1,4 +1,5 @@
-// ===== profile.js - 个人主页逻辑 =====
+// ===== profile.js - 个人主页逻辑（纯前端 localStorage 版本）=====
+// 不依赖任何后端数据库，所有数据存在浏览器本地
 
 (function () {
     'use strict';
@@ -6,9 +7,9 @@
     // ===== 状态 =====
     let isEditing = false;
     let isOwnProfile = false;
-    let currentUser = null;        // 当前登录用户
-    let profileUser = null;       // 被查看的用户
-    let profileData = null;        // 从数据库加载的 profile 数据
+    let currentEmail = null;
+    let viewEmail = null;
+    let profileData = null;
     let originalName = '';
     let originalBio = '';
 
@@ -39,6 +40,8 @@
     const favEmpty = $('#favEmpty');
     const favPrivate = $('#favPrivate');
     const toastContainer = $('#toastContainer');
+
+    const ADMIN_EMAIL = '3862242786@qq.com';
 
     // ===== 工具函数 =====
     function showToast(message, type = 'info') {
@@ -72,99 +75,146 @@
         return params.get(key);
     }
 
+    // ===== localStorage 数据管理 =====
+    function getProfileKey(email) {
+        return 'qn_profile_' + (email || 'guest');
+    }
+
+    function getWorksKey(email) {
+        return 'qn_works_' + (email || 'guest');
+    }
+
+    function getFavoritesKey(email) {
+        return 'qn_favorites_' + (email || 'guest');
+    }
+
+    function loadProfile(email) {
+        const key = getProfileKey(email);
+        const data = localStorage.getItem(key);
+        if (data) {
+            try { return JSON.parse(data); } catch (e) { return null; }
+        }
+        return null;
+    }
+
+    function saveProfile(email, data) {
+        const key = getProfileKey(email);
+        localStorage.setItem(key, JSON.stringify(data));
+    }
+
+    function loadWorks(email) {
+        const key = getWorksKey(email);
+        const data = localStorage.getItem(key);
+        if (data) {
+            try { return JSON.parse(data); } catch (e) { return []; }
+        }
+        return [];
+    }
+
+    function saveWorks(email, works) {
+        const key = getWorksKey(email);
+        localStorage.setItem(key, JSON.stringify(works));
+    }
+
+    function loadFavorites(email) {
+        const key = getFavoritesKey(email);
+        const data = localStorage.getItem(key);
+        if (data) {
+            try { return JSON.parse(data); } catch (e) { return []; }
+        }
+        return [];
+    }
+
+    function saveFavorites(email, favorites) {
+        const key = getFavoritesKey(email);
+        localStorage.setItem(key, JSON.stringify(favorites));
+    }
+
+    function createDefaultProfile(email) {
+        return {
+            email: email,
+            username: email.split('@')[0],
+            bio: '',
+            avatar_url: '',
+            banner_url: '',
+            verified: email === ADMIN_EMAIL,
+            role: email === ADMIN_EMAIL ? 'admin' : 'user',
+            favorites_public: false,
+            created_at: new Date().toISOString()
+        };
+    }
+
+    // ===== 图片转 Base64（纯前端存储图片）=====
+    function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
     // ===== 初始化 =====
     async function init() {
         // 获取当前登录用户
-        const userEmail = localStorage.getItem('qn_user_email');
-        if (userEmail && typeof supabaseClient !== 'undefined') {
-            try {
-                const { data, error } = await supabaseClient
-                    .from('users')
-                    .select('*')
-                    .eq('email', userEmail)
-                    .single();
-                if (!error && data) {
-                    currentUser = data;
-                }
-            } catch (e) {
-                console.warn('获取当前用户失败:', e);
-            }
-        }
+        currentEmail = localStorage.getItem('qn_user_email');
 
         // 设置导航栏头像
-        if (currentUser) {
-            if (currentUser.avatar_url) {
-                navAvatar.innerHTML = `<img src="${currentUser.avatar_url}" alt="头像">`;
+        if (currentEmail) {
+            const myProfile = loadProfile(currentEmail);
+            if (myProfile && myProfile.avatar_url) {
+                navAvatar.innerHTML = `<img src="${myProfile.avatar_url}" alt="头像">`;
             } else {
-                navAvatar.textContent = getFirstLetter(currentUser.username || currentUser.email);
+                navAvatar.textContent = getFirstLetter(currentEmail);
             }
+        } else {
+            navAvatar.textContent = '?';
         }
 
         // 判断查看的是谁的主页
-        const viewEmail = getQueryParam('user');
-        if (viewEmail) {
-            // 查看他人主页
-            isOwnProfile = false;
-            await loadUserProfile(viewEmail);
-            editBtn.style.display = 'none';
-            privacyToggle.style.display = 'none';
-        } else if (currentUser) {
-            // 查看自己的主页
-            isOwnProfile = true;
-            await loadUserProfile(currentUser.email);
-            privacyToggle.style.display = 'flex';
-        } else {
-            // 未登录，显示提示
+        viewEmail = getQueryParam('user') || currentEmail;
+
+        if (!viewEmail) {
+            // 未登录且没有指定用户
             profileName.textContent = '请先登录';
             profileBio.textContent = '登录后即可查看和编辑个人主页';
+            profileAvatar.textContent = '?';
             worksLoading.style.display = 'none';
             worksEmpty.style.display = 'block';
             worksEmpty.querySelector('p').textContent = '登录后即可查看作品';
             favLoading.style.display = 'none';
+            editBtn.style.display = 'none';
             return;
+        }
+
+        // 判断是否是自己的主页
+        isOwnProfile = (currentEmail === viewEmail);
+
+        // 加载用户资料
+        profileData = loadProfile(viewEmail);
+        if (!profileData) {
+            // 如果没有资料，创建默认资料
+            profileData = createDefaultProfile(viewEmail);
+            if (isOwnProfile) {
+                saveProfile(viewEmail, profileData);
+            }
+        }
+
+        // 渲染资料
+        renderProfile(profileData);
+
+        // 控制按钮显示
+        if (isOwnProfile) {
+            editBtn.style.display = 'inline-flex';
+            privacyToggle.style.display = 'flex';
+        } else {
+            editBtn.style.display = 'none';
+            privacyToggle.style.display = 'none';
         }
 
         // 加载作品和收藏
-        loadWorks();
-        loadFavorites();
-    }
-
-    // ===== 加载用户资料 =====
-    async function loadUserProfile(email) {
-        if (typeof supabaseClient === 'undefined') {
-            profileName.textContent = email ? getFirstLetter(email) : '未知用户';
-            profileBio.textContent = '服务暂不可用';
-            return;
-        }
-
-        try {
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('email', email)
-                .single();
-
-            if (!error && data) {
-                profileData = data;
-                renderProfile(data);
-            } else {
-                // 没有资料记录，使用 users 表数据
-                profileData = {
-                    email: email,
-                    username: currentUser ? (currentUser.username || email.split('@')[0]) : email.split('@')[0],
-                    bio: '',
-                    avatar_url: currentUser ? currentUser.avatar_url : null,
-                    banner_url: null,
-                    is_verified: false,
-                    is_admin: false,
-                    favorites_public: false,
-                };
-                renderProfile(profileData);
-            }
-        } catch (e) {
-            console.warn('加载资料失败:', e);
-            profileName.textContent = email ? getFirstLetter(email) : '未知用户';
-        }
+        loadWorksList();
+        loadFavoritesList();
     }
 
     // ===== 渲染资料 =====
@@ -183,17 +233,23 @@
         // 背景图
         if (data.banner_url) {
             profileBanner.style.backgroundImage = `url(${data.banner_url})`;
+        } else {
+            profileBanner.style.backgroundImage = '';
         }
 
         // 简介
         profileBio.textContent = data.bio || '这个人很懒，什么都没写~';
 
         // 认证标识
-        if (data.is_verified) {
+        if (data.verified) {
             badgeVerified.style.display = 'inline-flex';
+        } else {
+            badgeVerified.style.display = 'none';
         }
-        if (data.is_admin) {
+        if (data.role === 'admin') {
             badgeAdmin.style.display = 'inline-flex';
+        } else {
+            badgeAdmin.style.display = 'none';
         }
 
         // 收藏隐私
@@ -231,8 +287,8 @@
         profileAvatar.classList.add('editable');
         profileBanner.classList.add('editable');
 
-        profileAvatar.addEventListener('click', onAvatarClick);
-        profileBanner.addEventListener('click', onBannerClick);
+        profileAvatar.onclick = onAvatarClick;
+        profileBanner.onclick = onBannerClick;
     };
 
     window.cancelEdit = function () {
@@ -251,15 +307,15 @@
         profileAvatar.classList.remove('editable');
         profileBanner.classList.remove('editable');
 
-        profileAvatar.removeEventListener('click', onAvatarClick);
-        profileBanner.removeEventListener('click', onBannerClick);
+        profileAvatar.onclick = null;
+        profileBanner.onclick = null;
 
         // 恢复原值
-        profileName.textContent = originalName;
-        profileBio.textContent = originalBio || '这个人很懒，什么都没写~';
+        profileName.textContent = originalName || profileData.username || profileData.email.split('@')[0];
+        profileBio.textContent = originalBio || profileData.bio || '这个人很懒，什么都没写~';
     };
 
-    window.saveProfile = async function () {
+    window.saveProfile = function () {
         const newName = profileNameInput.value.trim();
         const newBio = profileBioInput.value.trim();
 
@@ -268,53 +324,32 @@
             return;
         }
 
-        saveBtn.disabled = true;
-        saveBtn.textContent = '保存中...';
+        // 更新数据
+        profileData.username = newName;
+        profileData.bio = newBio;
+        profileData.updated_at = new Date().toISOString();
 
-        try {
-            if (typeof supabaseClient === 'undefined') {
-                showToast('服务暂不可用', 'error');
-                return;
-            }
+        // 保存到 localStorage
+        saveProfile(currentEmail, profileData);
 
-            const updateData = {
-                username: newName,
-                bio: newBio,
-                updated_at: new Date().toISOString(),
-            };
+        // 更新显示
+        profileName.textContent = newName;
+        profileBio.textContent = newBio || '这个人很懒，什么都没写~';
 
-            const { error } = await supabaseClient
-                .from('profiles')
-                .upsert(updateData, { onConflict: 'email' });
-
-            if (error) throw error;
-
-            // 更新本地数据
-            profileData.username = newName;
-            profileData.bio = newBio;
-
-            // 更新显示
-            profileName.textContent = newName;
-            profileBio.textContent = newBio || '这个人很懒，什么都没写~';
-
-            // 更新导航栏头像首字母
-            if (!profileData.avatar_url) {
-                navAvatar.textContent = getFirstLetter(newName);
-                profileAvatar.textContent = getFirstLetter(newName);
-            }
-
-            showToast('资料已保存', 'success');
-            window.cancelEdit();
-        } catch (e) {
-            console.error('保存失败:', e);
-            showToast('保存失败: ' + (e.message || '未知错误'), 'error');
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> 保存';
+        // 更新导航栏头像首字母
+        if (!profileData.avatar_url) {
+            navAvatar.textContent = getFirstLetter(newName);
+            profileAvatar.textContent = getFirstLetter(newName);
         }
+
+        // 更新 index.html 导航栏（通过 localStorage 事件）
+        localStorage.setItem('qn_profile_updated', Date.now().toString());
+
+        showToast('资料已保存', 'success');
+        window.cancelEdit();
     };
 
-    // ===== 头像上传 =====
+    // ===== 头像上传（Base64 存储）=====
     function onAvatarClick() {
         avatarInput.click();
     }
@@ -329,54 +364,30 @@
         }
 
         try {
-            if (typeof supabaseClient === 'undefined') {
-                showToast('服务暂不可用', 'error');
-                return;
-            }
+            showToast('正在处理头像...', 'info');
+            const base64 = await fileToBase64(file);
 
-            showToast('正在上传头像...', 'info');
-
-            const ext = file.name.split('.').pop();
-            const fileName = `avatars/${currentUser.email}/${Date.now()}.${ext}`;
-
-            const { error: uploadError } = await supabaseClient.storage
-                .from('profiles')
-                .upload(fileName, file, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            const { data: urlData } = supabaseClient.storage
-                .from('profiles')
-                .getPublicUrl(fileName);
-
-            const avatarUrl = urlData.publicUrl;
-
-            // 更新数据库
-            const { error: updateError } = await supabaseClient
-                .from('profiles')
-                .upsert({
-                    email: currentUser.email,
-                    avatar_url: avatarUrl,
-                    updated_at: new Date().toISOString(),
-                }, { onConflict: 'email' });
-
-            if (updateError) throw updateError;
+            // 保存到 localStorage
+            profileData.avatar_url = base64;
+            saveProfile(currentEmail, profileData);
 
             // 更新显示
-            profileData.avatar_url = avatarUrl;
-            profileAvatar.innerHTML = `<img src="${avatarUrl}" alt="头像">`;
-            navAvatar.innerHTML = `<img src="${avatarUrl}" alt="头像">`;
+            profileAvatar.innerHTML = `<img src="${base64}" alt="头像">`;
+            navAvatar.innerHTML = `<img src="${base64}" alt="头像">`;
+
+            // 通知其他页面更新
+            localStorage.setItem('qn_profile_updated', Date.now().toString());
 
             showToast('头像已更新', 'success');
         } catch (e) {
-            console.error('头像上传失败:', e);
-            showToast('头像上传失败: ' + (e.message || '未知错误'), 'error');
+            console.error('头像处理失败:', e);
+            showToast('头像处理失败', 'error');
         }
 
         this.value = '';
     });
 
-    // ===== 背景图上传 =====
+    // ===== 背景图上传（Base64 存储）=====
     function onBannerClick() {
         bannerInput.click();
     }
@@ -391,85 +402,41 @@
         }
 
         try {
-            if (typeof supabaseClient === 'undefined') {
-                showToast('服务暂不可用', 'error');
-                return;
-            }
+            showToast('正在处理背景...', 'info');
+            const base64 = await fileToBase64(file);
 
-            showToast('正在上传背景...', 'info');
-
-            const ext = file.name.split('.').pop();
-            const fileName = `banners/${currentUser.email}/${Date.now()}.${ext}`;
-
-            const { error: uploadError } = await supabaseClient.storage
-                .from('profiles')
-                .upload(fileName, file, { upsert: true });
-
-            if (uploadError) throw uploadError;
-
-            const { data: urlData } = supabaseClient.storage
-                .from('profiles')
-                .getPublicUrl(fileName);
-
-            const bannerUrl = urlData.publicUrl;
-
-            // 更新数据库
-            const { error: updateError } = await supabaseClient
-                .from('profiles')
-                .upsert({
-                    email: currentUser.email,
-                    banner_url: bannerUrl,
-                    updated_at: new Date().toISOString(),
-                }, { onConflict: 'email' });
-
-            if (updateError) throw updateError;
+            // 保存到 localStorage
+            profileData.banner_url = base64;
+            saveProfile(currentEmail, profileData);
 
             // 更新显示
-            profileData.banner_url = bannerUrl;
-            profileBanner.style.backgroundImage = `url(${bannerUrl})`;
+            profileBanner.style.backgroundImage = `url(${base64})`;
 
             showToast('背景已更新', 'success');
         } catch (e) {
-            console.error('背景上传失败:', e);
-            showToast('背景上传失败: ' + (e.message || '未知错误'), 'error');
+            console.error('背景处理失败:', e);
+            showToast('背景处理失败', 'error');
         }
 
         this.value = '';
     });
 
     // ===== 收藏隐私切换 =====
-    window.toggleFavoritesPrivacy = async function () {
+    window.toggleFavoritesPrivacy = function () {
         if (!isOwnProfile || !profileData) return;
 
         const newPublic = !profileData.favorites_public;
+        profileData.favorites_public = newPublic;
+        saveProfile(currentEmail, profileData);
 
-        try {
-            if (typeof supabaseClient === 'undefined') {
-                showToast('服务暂不可用', 'error');
-                return;
-            }
-
-            const { error } = await supabaseClient
-                .from('profiles')
-                .update({ favorites_public: newPublic })
-                .eq('email', profileData.email);
-
-            if (error) throw error;
-
-            profileData.favorites_public = newPublic;
-
-            if (newPublic) {
-                favToggle.classList.add('active');
-                favPrivacyLabel.textContent = '公开';
-                showToast('收藏已设为公开', 'success');
-            } else {
-                favToggle.classList.remove('active');
-                favPrivacyLabel.textContent = '私密';
-                showToast('收藏已设为私密', 'success');
-            }
-        } catch (e) {
-            console.error('切换隐私失败:', e);
-            showToast('操作失败', 'error');
+        if (newPublic) {
+            favToggle.classList.add('active');
+            favPrivacyLabel.textContent = '公开';
+            showToast('收藏已设为公开', 'success');
+        } else {
+            favToggle.classList.remove('active');
+            favPrivacyLabel.textContent = '私密';
+            showToast('收藏已设为私密', 'success');
         }
     };
 
@@ -483,125 +450,70 @@
     };
 
     // ===== 加载作品 =====
-    async function loadWorks() {
-        worksLoading.style.display = 'flex';
+    function loadWorksList() {
+        worksLoading.style.display = 'none';
         worksGrid.style.display = 'none';
         worksEmpty.style.display = 'none';
 
-        try {
-            if (typeof supabaseClient === 'undefined') {
-                worksLoading.style.display = 'none';
-                worksEmpty.style.display = 'block';
-                return;
-            }
+        const works = loadWorks(viewEmail);
 
-            const email = profileData ? profileData.email : (currentUser ? currentUser.email : null);
-            if (!email) {
-                worksLoading.style.display = 'none';
-                worksEmpty.style.display = 'block';
-                return;
-            }
-
-            const { data, error } = await supabaseClient
-                .from('user_works')
-                .select('*')
-                .eq('user_email', email)
-                .order('created_at', { ascending: false });
-
-            worksLoading.style.display = 'none';
-
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                worksEmpty.style.display = 'block';
-                return;
-            }
-
-            worksGrid.style.display = 'grid';
-            worksGrid.innerHTML = data.map((work, i) => `
-                <div class="work-card anim" style="animation-delay:${i * 0.05}s">
-                    <div class="work-card-thumb">
-                        ${work.thumbnail_url
-                            ? `<img src="${work.thumbnail_url}" alt="${work.title}" loading="lazy">`
-                            : `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
-                        }
-                    </div>
-                    <div class="work-card-body">
-                        <div class="work-card-title" title="${work.title || '未命名'}">${work.title || '未命名'}</div>
-                        <div class="work-card-date">${formatDate(work.created_at)}</div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (e) {
-            console.warn('加载作品失败:', e);
-            worksLoading.style.display = 'none';
+        if (!works || works.length === 0) {
             worksEmpty.style.display = 'block';
+            return;
         }
+
+        worksGrid.style.display = 'grid';
+        worksGrid.innerHTML = works.map((work, i) => `
+            <div class="work-card anim" style="animation-delay:${i * 0.05}s">
+                <div class="work-card-thumb">
+                    ${work.thumbnail_url
+                        ? `<img src="${work.thumbnail_url}" alt="${work.title}" loading="lazy">`
+                        : `<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`
+                    }
+                </div>
+                <div class="work-card-body">
+                    <div class="work-card-title" title="${work.title || '未命名'}">${work.title || '未命名'}</div>
+                    <div class="work-card-date">${formatDate(work.created_at)}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
     // ===== 加载收藏 =====
-    async function loadFavorites() {
-        favLoading.style.display = 'flex';
+    function loadFavoritesList() {
+        favLoading.style.display = 'none';
         favGrid.style.display = 'none';
         favEmpty.style.display = 'none';
         favPrivate.style.display = 'none';
 
-        try {
-            if (typeof supabaseClient === 'undefined') {
-                favLoading.style.display = 'none';
-                favEmpty.style.display = 'block';
-                return;
-            }
-
-            const email = profileData ? profileData.email : (currentUser ? currentUser.email : null);
-            if (!email) {
-                favLoading.style.display = 'none';
-                favEmpty.style.display = 'block';
-                return;
-            }
-
-            // 如果不是自己的主页，且对方收藏为私密
-            if (!isOwnProfile && profileData && !profileData.favorites_public) {
-                favLoading.style.display = 'none';
-                favPrivate.style.display = 'block';
-                return;
-            }
-
-            const { data, error } = await supabaseClient
-                .from('user_favorites')
-                .select('*')
-                .eq('user_email', email)
-                .order('created_at', { ascending: false });
-
-            favLoading.style.display = 'none';
-
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                favEmpty.style.display = 'block';
-                return;
-            }
-
-            favGrid.style.display = 'grid';
-            favGrid.innerHTML = data.map((fav, i) => `
-                <div class="fav-card anim" style="animation-delay:${i * 0.05}s">
-                    <div class="fav-card-thumb">
-                        ${fav.thumbnail_url
-                            ? `<img src="${fav.thumbnail_url}" alt="${fav.title}" loading="lazy">`
-                            : `<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
-                        }
-                    </div>
-                    <div class="fav-card-body">
-                        <div class="fav-card-title" title="${fav.title || '未命名'}">${fav.title || '未命名'}</div>
-                        <div class="fav-card-author">${fav.author_name || '未知作者'}</div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (e) {
-            console.warn('加载收藏失败:', e);
-            favLoading.style.display = 'none';
-            favEmpty.style.display = 'block';
+        // 如果不是自己的主页，且对方收藏为私密
+        if (!isOwnProfile && profileData && !profileData.favorites_public) {
+            favPrivate.style.display = 'block';
+            return;
         }
+
+        const favorites = loadFavorites(viewEmail);
+
+        if (!favorites || favorites.length === 0) {
+            favEmpty.style.display = 'block';
+            return;
+        }
+
+        favGrid.style.display = 'grid';
+        favGrid.innerHTML = favorites.map((fav, i) => `
+            <div class="fav-card anim" style="animation-delay:${i * 0.05}s">
+                <div class="fav-card-thumb">
+                    ${fav.thumbnail_url
+                        ? `<img src="${fav.thumbnail_url}" alt="${fav.title}" loading="lazy">`
+                        : `<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`
+                    }
+                </div>
+                <div class="fav-card-body">
+                    <div class="fav-card-title" title="${fav.title || '未命名'}">${fav.title || '未命名'}</div>
+                    <div class="fav-card-author">${fav.author_name || '未知作者'}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
     // ===== 启动 =====
