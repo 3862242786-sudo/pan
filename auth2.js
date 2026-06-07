@@ -122,27 +122,23 @@ async function handleRegister(e) {
         showMessage('registerMessage', '登录成功！正在跳转...');
         saveLoginState(email);
 
-        // 自动创建用户主页数据（如果不存在）
+        // 初始化用户主页数据（localStorage）
         try {
-            const { data: existingProfile } = await supabaseClient
-                .from('profiles')
-                .select('id')
-                .eq('id', loginData.user.id)
-                .single();
-            if (!existingProfile) {
-                await supabaseClient.from('profiles').insert({
-                    id: loginData.user.id,
+            var profileKey = 'qn_profile_' + email;
+            if (!localStorage.getItem(profileKey)) {
+                localStorage.setItem(profileKey, JSON.stringify({
                     email: email,
                     username: email.split('@')[0],
                     bio: '',
                     avatar_url: '',
-                    bg_url: '',
+                    banner_url: '',
                     verified: false,
                     role: email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false
-                });
+                    favorites_public: false,
+                    created_at: new Date().toISOString()
+                }));
             }
-        } catch (pe) { console.warn('Profile creation:', pe); }
+        } catch (pe) { console.warn('Profile init:', pe); }
 
         if (email === ADMIN_EMAIL) {
             setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
@@ -198,27 +194,23 @@ async function handleLogin(e) {
         showMessage('loginMessage', '登录成功！正在跳转...');
         saveLoginState(email);
 
-        // 确保用户主页数据存在
+        // 初始化用户主页数据（localStorage）
         try {
-            const { data: existingProfile } = await supabaseClient
-                .from('profiles')
-                .select('id')
-                .eq('id', data.user.id)
-                .single();
-            if (!existingProfile) {
-                await supabaseClient.from('profiles').insert({
-                    id: data.user.id,
+            var profileKey = 'qn_profile_' + email;
+            if (!localStorage.getItem(profileKey)) {
+                localStorage.setItem(profileKey, JSON.stringify({
                     email: email,
                     username: email.split('@')[0],
                     bio: '',
                     avatar_url: '',
-                    bg_url: '',
+                    banner_url: '',
                     verified: false,
                     role: email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false
-                });
+                    favorites_public: false,
+                    created_at: new Date().toISOString()
+                }));
             }
-        } catch (pe) { console.warn('Profile check:', pe); }
+        } catch (pe) { console.warn('Profile init:', pe); }
 
         // 管理员跳转到管理后台，普通用户跳转到首页
         if (email === ADMIN_EMAIL) {
