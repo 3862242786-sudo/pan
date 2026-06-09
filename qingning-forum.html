@@ -481,9 +481,12 @@
                 <a href="qingning-forum.html" class="active">社区</a>
                 <a href="index.html" style="color:#22c55e;font-weight:600">官网</a>
             </div>
-            <div class="nav-actions">
-                <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
-                <a href="qingning-forum-login.html?register=1" class="btn btn-primary">注册</a>
+            <div class="nav-actions" id="forumNavActions">
+                <a href="auth.html" class="btn btn-secondary" id="forumLoginBtn">登录</a>
+                <a href="profile.html" class="btn btn-primary" id="forumProfileBtn" style="display:none">
+                    <span id="forumNavAvatar" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:11px;font-weight:700;margin-right:4px;overflow:hidden"></span>
+                    <span id="forumNavUsername">我的</span>
+                </a>
             </div>
         </div>
     </nav>
@@ -679,7 +682,7 @@
                 <!-- 用户信息（未登录） -->
                 <div class="sidebar-card login-prompt">
                     <div class="login-prompt-text">登录青柠账号，参与讨论、收藏帖子、关注用户</div>
-                    <a href="qingning-forum-login.html" class="login-btn">立即登录</a>
+                    <a href="auth.html" class="login-btn">立即登录</a>
                 </div>
 
                 <!-- 热门话题 -->
@@ -756,6 +759,66 @@
                 this.classList.add('active');
             });
         });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
+    <script>
+    // 论坛登录状态同步
+    (async function() {
+        function updateForumNav() {
+            var email = localStorage.getItem('qn_user_email');
+            var loggedIn = localStorage.getItem('qn_logged_in');
+            var loginBtn = document.getElementById('forumLoginBtn');
+            var profileBtn = document.getElementById('forumProfileBtn');
+            var avatar = document.getElementById('forumNavAvatar');
+            var username = document.getElementById('forumNavUsername');
+
+            if (loggedIn && email) {
+                loginBtn.style.display = 'none';
+                profileBtn.style.display = 'inline-flex';
+                // 尝试加载用户名
+                try {
+                    var profile = JSON.parse(localStorage.getItem('qn_profile_' + email));
+                    var name = profile ? profile.username : email.split('@')[0];
+                    username.textContent = name;
+                    if (profile && profile.avatar_url) {
+                        avatar.innerHTML = '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+                    } else {
+                        avatar.textContent = name.charAt(0).toUpperCase();
+                    }
+                } catch(e) {
+                    username.textContent = email.split('@')[0];
+                    avatar.textContent = email.charAt(0).toUpperCase();
+                }
+            } else {
+                loginBtn.style.display = 'inline-flex';
+                profileBtn.style.display = 'none';
+            }
+        }
+
+        // 如果 Supabase SDK 已加载，先验证 Session
+        if (typeof supabaseClient !== 'undefined') {
+            try {
+                var result = await supabaseClient.auth.getSession();
+                if (result.data.session && result.data.session.user) {
+                    localStorage.setItem('qn_logged_in', 'true');
+                    localStorage.setItem('qn_user_email', result.data.session.user.email);
+                } else {
+                    localStorage.removeItem('qn_logged_in');
+                    localStorage.removeItem('qn_user_email');
+                }
+            } catch(e) {}
+        }
+
+        updateForumNav();
+
+        // 监听 localStorage 变化（登录/退出时同步）
+        window.addEventListener('storage', function(e) {
+            if (e.key && (e.key.indexOf('qn_') === 0)) {
+                updateForumNav();
+            }
+        });
+    })();
     </script>
 </body>
 </html>
