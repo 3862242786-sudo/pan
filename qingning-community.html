@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠社区</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2322c55e' stroke-width='2'%3E%3Cpath d='M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z'/%3E%3C/svg%3E">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+            background: #0f172a; color: #e2e8f0; line-height: 1.6;
+            min-height: 100vh;
+        }
+        a { color: inherit; text-decoration: none; }
+
+        /* ===== 导航栏 ===== */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid #1e293b;
+            padding: 0 24px; height: 60px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 18px; font-weight: 700; color: #22c55e;
+            text-decoration: none; cursor: pointer;
+        }
+        .nav-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a {
+            color: #94a3b8; font-size: 15px; transition: color 0.3s;
+            cursor: pointer; white-space: nowrap;
+        }
+        .nav-links a:hover, .nav-links a.active { color: #22c55e; }
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-avatar {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 14px;
+            cursor: pointer; transition: box-shadow 0.3s;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .nav-avatar:hover { box-shadow: 0 0 0 3px rgba(34,197,94,0.3); }
+        .nav-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .nav-post-btn {
+            background: #22c55e; color: #fff; border: none; border-radius: 20px;
+            padding: 8px 20px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: background 0.3s; white-space: nowrap;
+        }
+        .nav-post-btn:hover { background: #16a34a; }
+        .nav-login-btn {
+            background: transparent; color: #22c55e; border: 1px solid #22c55e;
+            border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s; white-space: nowrap;
+        }
+        .nav-login-btn:hover { background: #22c55e; color: #fff; }
+        .nav-notif-badge {
+            position: relative; cursor: pointer;
+        }
+        .nav-notif-badge .badge-count {
+            position: absolute; top: -6px; right: -6px;
+            background: #ef4444; color: #fff; font-size: 10px;
+            width: 16px; height: 16px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700;
+        }
+
+        /* ===== 主布局 ===== */
+        .main-container {
+            max-width: 1080px; margin: 0 auto;
+            padding: 76px 20px 40px;
+            display: flex; gap: 24px;
+        }
+        .feed-column { flex: 1; min-width: 0; max-width: 680px; }
+        .sidebar-column { width: 300px; flex-shrink: 0; }
+
+        /* ===== 发帖框 ===== */
+        .compose-box {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 20px; margin-bottom: 20px;
+        }
+        .compose-box.hidden { display: none; }
+        .compose-top {
+            display: flex; gap: 12px; align-items: flex-start;
+        }
+        .compose-avatar {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 16px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .compose-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .compose-input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #e2e8f0; font-size: 15px; resize: none;
+            min-height: 60px; line-height: 1.6; font-family: inherit;
+        }
+        .compose-input::placeholder { color: #64748b; }
+        .compose-images-preview {
+            display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+            padding-left: 56px;
+        }
+        .compose-images-preview .img-item {
+            position: relative; width: 100px; height: 100px;
+            border-radius: 10px; overflow: hidden;
+        }
+        .compose-images-preview .img-item img {
+            width: 100%; height: 100%; object-fit: cover;
+        }
+        .compose-images-preview .img-item .img-remove {
+            position: absolute; top: 4px; right: 4px;
+            background: rgba(0,0,0,0.6); color: #fff; border: none;
+            width: 22px; height: 22px; border-radius: 50%;
+            font-size: 14px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .compose-bottom {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-top: 16px; padding-left: 56px;
+        }
+        .compose-tools { display: flex; gap: 8px; }
+        .compose-tool-btn {
+            background: transparent; border: none; color: #64748b;
+            cursor: pointer; padding: 8px; border-radius: 8px;
+            transition: all 0.3s; display: flex; align-items: center;
+        }
+        .compose-tool-btn:hover { color: #22c55e; background: rgba(34,197,94,0.1); }
+        .compose-publish-btn {
+            background: #22c55e; color: #fff; border: none;
+            border-radius: 20px; padding: 8px 24px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: background 0.3s;
+        }
+        .compose-publish-btn:hover { background: #16a34a; }
+        .compose-publish-btn:disabled {
+            background: #334155; color: #64748b; cursor: not-allowed;
+        }
+
+        /* ===== 标签页 ===== */
+        .tabs-bar {
+            display: flex; gap: 0; border-bottom: 1px solid #1e293b;
+            margin-bottom: 20px;
+        }
+        .tab-item {
+            padding: 12px 24px; font-size: 15px; font-weight: 500;
+            color: #64748b; cursor: pointer; transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-item:hover { color: #94a3b8; }
+        .tab-item.active { color: #22c55e; border-bottom-color: #22c55e; }
+
+        /* ===== 帖子卡片 ===== */
+        .post-card {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 20px; margin-bottom: 16px;
+            transition: border-color 0.3s;
+        }
+        .post-card:hover { border-color: #475569; }
+        .post-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .post-header-left {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .post-avatar {
+            width: 42px; height: 42px; border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 16px;
+            overflow: hidden; flex-shrink: 0; cursor: pointer;
+        }
+        .post-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .post-user-info { display: flex; flex-direction: column; }
+        .post-username {
+            font-size: 15px; font-weight: 600; color: #e2e8f0;
+            cursor: pointer;
+        }
+        .post-username:hover { color: #22c55e; }
+        .post-time { font-size: 12px; color: #64748b; }
+        .follow-btn {
+            background: transparent; border: 1px solid #22c55e;
+            color: #22c55e; border-radius: 20px; padding: 4px 16px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            transition: all 0.3s; white-space: nowrap;
+        }
+        .follow-btn:hover { background: #22c55e; color: #fff; }
+        .follow-btn.following {
+            border-color: #475569; color: #94a3b8;
+        }
+        .follow-btn.following:hover { border-color: #ef4444; color: #ef4444; background: transparent; }
+        .post-content {
+            font-size: 15px; line-height: 1.7; color: #cbd5e1;
+            margin-bottom: 12px; word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .post-images {
+            display: grid; gap: 6px; margin-bottom: 12px;
+            border-radius: 12px; overflow: hidden;
+        }
+        .post-images.grid-1 { grid-template-columns: 1fr; max-width: 400px; }
+        .post-images.grid-2 { grid-template-columns: 1fr 1fr; max-width: 500px; }
+        .post-images.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+        .post-images img {
+            width: 100%; height: 200px; object-fit: cover;
+            cursor: pointer; transition: opacity 0.3s;
+        }
+        .post-images img:hover { opacity: 0.85; }
+        .post-actions {
+            display: flex; gap: 24px; padding-top: 12px;
+            border-top: 1px solid #1e293b;
+        }
+        .post-action-btn {
+            background: transparent; border: none; color: #64748b;
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            font-size: 14px; transition: color 0.3s; padding: 4px 0;
+        }
+        .post-action-btn:hover { color: #94a3b8; }
+        .post-action-btn.liked { color: #22c55e; }
+        .post-action-btn svg { width: 18px; height: 18px; }
+
+        /* ===== 评论区 ===== */
+        .comments-section {
+            display: none; margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid #1e293b;
+        }
+        .comments-section.open { display: block; }
+        .comment-preview {
+            margin-bottom: 8px; font-size: 13px; color: #64748b;
+            cursor: pointer;
+        }
+        .comment-preview:hover { color: #94a3b8; }
+        .comment-item {
+            display: flex; gap: 10px; padding: 10px 0;
+            border-bottom: 1px solid rgba(30,41,59,0.5);
+        }
+        .comment-item:last-child { border-bottom: none; }
+        .comment-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 12px;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .comment-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .comment-body { flex: 1; min-width: 0; }
+        .comment-meta {
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 2px;
+        }
+        .comment-author { font-size: 13px; font-weight: 600; color: #e2e8f0; cursor: pointer; }
+        .comment-author:hover { color: #22c55e; }
+        .comment-time { font-size: 11px; color: #64748b; }
+        .comment-text { font-size: 14px; color: #cbd5e1; word-break: break-word; }
+        .comment-like-btn {
+            background: transparent; border: none; color: #64748b;
+            cursor: pointer; font-size: 12px; display: flex; align-items: center;
+            gap: 4px; margin-top: 4px; transition: color 0.3s;
+        }
+        .comment-like-btn:hover { color: #94a3b8; }
+        .comment-like-btn.liked { color: #22c55e; }
+        .comment-input-row {
+            display: flex; gap: 10px; align-items: center; margin-top: 12px;
+        }
+        .comment-input {
+            flex: 1; background: #0f172a; border: 1px solid #334155;
+            border-radius: 20px; padding: 10px 16px; color: #e2e8f0;
+            font-size: 14px; outline: none; font-family: inherit;
+            transition: border-color 0.3s;
+        }
+        .comment-input::placeholder { color: #64748b; }
+        .comment-input:focus { border-color: #22c55e; }
+        .comment-send-btn {
+            background: #22c55e; color: #fff; border: none;
+            border-radius: 50%; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: background 0.3s; flex-shrink: 0;
+        }
+        .comment-send-btn:hover { background: #16a34a; }
+        .comment-send-btn svg { width: 16px; height: 16px; }
+
+        /* ===== 发现页 ===== */
+        .discover-section { display: none; }
+        .discover-section.active { display: block; }
+        .discover-title {
+            font-size: 18px; font-weight: 700; color: #e2e8f0;
+            margin-bottom: 16px; padding-bottom: 8px;
+            border-bottom: 1px solid #1e293b;
+        }
+        .recommend-users {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 16px; margin-bottom: 20px;
+        }
+        .recommend-user-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; border-bottom: 1px solid rgba(30,41,59,0.5);
+        }
+        .recommend-user-item:last-child { border-bottom: none; }
+        .recommend-user-left {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .recommend-user-avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 16px;
+            overflow: hidden; flex-shrink: 0; cursor: pointer;
+        }
+        .recommend-user-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .recommend-user-name { font-size: 14px; font-weight: 600; color: #e2e8f0; cursor: pointer; }
+        .recommend-user-name:hover { color: #22c55e; }
+        .recommend-user-email { font-size: 12px; color: #64748b; }
+
+        /* ===== 通知面板 ===== */
+        .notif-panel {
+            display: none; position: fixed; top: 60px; right: 24px;
+            width: 360px; max-height: 480px; overflow-y: auto;
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 16px; z-index: 200;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        }
+        .notif-panel.open { display: block; }
+        .notif-panel-title {
+            font-size: 16px; font-weight: 700; color: #e2e8f0;
+            margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .notif-item {
+            display: flex; gap: 10px; padding: 10px;
+            border-radius: 10px; transition: background 0.3s;
+            cursor: pointer;
+        }
+        .notif-item:hover { background: rgba(34,197,94,0.05); }
+        .notif-item.unread { background: rgba(34,197,94,0.08); }
+        .notif-icon {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 16px;
+        }
+        .notif-icon.like { background: rgba(239,68,68,0.15); }
+        .notif-icon.comment { background: rgba(59,130,246,0.15); }
+        .notif-icon.follow { background: rgba(34,197,94,0.15); }
+        .notif-body { flex: 1; min-width: 0; }
+        .notif-text { font-size: 13px; color: #cbd5e1; line-height: 1.5; }
+        .notif-text strong { color: #e2e8f0; font-weight: 600; }
+        .notif-time { font-size: 11px; color: #64748b; margin-top: 2px; }
+        .notif-empty {
+            text-align: center; color: #64748b; padding: 40px 0;
+            font-size: 14px;
+        }
+
+        /* ===== 右侧个人信息卡 ===== */
+        .sidebar-card {
+            background: #1e293b; border: 1px solid #334155;
+            border-radius: 16px; padding: 24px; position: sticky;
+            top: 84px;
+        }
+        .sidebar-avatar {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 28px;
+            margin: 0 auto 12px; overflow: hidden;
+        }
+        .sidebar-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .sidebar-name {
+            text-align: center; font-size: 18px; font-weight: 700;
+            color: #e2e8f0; margin-bottom: 4px;
+        }
+        .sidebar-email {
+            text-align: center; font-size: 13px; color: #64748b;
+            margin-bottom: 8px; word-break: break-all;
+        }
+        .sidebar-bio {
+            text-align: center; font-size: 14px; color: #94a3b8;
+            margin-bottom: 16px; line-height: 1.5;
+        }
+        .sidebar-stats {
+            display: flex; justify-content: center; gap: 24px;
+            margin-bottom: 16px; padding: 12px 0;
+            border-top: 1px solid #334155; border-bottom: 1px solid #334155;
+        }
+        .sidebar-stat {
+            text-align: center;
+        }
+        .sidebar-stat-num { font-size: 18px; font-weight: 700; color: #e2e8f0; }
+        .sidebar-stat-label { font-size: 12px; color: #64748b; }
+        .sidebar-edit-btn {
+            display: block; width: 100%; padding: 10px;
+            background: transparent; border: 1px solid #334155;
+            color: #e2e8f0; border-radius: 10px; font-size: 14px;
+            font-weight: 600; cursor: pointer; transition: all 0.3s;
+            text-align: center;
+        }
+        .sidebar-edit-btn:hover { border-color: #22c55e; color: #22c55e; }
+
+        /* ===== 未登录提示 ===== */
+        .login-prompt {
+            text-align: center; padding: 80px 20px;
+        }
+        .login-prompt-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(34,197,94,0.1); margin: 0 auto 20px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-prompt-icon svg { width: 40px; height: 40px; color: #22c55e; }
+        .login-prompt h2 {
+            font-size: 22px; font-weight: 700; color: #e2e8f0;
+            margin-bottom: 8px;
+        }
+        .login-prompt p {
+            font-size: 15px; color: #64748b; margin-bottom: 24px;
+        }
+        .login-prompt-btn {
+            display: inline-block; background: #22c55e; color: #fff;
+            border: none; border-radius: 24px; padding: 12px 32px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-prompt-btn:hover { background: #16a34a; }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed; top: 76px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .toast {
+            background: #1e293b; border: 1px solid #334155;
+            color: #e2e8f0; padding: 12px 20px; border-radius: 10px;
+            font-size: 14px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+            animation: toastIn 0.3s ease;
+            max-width: 320px;
+        }
+        .toast.success { border-left: 3px solid #22c55e; }
+        .toast.error { border-left: 3px solid #ef4444; }
+        .toast.info { border-left: 3px solid #3b82f6; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* ===== 图片预览遮罩 ===== */
+        .image-overlay {
+            display: none; position: fixed; inset: 0; z-index: 500;
+            background: rgba(0,0,0,0.85); align-items: center;
+            justify-content: center; cursor: pointer;
+        }
+        .image-overlay.open { display: flex; }
+        .image-overlay img {
+            max-width: 90vw; max-height: 90vh; object-fit: contain;
+            border-radius: 8px;
+        }
+
+        /* ===== 下拉刷新 ===== */
+        .pull-refresh-indicator {
+            text-align: center; padding: 12px; color: #64748b;
+            font-size: 13px; display: none;
+        }
+        .pull-refresh-indicator.visible { display: block; }
+
+        /* ===== 空状态 ===== */
+        .empty-state {
+            text-align: center; padding: 60px 20px; color: #64748b;
+        }
+        .empty-state svg { width: 48px; height: 48px; margin-bottom: 12px; opacity: 0.5; }
+        .empty-state p { font-size: 15px; }
+
+        /* ===== 底部移动导航 ===== */
+        .mobile-nav {
+            display: none; position: fixed; bottom: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid #1e293b;
+            height: 60px; z-index: 100;
+        }
+        .mobile-nav-inner {
+            display: flex; align-items: center; justify-content: space-around;
+            height: 100%; max-width: 500px; margin: 0 auto;
+        }
+        .mobile-nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            gap: 2px; color: #64748b; font-size: 11px; cursor: pointer;
+            transition: color 0.3s; padding: 4px 12px;
+        }
+        .mobile-nav-item:hover, .mobile-nav-item.active { color: #22c55e; }
+        .mobile-nav-item svg { width: 22px; height: 22px; }
+        .mobile-nav-post {
+            width: 44px; height: 44px; border-radius: 50%;
+            background: #22c55e; display: flex; align-items: center;
+            justify-content: center; color: #fff; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(34,197,94,0.3);
+            margin-top: -10px;
+        }
+        .mobile-nav-post svg { width: 22px; height: 22px; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 900px) {
+            .sidebar-column { display: none; }
+            .feed-column { max-width: 100%; }
+            .main-container { max-width: 680px; }
+        }
+        @media (max-width: 640px) {
+            .nav-links { display: none; }
+            .nav { padding: 0 16px; }
+            .main-container { padding: 72px 12px 120px; }
+            .compose-box { padding: 16px; }
+            .compose-bottom { padding-left: 0; }
+            .compose-images-preview { padding-left: 0; }
+            .post-card { padding: 16px; border-radius: 12px; }
+            .mobile-nav { display: block; }
+            .notif-panel { right: 8px; left: 8px; width: auto; }
+            .nav-post-btn { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ===== 导航栏 ===== -->
+    <nav class="nav">
+        <a class="nav-logo" href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+            </svg>
+            青柠社区
+        </a>
+        <div class="nav-links">
+            <a class="active" id="navHome" onclick="switchPage('home')">首页</a>
+            <a id="navDiscover" onclick="switchPage('discover')">发现</a>
+            <a id="navMessages" onclick="toggleNotifPanel()">
+                <span class="nav-notif-badge">
+                    消息
+                    <span class="badge-count" id="navNotifCount" style="display:none;">0</span>
+                </span>
+            </a>
+        </div>
+        <div class="nav-right">
+            <button class="nav-post-btn" id="navPostBtn" onclick="focusCompose()">发帖</button>
+            <a class="nav-avatar" id="navAvatar" href="profile.html" style="display:none;"></a>
+            <a class="nav-login-btn" id="navLoginBtn" href="auth.html">前往登录</a>
+        </div>
+    </nav>
+
+    <!-- ===== 通知面板 ===== -->
+    <div class="notif-panel" id="notifPanel">
+        <div class="notif-panel-title">通知</div>
+        <div id="notifList">
+            <div class="notif-empty">暂无通知</div>
+        </div>
+    </div>
+
+    <!-- ===== 图片预览 ===== -->
+    <div class="image-overlay" id="imageOverlay" onclick="closeImageOverlay()">
+        <img id="overlayImage" src="" alt="预览">
+    </div>
+
+    <!-- ===== Toast 容器 ===== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ===== 主内容 ===== -->
+    <div class="main-container" id="mainContainer">
+        <!-- 左侧信息流 -->
+        <div class="feed-column" id="feedColumn">
+
+            <!-- 未登录提示 -->
+            <div class="login-prompt" id="loginPrompt">
+                <div class="login-prompt-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <h2>欢迎来到青柠社区</h2>
+                <p>登录后即可发帖、点赞、评论和关注其他用户</p>
+                <a class="login-prompt-btn" href="auth.html">前往登录</a>
+            </div>
+
+            <!-- 发帖框 -->
+            <div class="compose-box hidden" id="composeBox">
+                <div class="compose-top">
+                    <div class="compose-avatar" id="composeAvatar"></div>
+                    <textarea class="compose-input" id="composeInput" placeholder="分享你的想法..." rows="2"></textarea>
+                </div>
+                <div class="compose-images-preview" id="composeImagesPreview"></div>
+                <div class="compose-bottom">
+                    <div class="compose-tools">
+                        <button class="compose-tool-btn" onclick="triggerImageUpload()" title="上传图片">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                <circle cx="8.5" cy="8.5" r="1.5"/>
+                                <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </button>
+                        <input type="file" id="composeImageInput" accept="image/*" multiple style="display:none;" onchange="handleImageSelect(event)">
+                    </div>
+                    <button class="compose-publish-btn" id="composePublishBtn" onclick="publishPost()" disabled>发布</button>
+                </div>
+            </div>
+
+            <!-- 标签页 -->
+            <div class="tabs-bar" id="tabsBar" style="display:none;">
+                <div class="tab-item active" data-tab="home" onclick="switchPage('home')">最新</div>
+                <div class="tab-item" data-tab="discover" onclick="switchPage('discover')">发现</div>
+            </div>
+
+            <!-- 首页信息流 -->
+            <div id="homeFeed">
+                <div class="pull-refresh-indicator" id="pullRefreshIndicator">下拉刷新...</div>
+            </div>
+
+            <!-- 发现页 -->
+            <div class="discover-section" id="discoverSection">
+                <div class="discover-title">推荐用户</div>
+                <div class="recommend-users" id="recommendUsers"></div>
+                <div class="discover-title">热门帖子</div>
+                <div id="hotPosts"></div>
+            </div>
+        </div>
+
+        <!-- 右侧个人信息卡 -->
+        <div class="sidebar-column" id="sidebarColumn">
+            <div class="sidebar-card" id="sidebarCard" style="display:none;">
+                <div class="sidebar-avatar" id="sidebarAvatar"></div>
+                <div class="sidebar-name" id="sidebarName"></div>
+                <div class="sidebar-email" id="sidebarEmail"></div>
+                <div class="sidebar-bio" id="sidebarBio">这个人很懒，什么都没写~</div>
+                <div class="sidebar-stats">
+                    <div class="sidebar-stat">
+                        <div class="sidebar-stat-num" id="sidebarPostCount">0</div>
+                        <div class="sidebar-stat-label">帖子</div>
+                    </div>
+                    <div class="sidebar-stat">
+                        <div class="sidebar-stat-num" id="sidebarFollowingCount">0</div>
+                        <div class="sidebar-stat-label">关注</div>
+                    </div>
+                    <div class="sidebar-stat">
+                        <div class="sidebar-stat-num" id="sidebarFollowerCount">0</div>
+                        <div class="sidebar-stat-label">粉丝</div>
+                    </div>
+                </div>
+                <a class="sidebar-edit-btn" href="profile.html">编辑资料</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 底部移动导航 ===== -->
+    <div class="mobile-nav">
+        <div class="mobile-nav-inner">
+            <div class="mobile-nav-item active" id="mobNavHome" onclick="switchPage('home')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                首页
+            </div>
+            <div class="mobile-nav-item" id="mobNavDiscover" onclick="switchPage('discover')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+                </svg>
+                发现
+            </div>
+            <div class="mobile-nav-post" onclick="focusCompose()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+            </div>
+            <div class="mobile-nav-item" id="mobNavMessages" onclick="toggleNotifPanel()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+                消息
+            </div>
+            <div class="mobile-nav-item" id="mobNavProfile" onclick="window.location.href='profile.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                我的
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 脚本 ===== -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
+    <script src="community.js"></script>
+</body>
+</html>
