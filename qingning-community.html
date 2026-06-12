@@ -545,6 +545,9 @@
             <a class="nav-login-btn" id="navLoginBtn" href="auth.html">前往登录</a>
         </div>
     </nav>
+    <div style="padding:8px 16px; background:rgba(34,197,94,.15); border-bottom:1px solid rgba(34,197,94,.3); color:#86efac; font-size:13px; text-align:center;">
+        🛡️ 青柠网盘上传文件已接入青柠杀毒扫描，检测到病毒文件将自动禁止上传。
+    </div>
 
     <!-- ===== 通知面板 ===== -->
     <div class="notif-panel" id="notifPanel">
@@ -594,6 +597,11 @@
                                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
                                 <circle cx="8.5" cy="8.5" r="1.5"/>
                                 <polyline points="21 15 16 10 5 21"/>
+                            </svg>
+                        </button>
+                        <button class="compose-tool-btn" id="composeCommentToggle" onclick="toggleComposeComments()" title="允许评论" style="color:#22c55e;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                             </svg>
                         </button>
                         <input type="file" id="composeImageInput" accept="image/*" multiple style="display:none;" onchange="handleImageSelect(event)">

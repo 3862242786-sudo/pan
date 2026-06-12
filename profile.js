@@ -98,6 +98,10 @@
         try { return JSON.parse(localStorage.getItem(getWorksKey(email))) || []; }
         catch (e) { return []; }
     }
+    function saveWorks(email, works) {
+        try { localStorage.setItem(getWorksKey(email), JSON.stringify(works)); }
+        catch (e) { showToast('存储空间不足', 'error'); }
+    }
     function loadFavorites(email) {
         try { return JSON.parse(localStorage.getItem(getFavoritesKey(email))) || []; }
         catch (e) { return []; }
@@ -248,6 +252,8 @@
         if (isOwnProfile) {
             editBtn.style.display = 'inline-flex';
             privacyToggle.style.display = 'flex';
+            var addWorkArea = document.getElementById('addWorkArea');
+            if (addWorkArea) addWorkArea.style.display = 'block';
             // 显示账户信息（注册时间等）
             var accountInfo = document.getElementById('accountInfo');
             var regDate = document.getElementById('regDate');
@@ -470,7 +476,7 @@
         }
         worksGrid.style.display = 'grid';
         worksGrid.innerHTML = works.map(function (work, i) {
-            return '<div class="work-card anim" style="animation-delay:' + (i * 0.05) + 's">' +
+            return '<div class="work-card anim" style="animation-delay:' + (i * 0.05) + 's; cursor:pointer;" onclick="viewWork(\'' + work.id + '\')">' +
                 '<div class="work-card-thumb">' +
                 (work.thumbnail_url
                     ? '<img src="' + work.thumbnail_url + '" alt="' + work.title + '" loading="lazy">'
@@ -478,6 +484,7 @@
                 '</div>' +
                 '<div class="work-card-body">' +
                 '<div class="work-card-title" title="' + (work.title || '未命名') + '">' + (work.title || '未命名') + '</div>' +
+                (work.description ? '<div class="work-card-date" style="margin-top:4px;color:#94a3b8;font-size:12px;">' + work.description.substring(0, 50) + '</div>' : '') +
                 '<div class="work-card-date">' + formatDate(work.created_at) + '</div>' +
                 '</div></div>';
         }).join('');
@@ -513,6 +520,81 @@
                 '<div class="fav-card-author">' + (fav.author_name || '未知作者') + '</div>' +
                 '</div></div>';
         }).join('');
+    }
+
+    // ===== 发布作品 =====
+    window.showAddWorkModal = function () {
+        document.getElementById('addWorkModal').style.display = 'block';
+        document.getElementById('workTitle').value = '';
+        document.getElementById('workDesc').value = '';
+        document.getElementById('workImagesPreview').innerHTML = '';
+        window._workImages = [];
+    };
+
+    window.closeAddWorkModal = function () {
+        document.getElementById('addWorkModal').style.display = 'none';
+    };
+
+    window.handleWorkImages = function (input) {
+        var files = input.files;
+        if (!files.length) return;
+        var preview = document.getElementById('workImagesPreview');
+        var remaining = 9 - (window._workImages || []).length;
+        var toProcess = Math.min(files.length, remaining);
+
+        for (var i = 0; i < toProcess; i++) {
+            (function (file) {
+                var reader = new FileReader();
+                reader.onload = function () {
+                    var img = new Image();
+                    img.onload = function () {
+                        var canvas = document.createElement('canvas');
+                        var w = img.width, h = img.height;
+                        var max = 800;
+                        if (w > max || h > max) {
+                            if (w > h) { h = h * max / w; w = max; }
+                            else { w = w * max / h; h = max; }
+                        }
+                        canvas.width = w; canvas.height = h;
+                        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                        var base64 = canvas.toDataURL('image/jpeg', 0.8);
+                        if (!window._workImages) window._workImages = [];
+                        window._workImages.push(base64);
+                        var imgEl = document.createElement('img');
+                        imgEl.src = base64;
+                        preview.appendChild(imgEl);
+                    };
+                    img.src = reader.result;
+                };
+                reader.readAsDataURL(file);
+            })(files[i]);
+        }
+        input.value = '';
+    };
+
+    window.publishWork = function () {
+        var title = document.getElementById('workTitle').value.trim();
+        if (!title) { showToast('请输入作品标题', 'error'); return; }
+        var desc = document.getElementById('workDesc').value.trim();
+        var images = window._workImages || [];
+
+        var works = loadWorks(currentEmail);
+        works.unshift({
+            id: generateId(),
+            title: title,
+            description: desc,
+            thumbnail_url: images.length > 0 ? images[0] : '',
+            images: images,
+            created_at: new Date().toISOString()
+        });
+        saveWorks(currentEmail, works);
+        loadWorksList();
+        closeAddWorkModal();
+        showToast('作品已发布', 'success');
+    };
+
+    function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
 
     // ===== 启动 =====

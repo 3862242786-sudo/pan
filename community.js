@@ -16,6 +16,7 @@
     var currentPage = 'home';
     var composeImages = []; // Base64 图片数组
     var expandedComments = {}; // postId -> boolean
+    window._composeCommentsEnabled = true; // 发帖时是否允许评论
 
     // ===== DOM 引用 =====
     var $ = function (sel) { return document.querySelector(sel); };
@@ -165,8 +166,14 @@
             }
             var colorIndex = Math.abs(hash) % colors.length;
             container.style.background = colors[colorIndex];
-            var letter = (profile && profile.username) ? getFirstLetter(profile.username) : '?';
-            container.textContent = letter;
+
+            // 系统管理员显示 SVG 图标
+            if (email === ADMIN_EMAIL) {
+                container.innerHTML = '<svg width="' + Math.round(size * 0.45) + '" height="' + Math.round(size * 0.45) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+            } else {
+                var letter = (profile && profile.username) ? getFirstLetter(profile.username) : '?';
+                container.textContent = letter;
+            }
         }
     }
 
@@ -320,7 +327,8 @@
             images: composeImages.slice(0, 9),
             created_at: new Date().toISOString(),
             likes: [],
-            comments: []
+            comments: [],
+            comments_enabled: window._composeCommentsEnabled !== false
         };
 
         var posts = loadPosts();
@@ -330,6 +338,9 @@
         // 清空输入
         input.value = '';
         composeImages = [];
+        window._composeCommentsEnabled = true;
+        var commentToggle = document.getElementById('composeCommentToggle');
+        if (commentToggle) { commentToggle.style.color = '#22c55e'; commentToggle.title = '允许评论'; }
         $('#composeImagesPreview').innerHTML = '';
         $('#composePublishBtn').disabled = true;
 
@@ -515,6 +526,7 @@
         // 操作栏
         var likeCount = post.likes ? post.likes.length : 0;
         var commentCount = post.comments ? post.comments.length : 0;
+        var commentsEnabled = post.comments_enabled !== false;
         var actionsHTML = '<div class="post-actions">' +
             '<button class="post-action-btn ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + post.id + '\', this)">' +
             '<svg viewBox="0 0 24 24" fill="' + (isLiked ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -524,6 +536,12 @@
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
             '<span>' + commentCount + '</span></button>' +
+            (isOwn ? '<button class="post-action-btn" title="' + (commentsEnabled ? '关闭评论' : '开启评论') + '" onclick="toggleCommentsEnabled(\'' + post.id + '\', this)">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+            (commentsEnabled ? '' : '<line x1="3" y1="3" x2="21" y2="21"/>') +
+            '</svg>' +
+            '<span>' + (commentsEnabled ? '评论开' : '评论关') + '</span></button>' : '') +
             '<button class="post-action-btn" onclick="sharePost(\'' + post.id + '\')">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>' +
@@ -577,7 +595,7 @@
         }
         commentsHTML += '</div>';
 
-        // 评论输入框
+        // 评论输入框（仅评论开启时显示）
         if (currentUser) {
             commentsHTML += '<div class="comment-input-row" id="commentInputRow-' + post.id + '" style="display:none;">' +
                 '<input class="comment-input" id="commentInput-' + post.id + '" placeholder="写评论..." ' +
@@ -586,6 +604,11 @@
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
                 '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
                 '</button></div>';
+        }
+
+        // 评论关闭提示
+        if (!commentsEnabled) {
+            commentsHTML += '<div style="text-align:center; padding:8px; color:#64748b; font-size:13px;">评论已关闭</div>';
         }
 
         commentsHTML += '</div>';
@@ -647,6 +670,14 @@
 
     // ===== 评论 =====
     window.toggleComments = function (postId) {
+        // 检查评论是否开启
+        var posts = loadPosts();
+        var post = posts.find(function (p) { return p.id === postId; });
+        if (post && post.comments_enabled === false) {
+            showToast('该帖子的评论已关闭', 'info');
+            return;
+        }
+
         var section = document.getElementById('comments-' + postId);
         var list = document.getElementById('commentsList-' + postId);
         var inputRow = document.getElementById('commentInputRow-' + postId);
@@ -684,14 +715,19 @@
             return;
         }
 
+        var posts = loadPosts();
+        var post = posts.find(function (p) { return p.id === postId; });
+        if (!post) return;
+
+        if (post.comments_enabled === false) {
+            showToast('该帖子的评论已关闭', 'info');
+            return;
+        }
+
         var input = document.getElementById('commentInput-' + postId);
         if (!input) return;
         var content = input.value.trim();
         if (!content) return;
-
-        var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
-        if (!post) return;
 
         if (!post.comments) post.comments = [];
         var comment = {
@@ -818,6 +854,42 @@
         } else {
             showToast('分享链接：' + url, 'info');
         }
+    };
+
+    // ===== 开关评论 =====
+    window.toggleCommentsEnabled = function (postId, btn) {
+        if (!currentUser) return;
+
+        var posts = loadPosts();
+        var post = posts.find(function (p) { return p.id === postId; });
+        if (!post) return;
+
+        post.comments_enabled = post.comments_enabled === false ? true : false;
+        savePosts(posts);
+
+        if (post.comments_enabled) {
+            showToast('已开启评论', 'success');
+        } else {
+            showToast('已关闭评论', 'info');
+        }
+
+        // 重新渲染该帖子
+        var card = document.getElementById('post-' + postId);
+        if (card) {
+            var newCard = createPostCard(post);
+            card.replaceWith(newCard);
+        }
+    };
+
+    // ===== 发帖框评论开关 =====
+    window.toggleComposeComments = function () {
+        window._composeCommentsEnabled = !window._composeCommentsEnabled;
+        var btn = document.getElementById('composeCommentToggle');
+        if (btn) {
+            btn.style.color = window._composeCommentsEnabled ? '#22c55e' : '#64748b';
+            btn.title = window._composeCommentsEnabled ? '允许评论' : '禁止评论';
+        }
+        showToast(window._composeCommentsEnabled ? '已开启评论' : '已关闭评论', 'info');
     };
 
     // ===== 查看用户主页 =====
