@@ -697,6 +697,35 @@
     </div>
 
     <!-- ===== 脚本 ===== -->
+    <!-- 手机端 APP 下载提示 -->
+    <div id="appDownloadBanner" style="display:none; position:fixed; bottom:0; left:0; right:0; z-index:200; background:#1e293b; border-top:1px solid #334155; padding:12px 16px;">
+        <div style="display:flex; align-items:center; gap:12px; max-width:600px; margin:0 auto;">
+            <div style="width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg,#22c55e,#16a34a); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div style="font-size:15px; font-weight:600; color:#e2e8f0;">青柠社区 APP</div>
+                <div style="font-size:12px; color:#94a3b8;">更流畅的体验，随时随地发帖互动</div>
+            </div>
+            <a href="qingning-community.apk" download style="padding:8px 16px; background:#22c55e; color:#fff; border-radius:20px; font-size:14px; font-weight:600; text-decoration:none; white-space:nowrap; flex-shrink:0;">立即下载</a>
+            <button onclick="document.getElementById('appDownloadBanner').style.display='none'; sessionStorage.setItem('qn_app_banner_closed','1');" style="background:none; border:none; color:#64748b; font-size:20px; cursor:pointer; padding:4px; flex-shrink:0;">&times;</button>
+        </div>
+    </div>
+    <script>
+    (function(){
+        // 检测是否为手机端
+        var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        var isSmallScreen = window.innerWidth < 768;
+        var banner = document.getElementById('appDownloadBanner');
+        if (banner && isMobile && isSmallScreen && !sessionStorage.getItem('qn_app_banner_closed')) {
+            banner.style.display = 'block';
+            // 给底部导航栏增加 padding 避免被遮挡
+            var bottomNav = document.querySelector('.bottom-nav');
+            if (bottomNav) bottomNav.style.paddingBottom = '76px';
+        }
+    })();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth2.js"></script>
     <script src="community.js"></script>
