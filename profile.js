@@ -248,9 +248,33 @@
         if (isOwnProfile) {
             editBtn.style.display = 'inline-flex';
             privacyToggle.style.display = 'flex';
+            // 显示账户信息（注册时间等）
+            var accountInfo = document.getElementById('accountInfo');
+            var regDate = document.getElementById('regDate');
+            var accountType = document.getElementById('accountType');
+            if (accountInfo) {
+                accountInfo.style.display = 'block';
+                if (regDate) {
+                    var created = profileData.created_at;
+                    if (created) {
+                        var d = new Date(created);
+                        regDate.textContent = d.getFullYear() + '-' +
+                            String(d.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(d.getDate()).padStart(2, '0');
+                    } else {
+                        regDate.textContent = '未知';
+                    }
+                }
+                if (accountType) {
+                    accountType.textContent = (profileData.role === 'admin') ? '站长' : '普通用户';
+                    accountType.style.color = (profileData.role === 'admin') ? '#f59e0b' : '#e2e8f0';
+                }
+            }
         } else {
             editBtn.style.display = 'none';
             privacyToggle.style.display = 'none';
+            var accountInfo = document.getElementById('accountInfo');
+            if (accountInfo) accountInfo.style.display = 'none';
         }
 
         loadWorksList();
