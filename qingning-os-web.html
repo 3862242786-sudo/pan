@@ -985,13 +985,16 @@
                 <circle cx="40" cy="68" r="2" fill="#22c55e" opacity="0.4"/>
             </svg>
             <div class="activation-title">青柠OS 网页体验系统</div>
-            <div class="activation-subtitle">输入激活码以启动系统</div>
+            <div class="activation-subtitle">输入您的激活码开始使用 QingningOS</div>
             <div class="activation-input-group">
                 <input type="text" class="activation-input" id="activationInput" placeholder="请输入激活码，例如 xt2024" autocomplete="off" spellcheck="false">
             </div>
             <div class="activation-perm-info" id="activationPermInfo"></div>
             <button class="activation-btn" id="activateBtn">激活</button>
-            <div class="activation-note">激活码格式为 xt + 4位以上数字，每个账户唯一</div>
+            <div class="activation-note">激活码格式：xt + 数字（如 xt2024）</div>
+            <div style="margin-top:16px;text-align:center;">
+                <a href="profile.html" style="color:#22c55e;text-decoration:none;font-size:0.85rem;">没有激活码？前往个人主页获取</a>
+            </div>
         </div>
     </div>
 
@@ -1028,6 +1031,7 @@
                     <span class="taskbar-icon" title="电池">&#128267;</span>
                     <span class="clock-time" id="taskbarClock">00:00:00</span>
                     <span class="taskbar-code activation-code-display">--</span>
+                    <span class="trial-mode-badge" id="trialModeBadge" style="display:none;background:rgba(234,179,8,0.2);color:#eab308;font-size:0.7rem;padding:1px 6px;border-radius:3px;margin-left:4px;">体验模式</span>
                 </div>
             </div>
 
@@ -1075,6 +1079,7 @@
                     <span style="font-size:10px;">&#128246;</span>
                     <span style="font-size:10px;">&#128267;</span>
                     <span class="activation-code-display" style="font-size:0.65rem;color:#22c55e;">--</span>
+                    <span class="trial-mode-badge" id="mobileTrialModeBadge" style="display:none;background:rgba(234,179,8,0.2);color:#eab308;font-size:0.55rem;padding:1px 4px;border-radius:2px;">体验</span>
                 </div>
             </div>
             <div id="mobileHomeScreen">

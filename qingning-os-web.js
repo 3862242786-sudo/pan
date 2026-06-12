@@ -135,11 +135,12 @@ function getPermissionLevel(code) {
 }
 
 function canModifySettings() {
-    return currentPermission && (currentPermission.level === 'system' || currentPermission.level === 'admin');
+    // 体验模式（system 级别 XT0000）不允许修改系统设置
+    return currentPermission && currentPermission.level === 'admin';
 }
 
 function canControlAntivirus() {
-    return currentPermission && (currentPermission.level === 'system' || currentPermission.level === 'admin');
+    return currentPermission && currentPermission.level === 'admin';
 }
 
 // ===== 激活码验证 =====
@@ -160,7 +161,7 @@ function getPermInfoClass(code) {
 function getPermInfoText(code) {
     const perm = getPermissionLevel(code);
     if (!perm) return '';
-    if (perm.level === 'system') return '系统级权限 - 仅管理用，普通用户无法直接使用';
+    if (perm.level === 'system') return '系统级权限 - 将以体验模式运行，部分功能受限';
     if (perm.level === 'admin') return '管理员权限 - 可修改系统设置';
     return '普通用户权限 - 基础功能使用';
 }
@@ -212,10 +213,6 @@ function activate(code) {
         return false;
     }
     const perm = getPermissionLevel(trimmed);
-    if (perm.level === 'system') {
-        showToast('XT0000 为系统级激活码，普通用户无法直接使用', 'error');
-        return false;
-    }
 
     // 检查是否绑定了其他账户
     const savedCode = localStorage.getItem('qn_os_activation_code');
@@ -229,7 +226,12 @@ function activate(code) {
     currentActivationCode = trimmed;
     currentPermission = perm;
     localStorage.setItem('qn_os_activation_code', trimmed);
-    showToast('激活成功！权限等级：' + perm.name, 'success');
+
+    if (perm.level === 'system') {
+        showToast('已进入体验模式，部分功能受限', 'info');
+    } else {
+        showToast('激活成功！权限等级：' + perm.name, 'success');
+    }
     showOOBEOrDesktop();
     return true;
 }
@@ -274,10 +276,13 @@ function verifyAuthAndActivate(newCode) {
 
 function showOOBEOrDesktop() {
     document.getElementById('activationScreen').style.display = 'none';
-    const oobeComplete = localStorage.getItem('qn_os_oobe_complete');
-    if (!oobeComplete) {
+    const oobeDone = localStorage.getItem('qn_os_oobe_done') || localStorage.getItem('qn_os_oobe_complete');
+    if (!oobeDone) {
         startOOBE();
     } else {
+        // 恢复保存的设置
+        currentUsername = localStorage.getItem('qn_os_username') || 'User';
+        currentLanguage = localStorage.getItem('qn_os_language') || 'zh-CN';
         loadUserData();
         showOSDesktop();
     }
@@ -396,6 +401,7 @@ function renderOOBEStep() {
                     </div>
                 `;
             } else {
+                const showPinInput = oobeData.security === 'pin';
                 content = `
                     <div class="oobe-title">安全设置</div>
                     <div class="oobe-desc">设置屏幕锁定方式</div>
@@ -422,9 +428,13 @@ function renderOOBEStep() {
                             </div>
                         </div>
                     </div>
+                    ${showPinInput ? `
+                    <div style="margin-top:16px;">
+                        <input type="password" class="oobe-input" id="oobePinInput" placeholder="输入 4 位数字密码" maxlength="4" pattern="[0-9]*" inputmode="numeric" value="${oobeData.password || ''}">
+                    </div>` : ''}
                     <div class="oobe-buttons">
                         <button class="oobe-btn secondary" onclick="prevOOBE()">上一步</button>
-                        <button class="oobe-btn primary" onclick="nextOOBE()">下一步</button>
+                        <button class="oobe-btn primary" onclick="saveOobeSecurity()">下一步</button>
                     </div>
                 `;
             }
@@ -469,6 +479,21 @@ function saveOobeUsername() {
     nextOOBE();
 }
 
+function saveOobeSecurity() {
+    if (oobeData.security === 'pin') {
+        const pinInput = document.getElementById('oobePinInput');
+        if (pinInput) {
+            const pin = pinInput.value.trim();
+            if (!pin || pin.length < 4) {
+                showToast('请输入 4 位数字密码', 'error');
+                return;
+            }
+            oobeData.password = pin;
+        }
+    }
+    nextOOBE();
+}
+
 function nextOOBE() {
     oobeStep++;
     if (oobeStep >= 6) {
@@ -487,11 +512,15 @@ function prevOOBE() {
 
 function finishOOBE() {
     localStorage.setItem('qn_os_oobe_complete', 'true');
+    localStorage.setItem('qn_os_oobe_done', 'true');
     localStorage.setItem('qn_os_username', oobeData.username || 'user');
-    localStorage.setItem('qn_os_password', '123456'); // 默认密码
+    localStorage.setItem('qn_os_password', oobeData.password || '123456'); // 默认密码
+    localStorage.setItem('qn_os_language', oobeData.language || oobeData.region === 'English' ? 'en-US' : 'zh-CN');
+    localStorage.setItem('qn_os_wifi', oobeData.wifi || 'QingningOS-WiFi');
     localStorage.setItem('qn_os_location', oobeData.location !== false ? 'true' : 'false');
     localStorage.setItem('qn_os_diagnostic', oobeData.diagnostic !== false ? 'true' : 'false');
-    if (oobeData.wifi) localStorage.setItem('qn_os_wifi', oobeData.wifi);
+    // 手机端安全设置
+    if (oobeData.security) localStorage.setItem('qn_os_security', oobeData.security);
     document.getElementById('oobeScreen').style.display = 'none';
     loadUserData();
     showOSDesktop();
@@ -499,6 +528,7 @@ function finishOOBE() {
 
 function loadUserData() {
     currentUsername = localStorage.getItem('qn_os_username') || 'user';
+    currentLanguage = localStorage.getItem('qn_os_language') || 'zh-CN';
     currentWallpaperId = localStorage.getItem('qn_os_wallpaper') || 'dark';
     const savedApps = localStorage.getItem('qn_os_installed_apps');
     if (savedApps) {
@@ -536,6 +566,14 @@ function showToast(message, type = 'info') {
 }
 
 // ===== 时钟 =====
+function updateTrialModeBadge() {
+    const isTrial = currentPermission && currentPermission.level === 'system';
+    const badge1 = document.getElementById('trialModeBadge');
+    const badge2 = document.getElementById('mobileTrialModeBadge');
+    if (badge1) badge1.style.display = isTrial ? 'inline' : 'none';
+    if (badge2) badge2.style.display = isTrial ? 'inline' : 'none';
+}
+
 function startClock() {
     function updateClock() {
         const now = new Date();
@@ -681,6 +719,10 @@ function uninstallMobileApp(appId) {
 
 // ===== 窗口管理 =====
 function openWindow(appId) {
+    // 体验模式下每次打开应用时提示
+    if (currentPermission && currentPermission.level === 'system') {
+        showToast('体验模式，数据不会保存', 'info');
+    }
     if (isMobileMode) {
         openMobileApp(appId);
         return;
@@ -1181,9 +1223,13 @@ function processTerminalCommand(cmd) {
             terminalPrint(new Date().toLocaleString('zh-CN'));
             break;
         case 'whoami':
-            terminalPrint('用户: ' + (currentPermission ? currentPermission.name : '未知'));
+            terminalPrint('用户: ' + (currentUsername || (currentPermission ? currentPermission.name : '未知')));
             terminalPrint('激活码: ' + (currentActivationCode || '未激活'));
             terminalPrint('权限: ' + (currentPermission ? currentPermission.level : '无'));
+            const savedPassword = localStorage.getItem('qn_os_password');
+            if (savedPassword) {
+                terminalPrint('密码: ' + savedPassword);
+            }
             terminalPrint('目录: ' + terminalCwd);
             break;
         case 'clear':
@@ -2161,6 +2207,8 @@ function showOSDesktop() {
 
     document.querySelectorAll('.activation-code-display').forEach(el => el.textContent = currentActivationCode);
     document.querySelectorAll('.username-display').forEach(el => el.textContent = currentUsername || (currentPermission ? currentPermission.name : '用户'));
+
+    updateTrialModeBadge();
 
     renderDesktop();
     renderMobile();
