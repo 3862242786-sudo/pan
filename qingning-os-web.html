@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>青柠OS - 网页体验系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            background-color: #0a0e1a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* ===== 激活码界面 ===== */
+        #activationScreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0d1117 30%, #0f1923 60%, #0a1628 100%);
+            position: relative;
+        }
+
+        #activationScreen::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 50%, rgba(34, 197, 94, 0.06) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(34, 197, 94, 0.04) 0%, transparent 50%);
+            animation: activateGlow 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes activateGlow {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-5%, 5%); }
+        }
+
+        .activation-card {
+            position: relative;
+            z-index: 1;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 20px;
+            padding: 48px 40px;
+            max-width: 420px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .activation-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+        }
+
+        .activation-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 8px;
+        }
+
+        .activation-subtitle {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 28px;
+        }
+
+        .activation-input-group {
+            margin-bottom: 20px;
+        }
+
+        .activation-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .activation-input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        .activation-input::placeholder {
+            color: #475569;
+        }
+
+        .activation-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+        }
+
+        .activation-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4);
+        }
+
+        .activation-btn:active {
+            transform: translateY(0);
+        }
+
+        .activation-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: #22c55e;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: opacity 0.3s;
+        }
+
+        .activation-link:hover {
+            opacity: 0.8;
+            text-decoration: underline;
+        }
+
+        .activation-note {
+            margin-top: 20px;
+            color: #475569;
+            font-size: 0.8rem;
+        }
+
+        /* ===== OS 桌面 ===== */
+        #osDesktop {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* ===== 桌面壁纸 ===== */
+        #desktopWallpaper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0d1117 30%, #0f1923 60%, #0a1628 100%);
+            z-index: 0;
+        }
+
+        /* 壁纸装饰 */
+        #desktopWallpaper::after {
+            content: '';
+            position: absolute;
+            top: 20%;
+            right: 15%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        /* ===== 桌面模式 UI ===== */
+        #desktopUI {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== 任务栏 ===== */
+        .taskbar {
+            height: 40px;
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 500;
+            flex-shrink: 0;
+        }
+
+        .taskbar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .taskbar-logo {
+            width: 24px;
+            height: 24px;
+        }
+
+        .start-menu-btn {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 4px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .start-menu-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .taskbar-center {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .clock-time {
+            font-size: 0.8rem;
+            color: #e2e8f0;
+            font-weight: 500;
+        }
+
+        .taskbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .taskbar-icon {
+            font-size: 0.85rem;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: opacity 0.2s;
+        }
+
+        .taskbar-icon:hover {
+            opacity: 1;
+        }
+
+        .taskbar-code {
+            font-size: 0.7rem;
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .taskbar-settings-btn {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .taskbar-settings-btn:hover {
+            color: #22c55e;
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        #taskbarWindows {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            max-width: 300px;
+            overflow-x: auto;
+        }
+
+        .taskbar-window-btn {
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.12);
+            color: #94a3b8;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .taskbar-window-btn:hover, .taskbar-window-btn.minimized {
+            background: rgba(34, 197, 94, 0.15);
+            color: #e2e8f0;
+        }
+
+        .taskbar-window-icon {
+            font-size: 0.75rem;
+        }
+
+        /* ===== 桌面区域 ===== */
+        #desktopArea {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .desktop-icons {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: grid;
+            grid-template-columns: repeat(2, 90px);
+            gap: 16px;
+            z-index: 10;
+        }
+
+        .desktop-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 6px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .desktop-icon:hover {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .desktop-icon:active {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .desktop-icon-img {
+            font-size: 36px;
+            line-height: 1;
+        }
+
+        .desktop-icon-label {
+            font-size: 0.7rem;
+            color: #e2e8f0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            word-break: break-all;
+        }
+
+        /* ===== Dock 栏 ===== */
+        .dock {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.1);
+            border-radius: 16px;
+            z-index: 20;
+        }
+
+        .dock-item {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .dock-item:hover {
+            background: rgba(34, 197, 94, 0.15);
+            transform: scale(1.15) translateY(-4px);
+        }
+
+        .dock-item:active {
+            transform: scale(1.05);
+        }
+
+        /* ===== 开始菜单 ===== */
+        #startMenu {
+            display: none;
+            position: absolute;
+            top: 40px;
+            left: 0;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 0 0 12px 12px;
+            z-index: 600;
+            padding: 12px 0;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        }
+
+        .start-menu-user {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .start-menu-avatar {
+            width: 36px;
+            height: 36px;
+            background: rgba(34, 197, 94, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .start-menu-user-info {
+            flex: 1;
+        }
+
+        .start-menu-username {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .start-menu-usercode {
+            font-size: 0.75rem;
+            color: #22c55e;
+        }
+
+        .start-menu-items {
+            padding: 8px 0;
+        }
+
+        .start-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+        }
+
+        .start-menu-item:hover {
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .start-menu-item-icon {
+            font-size: 18px;
+            width: 24px;
+            text-align: center;
+        }
+
+        .start-menu-divider {
+            height: 1px;
+            background: rgba(34, 197, 94, 0.1);
+            margin: 4px 20px;
+        }
+
+        .start-menu-item.danger {
+            color: #ef4444;
+        }
+
+        .start-menu-item.danger:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* ===== 窗口 ===== */
+        .os-window {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.12);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+        }
+
+        .window-titlebar {
+            height: 38px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            cursor: move;
+            flex-shrink: 0;
+            user-select: none;
+        }
+
+        .window-titlebar-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .window-titlebar-icon {
+            font-size: 14px;
+        }
+
+        .window-titlebar-text {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .window-titlebar-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .win-btn {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: transparent;
+            transition: all 0.2s;
+        }
+
+        .win-btn:hover {
+            color: #fff;
+        }
+
+        .win-btn-minimize {
+            background: #eab308;
+        }
+
+        .win-btn-maximize {
+            background: #22c55e;
+        }
+
+        .win-btn-close {
+            background: #ef4444;
+        }
+
+        .window-content {
+            flex: 1;
+            overflow: auto;
+        }
+
+        /* ===== 文件管理器 ===== */
+        .filemanager-layout {
+            display: flex;
+            height: 100%;
+        }
+
+        .filemanager-sidebar {
+            width: 160px;
+            background: rgba(10, 14, 26, 0.5);
+            border-right: 1px solid rgba(34, 197, 94, 0.08);
+            padding: 12px 0;
+            flex-shrink: 0;
+        }
+
+        .fm-nav-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .fm-nav-item:hover {
+            background: rgba(34, 197, 94, 0.08);
+            color: #e2e8f0;
+        }
+
+        .fm-nav-item.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border-right: 2px solid #22c55e;
+        }
+
+        .filemanager-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fm-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.08);
+        }
+
+        .fm-path {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .fm-filelist {
+            flex: 1;
+            padding: 8px 0;
+        }
+
+        .fm-file-header {
+            display: flex;
+            padding: 6px 16px;
+            font-size: 0.75rem;
+            color: #475569;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.05);
+            font-weight: 600;
+        }
+
+        .fm-file-row {
+            display: flex;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            align-items: center;
+        }
+
+        .fm-file-row:hover {
+            background: rgba(34, 197, 94, 0.06);
+        }
+
+        .fm-col-name {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fm-col-size {
+            width: 100px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .fm-col-date {
+            width: 120px;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+
+        .fm-file-icon {
+            font-size: 16px;
+        }
+
+        /* ===== 浏览器 ===== */
+        .browser-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .browser-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            background: rgba(10, 14, 26, 0.5);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.08);
+        }
+
+        .browser-nav-btn {
+            width: 30px;
+            height: 30px;
+            background: rgba(34, 197, 94, 0.08);
+            border: none;
+            border-radius: 6px;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .browser-nav-btn:hover {
+            background: rgba(34, 197, 94, 0.15);
+            color: #e2e8f0;
+        }
+
+        .browser-urlbar {
+            flex: 1;
+            padding: 6px 12px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(34, 197, 94, 0.12);
+            border-radius: 8px;
+            color: #e2e8f0;
+            font-size: 0.8rem;
+            outline: none;
+        }
+
+        .browser-urlbar:focus {
+            border-color: #22c55e;
+        }
+
+        .browser-go-btn {
+            padding: 6px 14px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 8px;
+            color: #22c55e;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .browser-go-btn:hover {
+            background: rgba(34, 197, 94, 0.25);
+        }
+
+        .browser-content {
+            flex: 1;
+            overflow: auto;
+        }
+
+        .browser-home {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 40px;
+        }
+
+        .browser-quick-link {
+            padding: 10px 20px;
+            background: rgba(34, 197, 94, 0.08);
+            border: 1px solid rgba(34, 197, 94, 0.12);
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .browser-quick-link:hover {
+            background: rgba(34, 197, 94, 0.15);
+            transform: translateY(-2px);
+        }
+
+        /* ===== 终端 ===== */
+        .terminal-layout {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: #0a0e14;
+            font-family: 'Fira Code', 'Consolas', 'Courier New', monospace;
+        }
+
+        .terminal-output {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .terminal-line {
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .terminal-welcome {
+            color: #22c55e;
+            opacity: 0.7;
+        }
+
+        .terminal-cmd {
+            color: #e2e8f0;
+        }
+
+        .terminal-info {
+            color: #22c55e;
+        }
+
+        .terminal-error {
+            color: #ef4444;
+        }
+
+        .terminal-success {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border-top: 1px solid rgba(34, 197, 94, 0.1);
+            background: rgba(10, 14, 20, 0.8);
+        }
+
+        .terminal-prompt {
+            color: #22c55e;
+            font-size: 0.82rem;
+            margin-right: 8px;
+            white-space: nowrap;
+        }
+
+        .terminal-input {
+            flex: 1;
+            background: none;
+            border: none;
+            color: #e2e8f0;
+            font-family: inherit;
+            font-size: 0.82rem;
+            outline: none;
+            caret-color: #22c55e;
+        }
+
+        /* ===== 设置 ===== */
+        .settings-layout {
+            display: flex;
+            height: 100%;
+        }
+
+        .settings-sidebar {
+            width: 160px;
+            background: rgba(10, 14, 26, 0.5);
+            border-right: 1px solid rgba(34, 197, 94, 0.08);
+            padding: 12px 0;
+            flex-shrink: 0;
+        }
+
+        .settings-nav-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .settings-nav-item:hover {
+            background: rgba(34, 197, 94, 0.08);
+            color: #e2e8f0;
+        }
+
+        .settings-nav-item.active {
+            background: rgba(34, 197, 94, 0.12);
+            color: #22c55e;
+            border-right: 2px solid #22c55e;
+        }
+
+        .settings-main {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .settings-section {
+            margin-bottom: 24px;
+        }
+
+        .settings-section-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        .settings-note {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 12px;
+        }
+
+        .settings-info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.06);
+            font-size: 0.85rem;
+        }
+
+        .settings-info-row span:first-child {
+            color: #94a3b8;
+        }
+
+        .settings-info-row span:last-child {
+            color: #e2e8f0;
+        }
+
+        .settings-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .settings-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+        }
+
+        .settings-btn.secondary {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .settings-btn.secondary:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        /* ===== 壁纸选择 ===== */
+        .wallpaper-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .wallpaper-option {
+            height: 80px;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding-bottom: 8px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wallpaper-option span {
+            font-size: 0.75rem;
+            color: #e2e8f0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            position: relative;
+            z-index: 1;
+        }
+
+        .wallpaper-option:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .wallpaper-option.active {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+        }
+
+        /* ===== 网络状态 ===== */
+        .network-status {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .network-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(34, 197, 94, 0.08);
+            border-radius: 10px;
+        }
+
+        .network-item.connected {
+            border-color: rgba(34, 197, 94, 0.2);
+        }
+
+        .network-icon {
+            font-size: 24px;
+        }
+
+        .network-name {
+            font-size: 0.85rem;
+            color: #e2e8f0;
+        }
+
+        .network-detail {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .network-badge {
+            margin-left: auto;
+            font-size: 0.75rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            background: rgba(100, 116, 139, 0.15);
+            color: #64748b;
+        }
+
+        .network-badge.connected {
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e;
+        }
+
+        /* ===== 应用商店 ===== */
+        .appstore-layout {
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .appstore-header {
+            margin-bottom: 20px;
+        }
+
+        .appstore-header h3 {
+            font-size: 1.1rem;
+            color: #e2e8f0;
+        }
+
+        .appstore-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .appstore-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 14px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(34, 197, 94, 0.08);
+            border-radius: 12px;
+            transition: all 0.2s;
+        }
+
+        .appstore-item:hover {
+            border-color: rgba(34, 197, 94, 0.15);
+        }
+
+        .appstore-item-icon {
+            font-size: 32px;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(34, 197, 94, 0.08);
+            border-radius: 12px;
+            flex-shrink: 0;
+        }
+
+        .appstore-item-info {
+            flex: 1;
+        }
+
+        .appstore-item-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .appstore-item-desc {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .appstore-item-meta {
+            font-size: 0.7rem;
+            color: #475569;
+            margin-top: 2px;
+        }
+
+        .appstore-install-btn {
+            padding: 6px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .appstore-install-btn:hover {
+            background: rgba(34, 197, 94, 0.2);
+        }
+
+        .appstore-install-btn.installed {
+            background: rgba(100, 116, 139, 0.1);
+            border-color: rgba(100, 116, 139, 0.2);
+            color: #64748b;
+        }
+
+        /* ===== 杀毒 ===== */
+        .antivirus-layout {
+            padding: 24px;
+            text-align: center;
+            height: 100%;
+            overflow-y: auto;
+        }
+
+        .antivirus-header {
+            margin-bottom: 24px;
+        }
+
+        .antivirus-status {
+            padding: 20px;
+            background: rgba(15, 23, 42, 0.5);
+            border: 1px solid rgba(34, 197, 94, 0.12);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .av-status-icon {
+            font-size: 40px;
+            margin-bottom: 8px;
+        }
+
+        .av-status-text {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #22c55e;
+        }
+
+        .av-status-detail {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-top: 4px;
+        }
+
+        .antivirus-actions {
+            margin-bottom: 20px;
+        }
+
+        .av-scan-btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.3);
+        }
+
+        .av-scan-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.4);
+        }
+
+        .av-scan-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .antivirus-progress {
+            margin-bottom: 20px;
+        }
+
+        .av-progress-bar {
+            height: 6px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .av-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .av-progress-text {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .antivirus-results {
+            text-align: left;
+        }
+
+        .av-result-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 10px;
+        }
+
+        .av-result-item {
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 6px;
+        }
+
+        .av-result-item.safe {
+            color: #22c55e;
+        }
+
+        .av-result-item.danger {
+            color: #ef4444;
+        }
+
+        /* ===== 手机模式 ===== */
+        #mobileUI {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            flex-direction: column;
+        }
+
+        .mobile-statusbar {
+            height: 28px;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            flex-shrink: 0;
+            z-index: 100;
+        }
+
+        .mobile-statusbar-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mobile-statusbar-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #mobileHomeScreen {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(135deg, #0a0e1a 0%, #0d1117 30%, #0f1923 60%, #0a1628 100%);
+            overflow: hidden;
+        }
+
+        .mobile-icons-grid {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(4, 72px);
+            gap: 20px 16px;
+            padding: 10px;
+        }
+
+        .mobile-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px 4px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+
+        .mobile-icon:hover {
+            background: rgba(34, 197, 94, 0.08);
+        }
+
+        .mobile-icon:active {
+            background: rgba(34, 197, 94, 0.15);
+        }
+
+        .mobile-icon-img {
+            font-size: 32px;
+            line-height: 1;
+        }
+
+        .mobile-icon-label {
+            font-size: 0.65rem;
+            color: #e2e8f0;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+
+        .mobile-dock {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 16px;
+            padding: 10px 24px;
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.1);
+            border-radius: 20px;
+            z-index: 20;
+        }
+
+        .mobile-dock-item {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mobile-dock-item:hover {
+            background: rgba(34, 197, 94, 0.12);
+            transform: scale(1.1);
+        }
+
+        /* ===== 手机应用覆盖层 ===== */
+        .mobile-app-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 14, 26, 0.98);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            animation: mobileAppSlideIn 0.3s ease;
+        }
+
+        @keyframes mobileAppSlideIn {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .mobile-app-header {
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            background: rgba(15, 23, 42, 0.9);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.1);
+            flex-shrink: 0;
+        }
+
+        .mobile-app-back {
+            background: none;
+            border: none;
+            color: #22c55e;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+        }
+
+        .mobile-app-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #e2e8f0;
+        }
+
+        .mobile-app-body {
+            flex: 1;
+            overflow: auto;
+        }
+
+        /* ===== Toast ===== */
+        #toastContainer {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            backdrop-filter: blur(20px);
+            animation: toastIn 0.3s ease;
+            max-width: 320px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        .toast-info {
+            background: rgba(30, 41, 59, 0.9);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #e2e8f0;
+        }
+
+        .toast-success {
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #22c55e;
+        }
+
+        .toast-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .toast-fade-out {
+            animation: toastOut 0.3s ease forwards;
+        }
+
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes toastOut {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(20px); }
+        }
+
+        /* ===== 更新对话框 ===== */
+        .update-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9998;
+        }
+
+        .update-dialog {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .update-dialog-header {
+            margin-bottom: 16px;
+        }
+
+        .update-dialog-header h3 {
+            margin-top: 8px;
+            color: #e2e8f0;
+        }
+
+        .update-dialog-body {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .update-dialog-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .update-dialog-actions .settings-btn {
+            width: 100%;
+        }
+
+        /* ===== 关机画面 ===== */
+        .shutdown-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .shutdown-screen {
+            text-align: center;
+            animation: shutdownFade 1s ease;
+        }
+
+        @keyframes shutdownFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* ===== 滚动条 ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(34, 197, 94, 0.2);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(34, 197, 94, 0.35);
+        }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .activation-card {
+                padding: 32px 24px;
+            }
+
+            .activation-title {
+                font-size: 1.3rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast 容器 -->
+    <div id="toastContainer"></div>
+
+    <!-- ===== 激活码界面 ===== -->
+    <div id="activationScreen">
+        <div class="activation-card">
+            <svg class="activation-logo" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="actLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#22c55e"/>
+                        <stop offset="100%" stop-color="#4ade80"/>
+                    </linearGradient>
+                </defs>
+                <circle cx="40" cy="32" r="18" fill="rgba(34,197,94,0.15)" stroke="url(#actLogoGrad)" stroke-width="2"/>
+                <path d="M30 30 Q35 22 40 28 Q45 22 50 30" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+                <path d="M28 34 Q34 26 40 32 Q46 26 52 34" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>
+                <rect x="28" y="52" width="24" height="16" rx="3" fill="rgba(34,197,94,0.1)" stroke="url(#actLogoGrad)" stroke-width="1.5"/>
+                <line x1="34" y1="56" x2="46" y2="56" stroke="#22c55e" stroke-width="1" opacity="0.5"/>
+                <line x1="34" y1="60" x2="42" y2="60" stroke="#22c55e" stroke-width="1" opacity="0.3"/>
+                <circle cx="40" cy="68" r="2" fill="#22c55e" opacity="0.4"/>
+            </svg>
+            <div class="activation-title">青柠OS 网页体验系统</div>
+            <div class="activation-subtitle">输入激活码以启动系统</div>
+            <div class="activation-input-group">
+                <input type="text" class="activation-input" id="activationInput" placeholder="请输入激活码，例如 xt2024" autocomplete="off" spellcheck="false">
+            </div>
+            <button class="activation-btn" id="activateBtn">激活</button>
+            <a href="profile.html" class="activation-link">没有激活码？前往获取</a>
+            <div class="activation-note">激活码格式为 xt + 数字，每个账户唯一</div>
+        </div>
+    </div>
+
+    <!-- ===== OS 主界面 ===== -->
+    <div id="osDesktop">
+        <div id="desktopWallpaper"></div>
+
+        <!-- ===== 桌面模式 ===== -->
+        <div id="desktopUI">
+            <!-- 任务栏 -->
+            <div class="taskbar">
+                <div class="taskbar-left">
+                    <svg class="taskbar-logo" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="10" r="7" fill="rgba(34,197,94,0.15)" stroke="#22c55e" stroke-width="1.5"/>
+                        <path d="M8 9 Q10 5 12 8 Q14 5 16 9" fill="none" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+                        <rect x="8" y="17" width="8" height="5" rx="1.5" fill="rgba(34,197,94,0.1)" stroke="#22c55e" stroke-width="1"/>
+                    </svg>
+                    <button class="start-menu-btn" id="startMenuBtn" onclick="toggleStartMenu()">开始</button>
+                </div>
+                <div class="taskbar-center">
+                    <span class="clock-time" id="taskbarClock">00:00:00</span>
+                </div>
+                <div class="taskbar-right">
+                    <span id="taskbarWindows"></span>
+                    <span class="taskbar-icon" title="WiFi">&#128246;</span>
+                    <span class="taskbar-icon" title="电池">&#128267;</span>
+                    <span class="taskbar-code activation-code-display">--</span>
+                    <button class="taskbar-settings-btn" onclick="openWindow('settings')" title="设置">&#9881;</button>
+                </div>
+            </div>
+
+            <!-- 开始菜单 -->
+            <div id="startMenu">
+                <div class="start-menu-user">
+                    <div class="start-menu-avatar">&#128100;</div>
+                    <div class="start-menu-user-info">
+                        <div class="start-menu-username username-display">用户</div>
+                        <div class="start-menu-usercode activation-code-display">--</div>
+                    </div>
+                </div>
+                <div class="start-menu-items">
+                    <div class="start-menu-item" onclick="openWindow('filemanager'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#128193;</span> 文件管理器
+                    </div>
+                    <div class="start-menu-item" onclick="openWindow('browser'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#127760;</span> 青柠浏览器
+                    </div>
+                    <div class="start-menu-item" onclick="openWindow('terminal'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#128187;</span> 青柠终端
+                    </div>
+                    <div class="start-menu-item" onclick="openWindow('settings'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#9881;</span> 系统设置
+                    </div>
+                    <div class="start-menu-item" onclick="openWindow('appstore'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#128722;</span> 应用商店
+                    </div>
+                    <div class="start-menu-item" onclick="openWindow('antivirus'); closeStartMenu();">
+                        <span class="start-menu-item-icon">&#128737;</span> 青柠杀毒
+                    </div>
+                    <div class="start-menu-divider"></div>
+                    <div class="start-menu-item danger" onclick="shutdownOS()">
+                        <span class="start-menu-item-icon">&#9211;</span> 关机
+                    </div>
+                    <div class="start-menu-item danger" onclick="restartOS()">
+                        <span class="start-menu-item-icon">&#8635;</span> 重启
+                    </div>
+                </div>
+            </div>
+
+            <!-- 桌面区域 -->
+            <div id="desktopArea">
+                <!-- 桌面图标 -->
+                <div class="desktop-icons">
+                    <div class="desktop-icon" onclick="openWindow('filemanager')">
+                        <span class="desktop-icon-img">&#128193;</span>
+                        <span class="desktop-icon-label">文件管理器</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('browser')">
+                        <span class="desktop-icon-img">&#127760;</span>
+                        <span class="desktop-icon-label">青柠浏览器</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('terminal')">
+                        <span class="desktop-icon-img">&#128187;</span>
+                        <span class="desktop-icon-label">青柠终端</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('settings')">
+                        <span class="desktop-icon-img">&#9881;</span>
+                        <span class="desktop-icon-label">系统设置</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('appstore')">
+                        <span class="desktop-icon-img">&#128722;</span>
+                        <span class="desktop-icon-label">应用商店</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('antivirus')">
+                        <span class="desktop-icon-img">&#128737;</span>
+                        <span class="desktop-icon-label">青柠杀毒</span>
+                    </div>
+                    <div class="desktop-icon" onclick="openWindow('trash')">
+                        <span class="desktop-icon-img">&#128465;</span>
+                        <span class="desktop-icon-label">回收站</span>
+                    </div>
+                </div>
+
+                <!-- Dock 栏 -->
+                <div class="dock">
+                    <div class="dock-item" onclick="openWindow('filemanager')" title="文件管理器">&#128193;</div>
+                    <div class="dock-item" onclick="openWindow('browser')" title="浏览器">&#127760;</div>
+                    <div class="dock-item" onclick="openWindow('terminal')" title="终端">&#128187;</div>
+                    <div class="dock-item" onclick="openWindow('settings')" title="设置">&#9881;</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 手机模式 ===== -->
+        <div id="mobileUI">
+            <!-- 状态栏 -->
+            <div class="mobile-statusbar">
+                <div class="mobile-statusbar-left">
+                    <span class="clock-time">00:00</span>
+                </div>
+                <div class="mobile-statusbar-right">
+                    <span style="font-size:10px;">&#128246;</span>
+                    <span style="font-size:10px;">&#128267;</span>
+                    <span class="activation-code-display" style="font-size:0.65rem;color:#22c55e;">--</span>
+                </div>
+            </div>
+
+            <!-- 主屏幕 -->
+            <div id="mobileHomeScreen">
+                <div class="mobile-icons-grid">
+                    <div class="mobile-icon" onclick="openWindow('filemanager')">
+                        <span class="mobile-icon-img">&#128193;</span>
+                        <span class="mobile-icon-label">文件管理器</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('browser')">
+                        <span class="mobile-icon-img">&#127760;</span>
+                        <span class="mobile-icon-label">浏览器</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('terminal')">
+                        <span class="mobile-icon-img">&#128187;</span>
+                        <span class="mobile-icon-label">终端</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('settings')">
+                        <span class="mobile-icon-img">&#9881;</span>
+                        <span class="mobile-icon-label">设置</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('appstore')">
+                        <span class="mobile-icon-img">&#128722;</span>
+                        <span class="mobile-icon-label">应用商店</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('antivirus')">
+                        <span class="mobile-icon-img">&#128737;</span>
+                        <span class="mobile-icon-label">杀毒</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('trash')">
+                        <span class="mobile-icon-img">&#128465;</span>
+                        <span class="mobile-icon-label">回收站</span>
+                    </div>
+                    <div class="mobile-icon" onclick="openWindow('settings')">
+                        <span class="mobile-icon-img">&#128100;</span>
+                        <span class="mobile-icon-label">账户</span>
+                    </div>
+                </div>
+
+                <!-- 手机 Dock -->
+                <div class="mobile-dock">
+                    <div class="mobile-dock-item" onclick="openWindow('terminal')" title="电话">&#128222;</div>
+                    <div class="mobile-dock-item" onclick="openWindow('browser')" title="浏览器">&#127760;</div>
+                    <div class="mobile-dock-item" onclick="openWindow('filemanager')" title="消息">&#128172;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 引用脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
+    <script src="qingning-os-web.js"></script>
+</body>
+</html>
