@@ -1,8 +1,8 @@
-// ===== QingningOS - MIUI 10 风格 - 核心逻辑 =====
+// ===== QingningOS - HyperOS 3 风格 - 核心逻辑 =====
 
-const QNOS_VERSION = '2.0';
+const QNOS_VERSION = '3.0';
 const QNOS_KERNEL = '6.1.0-qn';
-const QNOS_CODENAME = 'QingningOS MIUI';
+const QNOS_CODENAME = 'QingningOS HyperOS 3';
 
 // ===== 状态管理 =====
 let currentActivationCode = '';
@@ -21,17 +21,30 @@ let clockInterval = null;
 let currentPage = 'home';
 let terminalExpanded = false;
 let activeTerminal = 'home'; // 'home' or 'full'
+let currentDisplayMode = 'dark';
+let currentWallpaper = 'default';
+
+// ===== 壁纸配置 =====
+const wallpapers = {
+    'default': { name: '默认', style: '' },
+    'dark-green': { name: '暗夜绿', style: 'linear-gradient(135deg, #0a0a0a 0%, #0d1117 50%, #0a1f0a 100%)' },
+    'dark-blue': { name: '深海蓝', style: 'linear-gradient(135deg, #0a0a0a 0%, #0d1117 50%, #0a1525 100%)' },
+    'dark-purple': { name: '星云紫', style: 'linear-gradient(135deg, #0a0a0a 0%, #0d1117 50%, #1a0a25 100%)' },
+    'light': { name: '浅色', style: 'linear-gradient(135deg, #f0f0f0 0%, #e8e8e8 50%, #f5f5f5 100%)' },
+    'aurora': { name: '极光', style: 'linear-gradient(135deg, #0a0a0a 0%, #0d1f1a 50%, #0a1525 100%)' },
+    'sunset': { name: '日落', style: 'linear-gradient(135deg, #0a0a0a 0%, #1a0f0a 50%, #0d1117 100%)' }
+};
 
 // ===== 模拟文件系统 =====
 let fileSystem = {
     '/home/user': {
         '桌面': {
-            '欢迎.txt': { size: '1.2 KB', date: '2026-01-15', type: 'file', content: '欢迎使用 QingningOS!\n这是一个基于 MIUI 10 设计的网页操作系统。\n输入 帮助 查看可用命令。' },
-            '说明.md': { size: '0.8 KB', date: '2026-01-15', type: 'file', content: '# QingningOS\n\n版本: v2.0\n内核: 6.1.0-qn\n\n## 快速开始\n- 输入 帮助 查看所有命令\n- 输入 系统信息 查看系统状态\n- 输入 列表 查看当前目录文件' }
+            '欢迎.txt': { size: '1.2 KB', date: '2026-01-15', type: 'file', content: '欢迎使用 QingningOS!\n这是一个基于 HyperOS 3 设计的网页操作系统。\n输入 帮助 查看可用命令。' },
+            '说明.md': { size: '0.8 KB', date: '2026-01-15', type: 'file', content: '# QingningOS\n\n版本: v3.0\n内核: 6.1.0-qn\n\n## 快速开始\n- 输入 帮助 查看所有命令\n- 输入 系统信息 查看系统状态\n- 输入 列表 查看当前目录文件' }
         },
         '文档': {
             '笔记.txt': { size: '2.1 KB', date: '2026-02-10', type: 'file', content: '这是一个笔记文件。\n你可以在终端中使用 写入 命令来编辑文件内容。' },
-            '项目计划.md': { size: '3.5 KB', date: '2026-03-05', type: 'file', content: '# 项目计划\n\n## 阶段一\n- 完成 MIUI 10 风格界面设计\n- 实现基本命令系统\n\n## 阶段二\n- 添加文件管理功能\n- 集成应用商店' }
+            '项目计划.md': { size: '3.5 KB', date: '2026-03-05', type: 'file', content: '# 项目计划\n\n## 阶段一\n- 完成 HyperOS 3 风格界面设计\n- 实现基本命令系统\n\n## 阶段二\n- 添加文件管理功能\n- 集成应用商店' }
         },
         '下载': {
             '安装包.qpk': { size: '45.2 MB', date: '2026-05-01', type: 'file', content: '[二进制文件 - 无法显示内容]' }
@@ -125,7 +138,7 @@ function startBoot() {
     setTimeout(() => {
         document.getElementById('bootScreen').style.display = 'none';
         showActivationScreen();
-    }, 3200);
+    }, 3500);
 }
 
 // ===== 激活码界面 =====
@@ -193,6 +206,9 @@ function showMainScreen() {
     const screen = document.getElementById('mainScreen');
     screen.style.display = 'flex';
 
+    // 恢复主题设置
+    loadThemeSettings();
+
     // 更新用户信息
     updateUserInfo();
 
@@ -212,6 +228,9 @@ function showMainScreen() {
     // 绑定设置项
     bindSettings();
 
+    // 绑定 FAB
+    bindFab();
+
     // 渲染应用列表
     renderAppList();
 
@@ -221,6 +240,28 @@ function showMainScreen() {
 
     // 绑定终端输入
     bindTerminalInput();
+
+    // 初始化弹窗
+    initModals();
+}
+
+function loadThemeSettings() {
+    const savedMode = localStorage.getItem('qn_display_mode');
+    const savedWallpaper = localStorage.getItem('qn_wallpaper');
+    const savedThemeName = localStorage.getItem('qn_theme_name');
+    const savedThemeColor = localStorage.getItem('qn_theme_color');
+
+    if (savedMode) {
+        applyDisplayMode(savedMode);
+    }
+    if (savedWallpaper && wallpapers[savedWallpaper]) {
+        applyWallpaper(savedWallpaper);
+    }
+    if (savedThemeName && savedThemeColor) {
+        currentThemeName = savedThemeName;
+        currentThemeColor = savedThemeColor;
+        document.documentElement.style.setProperty('--primary', currentThemeColor);
+    }
 }
 
 function updateUserInfo() {
@@ -464,8 +505,8 @@ function syncTerminalToHome() {
 // ===== 欢迎信息 =====
 function showWelcomeMessage() {
     printEmpty();
-    printLine('  QingningOS Terminal v2.0', 'highlight');
-    printLine('  基于 MIUI 10 设计', 'dim');
+    printLine('  QingningOS Terminal v3.0', 'highlight');
+    printLine('  基于 HyperOS 3 设计', 'dim');
     printLine('  内核: 6.1.0-qn', 'dim');
     printEmpty();
 
@@ -697,9 +738,9 @@ function executeCommand(cmdLine) {
 
 function cmdHelp() {
     printEmpty();
-    printLine('  ══════════════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printLine('                    可用命令列表', 'info');
-    printLine('  ══════════════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printEmpty();
     printLine('  基本命令', 'highlight');
     printLine('  帮助        显示此帮助信息', 'dim');
@@ -736,7 +777,7 @@ function cmdHelp() {
     printLine('  扫描        运行杀毒扫描', 'dim');
     printLine('  防护 <状态>  查看/切换实时防护', 'dim');
     printLine('  更新        检查系统更新', 'dim');
-    printLine('  壁纸 <编号>  更换壁纸 (1/2/3)', 'dim');
+    printLine('  壁纸 <编号>  更换壁纸', 'dim');
     printLine('  主题 <颜色>  切换主题色', 'dim');
     printEmpty();
     printLine('  管理员命令 (需要管理员权限)', 'warn');
@@ -1004,9 +1045,9 @@ function cmdNeofetch() {
     const installedCount = appStoreApps.filter(a => a.installed).length;
 
     printEmpty();
-    printLine('  ══════════════════════════════════════════', 'info');
-    printLine('           QingningOS Terminal v2.0', 'info');
-    printLine('  ══════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
+    printLine('           QingningOS Terminal v3.0', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printLine(`  用户:     ${currentUsername}`, 'white');
     printLine(`  激活码:   ${currentActivationCode}`, 'white');
     printLine(`  权限:     ${currentPermission.name}`, 'white');
@@ -1018,14 +1059,14 @@ function cmdNeofetch() {
     printLine(`  网络:     已连接 (QingningOS-WiFi)`, 'info');
     printLine(`  杀毒:     实时防护${antivirusRealTime ? '已开启' : '已关闭'}`, antivirusRealTime ? 'info' : 'warn');
     printLine(`  已安装:   ${installedCount} 个应用`, 'dim');
-    printLine('  ══════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printEmpty();
 }
 
 function cmdPs() {
     printEmpty();
     printLine('  PID    进程名                  CPU%    内存(MB)', 'dim');
-    printLine('  ───────────────────────────────────────────────', 'dim');
+    printLine('  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', 'dim');
     for (const p of processes) {
         const cpuFluc = (Math.random() * 2 - 1).toFixed(1);
         const cpuVal = (p.cpu + parseFloat(cpuFluc)).toFixed(1);
@@ -1064,7 +1105,7 @@ function cmdMemory() {
 
     printEmpty();
     printLine('  内存使用情况', 'info');
-    printLine('  ──────────────────────────────────────', 'dim');
+    printLine('  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', 'dim');
     printLine(`  总内存:   ${totalMem} MB`, 'white');
     printLine(`  已使用:   ${usedMem} MB (${percent}%)`, 'white');
     printLine(`  可用:     ${totalMem - usedMem} MB`, 'white');
@@ -1075,7 +1116,7 @@ function cmdMemory() {
 function cmdNetwork() {
     printEmpty();
     printLine('  网络状态', 'info');
-    printLine('  ──────────────────────────────────────', 'dim');
+    printLine('  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', 'dim');
     printLine('  连接状态: 已连接', 'success');
     printLine('  网络名称: QingningOS-WiFi', 'white');
     printLine('  信号强度: 优秀', 'info');
@@ -1097,7 +1138,7 @@ function cmdDisk() {
 
     printEmpty();
     printLine('  磁盘使用情况', 'info');
-    printLine('  ──────────────────────────────────────', 'dim');
+    printLine('  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', 'dim');
     printLine(`  总容量:   ${total.toFixed(1)} GB`, 'white');
     printLine(`  已使用:   ${used.toFixed(1)} GB (${percent}%)`, 'white');
     printLine(`  可用:     ${(total - used).toFixed(1)} GB`, 'white');
@@ -1123,16 +1164,16 @@ function cmdBrowse(url) {
 
 function cmdStore() {
     printEmpty();
-    printLine('  ══════════════════════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printLine('                    青柠应用商店', 'info');
-    printLine('  ══════════════════════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     for (const app of appStoreApps) {
         const status = app.installed ? '[已安装]' : '[安装]';
         const statusClass = app.installed ? 'dim' : 'info';
         printLine(`  ${app.name.padEnd(12)} v${app.version.padEnd(8)} ${app.size.padEnd(8)} ${app.desc}`, 'white');
         printHTML(`  ${' '.repeat(14)}<span class="${statusClass}">${status}</span>`, 'dim');
     }
-    printLine('  ══════════════════════════════════════════════════════════', 'info');
+    printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
     printEmpty();
     printLine('  使用 "安装 <应用名>" 安装应用', 'dim');
     printLine('  使用 "卸载 <应用名>" 卸载应用', 'dim');
@@ -1195,14 +1236,14 @@ function cmdScan() {
     }, 1500);
     setTimeout(() => {
         printEmpty();
-        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
         printLine('           扫描结果 - 安全', 'success');
-        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
         printLine('  扫描文件数: 1,247', 'white');
         printLine('  威胁发现:   0', 'success');
         printLine('  扫描耗时:   3.2秒', 'dim');
         printLine('  状态:       系统安全', 'success');
-        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
         printEmpty();
     }, 2200);
 }
@@ -1227,35 +1268,45 @@ function cmdUpdate() {
     printLine('  正在检查更新...', 'info');
     setTimeout(() => {
         printEmpty();
-        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
         printLine('           系统更新检查', 'info');
-        printLine('  ══════════════════════════════════════════', 'info');
-        printLine('  当前版本: v2.0', 'white');
-        printLine('  最新版本: v2.0', 'white');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
+        printLine('  当前版本: v3.0', 'white');
+        printLine('  最新版本: v3.0', 'white');
         printLine('  状态:     已是最新版本', 'success');
-        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550', 'info');
         printEmpty();
     }, 1200);
 }
 
 function cmdWallpaper(id) {
-    const wallpapers = {
-        '1': { name: '浅色渐变', style: 'linear-gradient(135deg, #f5f5f5 0%, #ffffff 50%, #f0f0f0 100%)' },
-        '2': { name: '青柠', style: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 50%, #ecfdf5 100%)' },
-        '3': { name: '天空', style: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #f0f9ff 100%)' }
-    };
-    if (!id || !wallpapers[id]) {
-        printLine('  壁纸: 用法: 壁纸 1/2/3', 'error');
+    const wpKeys = Object.keys(wallpapers);
+    if (!id) {
+        printLine('  壁纸: 用法: 壁纸 <编号>', 'error');
         printLine('  可用壁纸:', 'dim');
-        for (const [k, v] of Object.entries(wallpapers)) {
-            printLine(`    ${k}. ${v.name}`, 'dim');
-        }
+        wpKeys.forEach((k, i) => {
+            printLine(`    ${k} - ${wallpapers[k].name}`, 'dim');
+        });
         return;
     }
+    if (!wallpapers[id]) {
+        printLine(`  壁纸: "${id}" 不存在`, 'error');
+        return;
+    }
+    applyWallpaper(id);
+    printLine(`  ${trialPrefix()}壁纸已更换为: ${wallpapers[id].name}`, 'success');
+}
+
+function applyWallpaper(id) {
+    currentWallpaper = id;
     const wp = wallpapers[id];
-    document.getElementById('mainScreen').style.background = wp.style;
-    document.body.style.background = wp.style;
-    printLine(`  ${trialPrefix()}壁纸已更换为: ${wp.name}`, 'success');
+    const bg = document.getElementById('dynamicBg');
+    if (bg && wp.style) {
+        bg.style.background = wp.style;
+    }
+    localStorage.setItem('qn_wallpaper', id);
+    const el = document.getElementById('settingWallpaperValue');
+    if (el) el.textContent = wp.name;
 }
 
 function cmdTheme(color) {
@@ -1266,11 +1317,19 @@ function cmdTheme(color) {
         printLine('  主题: 用法: 主题 绿色/蓝色/紫色/红色', 'error');
         return;
     }
-    currentThemeColor = themes[color];
-    currentThemeName = color;
-    document.documentElement.style.setProperty('--primary', currentThemeColor);
+    applyTheme(color, themes[color]);
     printLine(`  ${trialPrefix()}主题色已切换为: ${color}`, 'success');
     showToast(`主题已切换: ${color}`, 'info');
+}
+
+function applyTheme(name, color) {
+    currentThemeColor = color;
+    currentThemeName = name;
+    document.documentElement.style.setProperty('--primary', color);
+    document.documentElement.style.setProperty('--primary-light', color);
+    document.documentElement.style.setProperty('--primary-glow', color + '66');
+    localStorage.setItem('qn_theme_name', name);
+    localStorage.setItem('qn_theme_color', color);
     updateThemeValue();
 }
 
@@ -1298,7 +1357,7 @@ function cmdUser(args) {
     if (!action || action === '列表') {
         printEmpty();
         printLine('  系统用户列表:', 'info');
-        printLine('  ──────────────────────────────────────', 'dim');
+        printLine('  \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500', 'dim');
         printLine('  用户名      激活码       权限', 'dim');
         printLine('  system      XT0000       系统(体验)', 'warn');
         printLine('  admin       xt0001       站长', 'info');
@@ -1381,6 +1440,10 @@ function cmdReset() {
     printLine('  正在重置...', 'warn');
     setTimeout(() => {
         localStorage.removeItem('qn_terminal_code');
+        localStorage.removeItem('qn_display_mode');
+        localStorage.removeItem('qn_wallpaper');
+        localStorage.removeItem('qn_theme_name');
+        localStorage.removeItem('qn_theme_color');
         location.reload();
     }, 2000);
 }
@@ -1394,11 +1457,12 @@ function cmdRestore() {
         currentThemeName = '绿色';
         antivirusRealTime = true;
         systemAnnouncement = '';
-        document.getElementById('mainScreen').style.background = '';
-        document.body.style.background = '';
-        document.documentElement.style.setProperty('--primary', '#22c55e');
+        currentDisplayMode = 'dark';
+        currentWallpaper = 'default';
+        applyDisplayMode('dark');
+        applyWallpaper('default');
+        applyTheme('绿色', '#22c55e');
         updatePrompt();
-        updateThemeValue();
         printLine('  系统设置已还原为默认值', 'success');
         showToast('系统已还原', 'success');
     }, 1000);
@@ -1485,16 +1549,27 @@ function renderAppList() {
 // ===== 设置项绑定 =====
 function bindSettings() {
     const themeItem = document.getElementById('settingTheme');
+    const modeItem = document.getElementById('settingMode');
+    const wallpaperItem = document.getElementById('settingWallpaper');
     const aboutItem = document.getElementById('settingAbout');
     const rebootItem = document.getElementById('settingReboot');
     const shutdownItem = document.getElementById('settingShutdown');
 
     if (themeItem) {
         themeItem.addEventListener('click', () => {
-            const themes = ['绿色', '蓝色', '紫色', '红色'];
-            const idx = themes.indexOf(currentThemeName);
-            const next = themes[(idx + 1) % themes.length];
-            executeCommand(`主题 ${next}`);
+            openModal('themeModal');
+        });
+    }
+
+    if (modeItem) {
+        modeItem.addEventListener('click', () => {
+            openModal('modeModal');
+        });
+    }
+
+    if (wallpaperItem) {
+        wallpaperItem.addEventListener('click', () => {
+            openModal('wallpaperModal');
         });
     }
 
@@ -1524,6 +1599,106 @@ function bindSettings() {
 function updateThemeValue() {
     const el = document.getElementById('settingThemeValue');
     if (el) el.textContent = currentThemeName;
+}
+
+// ===== 弹窗系统 =====
+function initModals() {
+    // 主题弹窗
+    const themeModal = document.getElementById('themeModal');
+    themeModal.querySelectorAll('.theme-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const theme = opt.dataset.theme;
+            const themes = { '绿色': '#22c55e', '蓝色': '#3b82f6', '紫色': '#a855f7', '红色': '#ef4444' };
+            applyTheme(theme, themes[theme]);
+            showToast(`主题已切换: ${theme}`, 'success');
+            closeModal('themeModal');
+        });
+    });
+    document.getElementById('themeModalClose').addEventListener('click', () => closeModal('themeModal'));
+
+    // 模式弹窗
+    const modeModal = document.getElementById('modeModal');
+    modeModal.querySelectorAll('.theme-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            const mode = opt.dataset.mode;
+            applyDisplayMode(mode);
+            showToast(`显示模式: ${mode === 'dark' ? '深色' : mode === 'light' ? '浅色' : '自动'}`, 'success');
+            closeModal('modeModal');
+        });
+    });
+    document.getElementById('modeModalClose').addEventListener('click', () => closeModal('modeModal'));
+
+    // 壁纸弹窗
+    renderWallpaperGrid();
+    document.getElementById('wallpaperModalClose').addEventListener('click', () => closeModal('wallpaperModal'));
+
+    // 点击遮罩关闭
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) overlay.classList.remove('active');
+        });
+    });
+}
+
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+function applyDisplayMode(mode) {
+    currentDisplayMode = mode;
+    const root = document.documentElement;
+    if (mode === 'light') {
+        root.setAttribute('data-theme', 'light');
+    } else if (mode === 'dark') {
+        root.removeAttribute('data-theme');
+    } else if (mode === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+            root.removeAttribute('data-theme');
+        } else {
+            root.setAttribute('data-theme', 'light');
+        }
+    }
+    localStorage.setItem('qn_display_mode', mode);
+    const el = document.getElementById('settingModeValue');
+    if (el) el.textContent = mode === 'dark' ? '深色' : mode === 'light' ? '浅色' : '自动';
+}
+
+function renderWallpaperGrid() {
+    const grid = document.getElementById('wallpaperGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    Object.entries(wallpapers).forEach(([key, wp]) => {
+        const item = document.createElement('div');
+        item.className = 'wallpaper-item' + (currentWallpaper === key ? ' active' : '');
+        item.style.background = wp.style || 'linear-gradient(135deg, #0a0a0a, #0d1117)';
+        item.innerHTML = `<span>${wp.name}</span>`;
+        item.addEventListener('click', () => {
+            applyWallpaper(key);
+            showToast(`壁纸已更换: ${wp.name}`, 'success');
+            grid.querySelectorAll('.wallpaper-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            closeModal('wallpaperModal');
+        });
+        grid.appendChild(item);
+    });
+}
+
+// ===== FAB 按钮 =====
+function bindFab() {
+    const fab = document.getElementById('fabBtn');
+    if (!fab) return;
+    fab.addEventListener('click', () => {
+        if (currentPage === 'terminal') {
+            focusTerminalInput();
+        } else {
+            switchPage('terminal');
+        }
+    });
 }
 
 // ===== 初始化 =====

@@ -9,406 +9,676 @@
         :root {
             --primary: #22c55e;
             --primary-light: #4ade80;
-            --bg: #f5f5f5;
-            --card-bg: #ffffff;
-            --text-title: #333333;
-            --text-body: #666666;
-            --text-dim: #999999;
-            --border: #e5e5e5;
-            --shadow: 0 2px 12px rgba(0,0,0,0.06);
-            --shadow-hover: 0 4px 20px rgba(0,0,0,0.1);
-            --radius: 14px;
-            --radius-sm: 10px;
-            --radius-xl: 18px;
+            --primary-glow: rgba(34,197,94,0.4);
+            --bg: #0a0a0a;
+            --bg-gradient-start: #0a0a0a;
+            --bg-gradient-end: #0d1117;
+            --card-bg: rgba(255,255,255,0.06);
+            --card-border: rgba(255,255,255,0.08);
+            --text-title: #ffffff;
+            --text-body: #b0b0b0;
+            --text-dim: #666666;
+            --border: rgba(255,255,255,0.08);
+            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+            --shadow-hover: 0 12px 40px rgba(0,0,0,0.5);
+            --radius: 20px;
+            --radius-sm: 12px;
+            --radius-xl: 24px;
+            --transition: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        :root[data-theme="light"] {
+            --bg: #f0f0f0;
+            --bg-gradient-start: #f0f0f0;
+            --bg-gradient-end: #e8e8e8;
+            --card-bg: rgba(255,255,255,0.7);
+            --card-border: rgba(0,0,0,0.06);
+            --text-title: #1a1a1a;
+            --text-body: #555555;
+            --text-dim: #888888;
+            --border: rgba(0,0,0,0.06);
+            --shadow: 0 8px 32px rgba(0,0,0,0.1);
+            --shadow-hover: 0 12px 40px rgba(0,0,0,0.15);
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
             background-color: var(--bg); color: var(--text-title); line-height: 1.5;
             overflow: hidden; width: 100vw; height: 100vh; user-select: none;
+            transition: background-color 0.5s var(--transition);
+        }
+
+        /* ===== 动态背景 ===== */
+        .dynamic-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 50%, #0a1f0a 100%);
+            z-index: -2; transition: background 1s var(--transition);
+        }
+        .dynamic-bg::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(34,197,94,0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 80%, rgba(59,130,246,0.06) 0%, transparent 50%);
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+        @keyframes bgFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(-2%, 2%) scale(1.05); }
+            66% { transform: translate(2%, -1%) scale(0.95); }
+        }
+
+        /* ===== 毛玻璃卡片基础 ===== */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px) saturate(1.8);
+            -webkit-backdrop-filter: blur(20px) saturate(1.8);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s var(--transition), box-shadow 0.3s var(--transition);
+        }
+        .glass-card:hover {
+            box-shadow: var(--shadow-hover);
         }
 
         /* ===== 开机动画 ===== */
         #bootScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff; z-index: 10000;
+            background: #0a0a0a; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
         .boot-logo-svg {
-            width: 80px; height: 80px;
+            width: 100px; height: 100px;
             opacity: 0;
-            animation: bootFadeIn 0.6s ease-out 0.2s forwards;
+            animation: bootFadeIn 0.8s ease-out 0.3s forwards;
+            filter: drop-shadow(0 0 20px rgba(34,197,94,0.6)) drop-shadow(0 0 60px rgba(34,197,94,0.3));
         }
         .boot-logo-svg svg { width: 100%; height: 100%; }
         .boot-title {
-            font-size: 1.4rem; font-weight: 600; color: var(--text-title);
-            margin-top: 20px; letter-spacing: 1px;
-            opacity: 0; animation: bootFadeIn 0.6s ease-out 0.5s forwards;
+            font-size: 1.6rem; font-weight: 500; color: #ffffff;
+            margin-top: 24px; letter-spacing: 2px;
+            opacity: 0; animation: bootFadeIn 0.8s ease-out 0.6s forwards;
         }
         .boot-subtitle {
-            font-size: 0.8rem; color: var(--text-dim); margin-top: 6px;
-            opacity: 0; animation: bootFadeIn 0.6s ease-out 0.7s forwards;
+            font-size: 0.85rem; color: #666666; margin-top: 8px;
+            opacity: 0; animation: bootFadeIn 0.8s ease-out 0.9s forwards;
+        }
+        .boot-powered {
+            font-size: 0.75rem; color: var(--primary); margin-top: 4px;
+            opacity: 0; animation: bootFadeIn 0.8s ease-out 1.1s forwards;
+            letter-spacing: 1px;
         }
         .boot-progress-circle {
-            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
-            width: 36px; height: 36px;
-            opacity: 0; animation: bootFadeIn 0.5s ease-out 0.9s forwards;
+            position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%);
+            width: 40px; height: 40px;
+            opacity: 0; animation: bootFadeIn 0.5s ease-out 1.3s forwards;
         }
         .boot-progress-circle svg { transform: rotate(-90deg); }
         .boot-progress-circle circle { fill: none; stroke-width: 3; }
-        .boot-progress-circle .bg { stroke: #e5e5e5; }
+        .boot-progress-circle .bg { stroke: rgba(255,255,255,0.1); }
         .boot-progress-circle .fill {
             stroke: var(--primary); stroke-linecap: round;
             stroke-dasharray: 100; stroke-dashoffset: 100;
-            animation: bootCircleProgress 2s ease-in-out 1s forwards;
+            animation: bootCircleProgress 2.5s ease-in-out 1.5s forwards;
+            filter: drop-shadow(0 0 6px var(--primary-glow));
         }
         @keyframes bootFadeIn {
-            from { opacity: 0; transform: translateY(12px); }
+            from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
         }
         @keyframes bootCircleProgress {
             0% { stroke-dashoffset: 100; }
             30% { stroke-dashoffset: 60; }
-            60% { stroke-dashoffset: 30; }
+            60% { stroke-dashoffset: 25; }
             100% { stroke-dashoffset: 0; }
         }
 
         /* ===== 激活码界面 ===== */
         #activationScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff; z-index: 9998; flex-direction: column;
+            background: linear-gradient(135deg, #0a0a0a 0%, #0d1117 50%, #0a1f0a 100%);
+            z-index: 9998; flex-direction: column;
             padding: 0 24px; overflow-y: auto;
         }
         .activation-header {
-            padding-top: 80px; padding-bottom: 32px; text-align: center;
+            padding-top: 100px; padding-bottom: 40px; text-align: center;
         }
         .activation-header h1 {
-            font-size: 1.6rem; font-weight: 600; color: var(--text-title);
+            font-size: 1.8rem; font-weight: 500; color: #ffffff;
+            letter-spacing: 1px;
         }
         .activation-header p {
-            font-size: 0.85rem; color: var(--text-dim); margin-top: 8px;
+            font-size: 0.9rem; color: var(--text-dim); margin-top: 10px;
         }
         .activation-card {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); padding: 28px 24px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(24px) saturate(1.8);
+            -webkit-backdrop-filter: blur(24px) saturate(1.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-xl);
+            padding: 32px 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
         .activation-input-wrap {
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         .activation-input-wrap label {
-            display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;
+            display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 10px;
         }
         .activation-input {
-            width: 100%; padding: 14px 16px;
-            border: 1px solid var(--border); border-radius: var(--radius-sm);
-            font-size: 1rem; color: var(--text-title); outline: none;
-            transition: border-color 0.2s, box-shadow 0.2s;
+            width: 100%; padding: 16px 18px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm);
+            font-size: 1rem; color: #ffffff; outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
             font-family: inherit;
         }
         .activation-input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.15), 0 0 20px rgba(34,197,94,0.1);
         }
-        .activation-input::placeholder { color: #cccccc; }
+        .activation-input::placeholder { color: #444444; }
         .activation-btn {
-            width: 100%; padding: 14px; border: none; border-radius: 999px;
-            background: var(--primary); color: #fff; font-size: 1rem; font-weight: 600;
-            cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+            width: 100%; padding: 16px; border: none; border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: transform 0.2s var(--transition), box-shadow 0.3s;
             font-family: inherit;
+            box-shadow: 0 4px 20px rgba(34,197,94,0.3);
         }
         .activation-btn:active { transform: scale(0.97); }
-        .activation-btn:hover { box-shadow: 0 4px 16px rgba(34,197,94,0.35); }
+        .activation-btn:hover {
+            box-shadow: 0 6px 28px rgba(34,197,94,0.5);
+            transform: translateY(-2px);
+        }
         .activation-link {
-            display: block; text-align: center; margin-top: 16px;
+            display: block; text-align: center; margin-top: 18px;
             color: var(--text-dim); font-size: 0.85rem; text-decoration: none;
-            transition: color 0.2s; cursor: pointer;
+            transition: color 0.3s; cursor: pointer;
         }
         .activation-link:hover { color: var(--primary); }
         .activation-error {
             color: #ef4444; font-size: 0.8rem; text-align: center;
-            min-height: 20px; margin-top: 10px;
+            min-height: 20px; margin-top: 12px;
         }
         .activation-perm-list {
-            margin-top: 28px; background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); padding: 20px 24px;
+            margin-top: 32px;
+            background: rgba(255,255,255,0.04);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-xl);
+            padding: 24px;
         }
         .activation-perm-list h3 {
-            font-size: 0.9rem; color: var(--text-title); margin-bottom: 12px;
+            font-size: 0.95rem; color: #ffffff; margin-bottom: 16px; font-weight: 500;
         }
         .perm-item {
-            display: flex; align-items: center; padding: 10px 0;
-            border-bottom: 1px solid var(--border); font-size: 0.85rem;
+            display: flex; align-items: center; padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.85rem;
         }
         .perm-item:last-child { border-bottom: none; }
         .perm-dot {
             width: 8px; height: 8px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
+            box-shadow: 0 0 8px currentColor;
         }
-        .perm-dot.green { background: var(--primary); }
-        .perm-dot.blue { background: #3b82f6; }
-        .perm-dot.orange { background: #f59e0b; }
-        .perm-dot.gray { background: #9ca3af; }
-        .perm-name { color: var(--text-title); font-weight: 500; }
+        .perm-dot.green { background: var(--primary); color: var(--primary); }
+        .perm-dot.blue { background: #3b82f6; color: #3b82f6; }
+        .perm-dot.orange { background: #f59e0b; color: #f59e0b; }
+        .perm-dot.gray { background: #9ca3af; color: #9ca3af; }
+        .perm-name { color: #ffffff; font-weight: 500; }
         .perm-desc { color: var(--text-dim); margin-left: auto; font-size: 0.8rem; }
 
         /* ===== 主界面框架 ===== */
         #mainScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--bg); z-index: 9997; flex-direction: column;
+            z-index: 9997; flex-direction: column;
         }
 
         /* 顶部状态栏 */
         .statusbar {
-            height: 36px; background: var(--card-bg);
+            height: 44px;
+            background: rgba(10,10,10,0.6);
+            backdrop-filter: blur(20px) saturate(1.8);
+            -webkit-backdrop-filter: blur(20px) saturate(1.8);
             display: flex; align-items: center; justify-content: space-between;
-            padding: 0 20px; font-size: 0.8rem; color: var(--text-body);
-            flex-shrink: 0; z-index: 10; border-bottom: 1px solid var(--border);
+            padding: 0 24px; font-size: 0.8rem; color: var(--text-body);
+            flex-shrink: 0; z-index: 10;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            transition: background 0.5s var(--transition);
         }
-        .statusbar-left { font-weight: 500; }
-        .statusbar-right { display: flex; gap: 12px; align-items: center; }
+        :root[data-theme="light"] .statusbar {
+            background: rgba(255,255,255,0.6);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .statusbar-left { font-weight: 500; color: var(--text-title); }
+        .statusbar-right { display: flex; gap: 14px; align-items: center; }
         .statusbar-icon { width: 16px; height: 16px; fill: var(--text-body); }
 
         /* 内容区域 */
         .main-content {
-            flex: 1; overflow-y: auto; padding: 16px 16px 80px;
+            flex: 1; overflow-y: auto; padding: 20px 20px 100px;
             position: relative;
         }
 
         /* 用户卡片 */
         .user-card {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); padding: 20px;
-            display: flex; align-items: center; gap: 16px;
-            margin-bottom: 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px) saturate(1.8);
+            -webkit-backdrop-filter: blur(20px) saturate(1.8);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            padding: 24px;
+            display: flex; align-items: center; gap: 18px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .user-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent);
         }
         .user-avatar {
-            width: 56px; height: 56px; border-radius: 50%;
+            width: 60px; height: 60px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.4rem; font-weight: 600; flex-shrink: 0;
+            color: #fff; font-size: 1.5rem; font-weight: 600; flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(34,197,94,0.3);
+            position: relative;
+        }
+        .user-avatar::after {
+            content: ''; position: absolute; inset: -3px; border-radius: 50%;
+            border: 2px solid rgba(34,197,94,0.3);
+            animation: avatarPulse 3s ease-in-out infinite;
+        }
+        @keyframes avatarPulse {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.05); opacity: 0.3; }
         }
         .user-info { flex: 1; min-width: 0; }
-        .user-name { font-size: 1.1rem; font-weight: 600; color: var(--text-title); }
-        .user-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+        .user-name { font-size: 1.15rem; font-weight: 500; color: var(--text-title); }
+        .user-meta { font-size: 0.78rem; color: var(--text-dim); margin-top: 4px; }
         .user-badge {
-            display: inline-block; padding: 2px 10px; border-radius: 999px;
-            font-size: 0.7rem; font-weight: 500; margin-top: 6px;
+            display: inline-block; padding: 3px 12px; border-radius: 999px;
+            font-size: 0.72rem; font-weight: 500; margin-top: 8px;
+            backdrop-filter: blur(10px);
         }
-        .user-badge.admin { background: rgba(34,197,94,0.1); color: var(--primary); }
-        .user-badge.system { background: rgba(245,158,11,0.1); color: #f59e0b; }
-        .user-badge.user { background: rgba(156,163,175,0.1); color: #9ca3af; }
+        .user-badge.admin { background: rgba(34,197,94,0.15); color: var(--primary); border: 1px solid rgba(34,197,94,0.2); }
+        .user-badge.system { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .user-badge.user { background: rgba(156,163,175,0.15); color: #9ca3af; border: 1px solid rgba(156,163,175,0.2); }
 
         /* 快捷功能网格 */
         .app-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-            margin-bottom: 16px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+            margin-bottom: 20px;
         }
         .app-grid-item {
-            background: var(--card-bg); border-radius: var(--radius);
-            box-shadow: var(--shadow); padding: 14px 8px;
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius);
+            padding: 16px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            cursor: pointer;
+            transition: transform 0.3s var(--transition), box-shadow 0.3s var(--transition);
         }
-        .app-grid-item:active { transform: scale(0.95); }
-        .app-grid-item:hover { box-shadow: var(--shadow-hover); }
+        .app-grid-item:active { transform: scale(0.92); }
+        .app-grid-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+        }
         .app-grid-icon {
-            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            width: 44px; height: 44px; border-radius: var(--radius-sm);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.3rem;
+            font-size: 1.4rem;
+            transition: transform 0.3s var(--transition);
         }
-        .app-grid-icon.green { background: rgba(34,197,94,0.1); color: var(--primary); }
-        .app-grid-icon.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
-        .app-grid-icon.purple { background: rgba(168,85,247,0.1); color: #a855f7; }
-        .app-grid-icon.orange { background: rgba(249,115,22,0.1); color: #f97316; }
-        .app-grid-icon.red { background: rgba(239,68,68,0.1); color: #ef4444; }
-        .app-grid-icon.cyan { background: rgba(6,182,212,0.1); color: #06b6d4; }
-        .app-grid-icon.pink { background: rgba(236,72,153,0.1); color: #ec4899; }
-        .app-grid-icon.yellow { background: rgba(234,179,8,0.1); color: #eab308; }
-        .app-grid-label { font-size: 0.7rem; color: var(--text-body); text-align: center; }
+        .app-grid-item:hover .app-grid-icon { transform: scale(1.1); }
+        .app-grid-icon.green { background: rgba(34,197,94,0.15); color: var(--primary); }
+        .app-grid-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .app-grid-icon.purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .app-grid-icon.orange { background: rgba(249,115,22,0.15); color: #f97316; }
+        .app-grid-icon.red { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .app-grid-icon.cyan { background: rgba(6,182,212,0.15); color: #06b6d4; }
+        .app-grid-icon.pink { background: rgba(236,72,153,0.15); color: #ec4899; }
+        .app-grid-icon.yellow { background: rgba(234,179,8,0.15); color: #eab308; }
+        .app-grid-label { font-size: 0.72rem; color: var(--text-body); text-align: center; font-weight: 400; }
 
         /* 终端区域 */
         .terminal-card {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); overflow: hidden;
-            transition: max-height 0.3s ease;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px) saturate(1.8);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: max-height 0.4s var(--transition);
         }
         .terminal-card-header {
             display: flex; align-items: center; justify-content: space-between;
-            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            padding: 16px 20px; border-bottom: 1px solid var(--border);
             cursor: pointer; user-select: none;
         }
         .terminal-card-title {
-            font-size: 0.9rem; font-weight: 600; color: var(--text-title);
-            display: flex; align-items: center; gap: 8px;
+            font-size: 0.9rem; font-weight: 500; color: var(--text-title);
+            display: flex; align-items: center; gap: 10px;
         }
         .terminal-card-toggle {
-            font-size: 0.75rem; color: var(--primary); font-weight: 500;
-            transition: transform 0.2s;
+            font-size: 0.8rem; color: var(--primary); font-weight: 500;
+            transition: transform 0.3s var(--transition);
         }
         .terminal-card.expanded .terminal-card-toggle { transform: rotate(180deg); }
         .terminal-card-body {
-            max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+            max-height: 0; overflow: hidden; transition: max-height 0.4s var(--transition);
         }
         .terminal-card.expanded .terminal-card-body { max-height: 50vh; }
         .terminal-content {
-            padding: 12px 16px; font-size: 0.8rem; line-height: 1.6;
+            padding: 14px 18px; font-size: 0.82rem; line-height: 1.7;
             color: var(--text-body); max-height: 38vh; overflow-y: auto;
             font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         }
         .terminal-input-row {
             display: flex; align-items: center;
-            padding: 10px 16px; border-top: 1px solid var(--border);
-            background: #fafafa;
+            padding: 12px 18px; border-top: 1px solid var(--border);
+            background: rgba(0,0,0,0.2);
         }
         .terminal-prompt {
-            color: var(--primary); margin-right: 8px; white-space: nowrap;
-            font-size: 0.8rem; font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            color: var(--primary); margin-right: 10px; white-space: nowrap;
+            font-size: 0.82rem; font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            text-shadow: 0 0 8px rgba(34,197,94,0.4);
         }
         .terminal-input {
             flex: 1; background: none; border: none;
-            color: var(--text-title); font-size: 0.8rem; outline: none;
+            color: var(--text-title); font-size: 0.82rem; outline: none;
             font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            caret-color: var(--primary);
         }
+        .terminal-input::placeholder { color: #444444; }
         .term-line { white-space: pre-wrap; word-break: break-all; }
         .term-line.cmd { color: var(--text-title); }
-        .term-line.info { color: var(--primary); }
+        .term-line.info { color: var(--primary); text-shadow: 0 0 6px rgba(34,197,94,0.3); }
         .term-line.error { color: #ef4444; }
         .term-line.warn { color: #f59e0b; }
         .term-line.dim { color: var(--text-dim); }
-        .term-line.success { color: var(--primary); font-weight: bold; }
+        .term-line.success { color: var(--primary); font-weight: 500; text-shadow: 0 0 6px rgba(34,197,94,0.3); }
         .term-line.system { color: var(--text-dim); }
         .term-line.highlight { color: var(--primary); }
         .term-line.white { color: var(--text-body); }
 
+        /* 呼吸光标 */
+        .terminal-input:focus {
+            animation: cursorBreath 2s ease-in-out infinite;
+        }
+        @keyframes cursorBreath {
+            0%, 100% { caret-color: var(--primary); }
+            50% { caret-color: rgba(34,197,94,0.3); }
+        }
+
         /* 页面切换 */
-        .page { display: none; animation: pageIn 0.25s ease; }
+        .page { display: none; animation: pageIn 0.35s var(--transition); }
         .page.active { display: block; }
         @keyframes pageIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         /* 应用列表 */
-        .app-list { background: var(--card-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow); overflow: hidden; }
+        .app-list {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
         .app-list-item {
-            display: flex; align-items: center; padding: 14px 18px;
+            display: flex; align-items: center; padding: 16px 20px;
             border-bottom: 1px solid var(--border); cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.2s, transform 0.2s var(--transition);
         }
         .app-list-item:last-child { border-bottom: none; }
-        .app-list-item:active { background: #f9fafb; }
+        .app-list-item:active { background: rgba(255,255,255,0.03); transform: scale(0.98); }
+        .app-list-item:hover { background: rgba(255,255,255,0.03); }
         .app-list-icon {
-            width: 44px; height: 44px; border-radius: var(--radius-sm);
+            width: 48px; height: 48px; border-radius: var(--radius-sm);
             display: flex; align-items: center; justify-content: center;
-            font-size: 1.4rem; margin-right: 14px; flex-shrink: 0;
+            font-size: 1.5rem; margin-right: 16px; flex-shrink: 0;
         }
         .app-list-info { flex: 1; min-width: 0; }
         .app-list-name { font-size: 0.95rem; font-weight: 500; color: var(--text-title); }
-        .app-list-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .app-list-desc { font-size: 0.78rem; color: var(--text-dim); margin-top: 3px; }
         .app-list-action {
-            padding: 6px 16px; border-radius: 999px; font-size: 0.75rem; font-weight: 500;
+            padding: 8px 18px; border-radius: 999px; font-size: 0.78rem; font-weight: 500;
             border: 1px solid var(--primary); color: var(--primary); background: transparent;
-            cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+            cursor: pointer; transition: all 0.3s var(--transition); flex-shrink: 0;
         }
-        .app-list-action:hover { background: var(--primary); color: #fff; }
+        .app-list-action:hover { background: var(--primary); color: #fff; box-shadow: 0 4px 16px rgba(34,197,94,0.3); }
         .app-list-action.installed { border-color: var(--border); color: var(--text-dim); }
-        .app-list-action.installed:hover { background: transparent; color: var(--text-dim); }
+        .app-list-action.installed:hover { background: transparent; color: var(--text-dim); box-shadow: none; }
 
         /* 我的页面 */
         .profile-header {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); padding: 32px 20px; text-align: center; margin-bottom: 16px;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            padding: 40px 24px; text-align: center; margin-bottom: 20px;
+            position: relative; overflow: hidden;
+        }
+        .profile-header::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(34,197,94,0.3), transparent);
         }
         .profile-avatar {
-            width: 72px; height: 72px; border-radius: 50%;
+            width: 80px; height: 80px; border-radius: 50%;
             background: linear-gradient(135deg, var(--primary), var(--primary-light));
             display: flex; align-items: center; justify-content: center;
-            color: #fff; font-size: 1.8rem; font-weight: 600; margin: 0 auto;
+            color: #fff; font-size: 2rem; font-weight: 600; margin: 0 auto;
+            box-shadow: 0 0 30px rgba(34,197,94,0.3);
+            position: relative;
         }
-        .profile-name { font-size: 1.2rem; font-weight: 600; color: var(--text-title); margin-top: 12px; }
-        .profile-code { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+        .profile-avatar::after {
+            content: ''; position: absolute; inset: -4px; border-radius: 50%;
+            border: 2px solid rgba(34,197,94,0.3);
+            animation: avatarPulse 3s ease-in-out infinite;
+        }
+        .profile-name { font-size: 1.25rem; font-weight: 500; color: var(--text-title); margin-top: 16px; }
+        .profile-code { font-size: 0.82rem; color: var(--text-dim); margin-top: 6px; }
         .settings-list {
-            background: var(--card-bg); border-radius: var(--radius-xl);
-            box-shadow: var(--shadow); overflow: hidden;
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            overflow: hidden;
         }
         .settings-item {
-            display: flex; align-items: center; padding: 16px 20px;
+            display: flex; align-items: center; padding: 18px 22px;
             border-bottom: 1px solid var(--border); cursor: pointer;
-            transition: background 0.15s;
+            transition: background 0.2s, transform 0.2s var(--transition);
         }
         .settings-item:last-child { border-bottom: none; }
-        .settings-item:active { background: #f9fafb; }
+        .settings-item:active { background: rgba(255,255,255,0.03); transform: scale(0.98); }
+        .settings-item:hover { background: rgba(255,255,255,0.03); }
         .settings-icon {
-            width: 32px; height: 32px; border-radius: 8px;
+            width: 36px; height: 36px; border-radius: 10px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; margin-right: 14px; flex-shrink: 0;
+            font-size: 1.1rem; margin-right: 16px; flex-shrink: 0;
         }
-        .settings-icon.green { background: rgba(34,197,94,0.1); color: var(--primary); }
-        .settings-icon.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
-        .settings-icon.purple { background: rgba(168,85,247,0.1); color: #a855f7; }
-        .settings-icon.orange { background: rgba(249,115,22,0.1); color: #f97316; }
-        .settings-icon.red { background: rgba(239,68,68,0.1); color: #ef4444; }
-        .settings-label { flex: 1; font-size: 0.95rem; color: var(--text-title); }
-        .settings-arrow { color: var(--text-dim); font-size: 0.8rem; }
-        .settings-value { color: var(--text-dim); font-size: 0.8rem; margin-right: 8px; }
+        .settings-icon.green { background: rgba(34,197,94,0.15); color: var(--primary); }
+        .settings-icon.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .settings-icon.purple { background: rgba(168,85,247,0.15); color: #a855f7; }
+        .settings-icon.orange { background: rgba(249,115,22,0.15); color: #f97316; }
+        .settings-icon.red { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .settings-icon.cyan { background: rgba(6,182,212,0.15); color: #06b6d4; }
+        .settings-label { flex: 1; font-size: 0.95rem; color: var(--text-title); font-weight: 400; }
+        .settings-arrow { color: var(--text-dim); font-size: 0.85rem; }
+        .settings-value { color: var(--text-dim); font-size: 0.8rem; margin-right: 10px; }
 
-        /* 底部导航栏 */
+        /* 底部导航栏 - 悬浮胶囊 */
         .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; height: 64px;
-            background: var(--card-bg); border-top: 1px solid var(--border);
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            height: 60px;
+            background: rgba(20,20,20,0.7);
+            backdrop-filter: blur(24px) saturate(1.8);
+            -webkit-backdrop-filter: blur(24px) saturate(1.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 30px;
             display: flex; align-items: center; justify-content: space-around;
-            z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0);
+            z-index: 100;
+            padding: 0 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            gap: 4px;
+            max-width: 90vw;
+            width: 360px;
+            transition: background 0.5s var(--transition);
+        }
+        :root[data-theme="light"] .bottom-nav {
+            background: rgba(255,255,255,0.7);
+            border: 1px solid rgba(0,0,0,0.06);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
         .nav-item {
-            display: flex; flex-direction: column; align-items: center; gap: 4px;
-            padding: 6px 16px; cursor: pointer; transition: color 0.2s;
+            display: flex; flex-direction: column; align-items: center; gap: 3px;
+            padding: 8px 20px; cursor: pointer; transition: all 0.3s var(--transition);
             color: var(--text-dim); border: none; background: none; font-family: inherit;
+            border-radius: 20px;
+            position: relative;
         }
-        .nav-item.active { color: var(--primary); }
-        .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
-        .nav-item span { font-size: 0.65rem; }
+        .nav-item.active {
+            color: var(--primary);
+            transform: scale(1.1);
+        }
+        .nav-item.active::before {
+            content: ''; position: absolute; inset: 0; border-radius: 20px;
+            background: rgba(34,197,94,0.1);
+            box-shadow: 0 0 20px rgba(34,197,94,0.15);
+        }
+        .nav-item svg { width: 22px; height: 22px; fill: currentColor; position: relative; z-index: 1; }
+        .nav-item span { font-size: 0.65rem; position: relative; z-index: 1; }
+
+        /* 悬浮操作按钮 FAB */
+        .fab-btn {
+            position: fixed; bottom: 90px; right: 20px;
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none; color: #fff; font-size: 1.5rem;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+            transition: transform 0.3s var(--transition), box-shadow 0.3s;
+            z-index: 99;
+        }
+        .fab-btn:hover {
+            transform: translateY(-4px) scale(1.05);
+            box-shadow: 0 8px 32px rgba(34,197,94,0.5);
+        }
+        .fab-btn:active { transform: scale(0.95); }
 
         /* ===== 关机画面 ===== */
         #shutdownScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #ffffff; z-index: 10001;
+            background: #0a0a0a; z-index: 10001;
             align-items: center; justify-content: center; flex-direction: column;
         }
         .shutdown-text { color: var(--text-dim); font-size: 0.9rem; }
         .shutdown-spinner {
-            width: 36px; height: 36px; margin-bottom: 16px;
-            border: 3px solid var(--border); border-top-color: var(--primary);
+            width: 40px; height: 40px; margin-bottom: 16px;
+            border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--primary);
             border-radius: 50%; animation: spin 1s linear infinite;
+            box-shadow: 0 0 20px rgba(34,197,94,0.2);
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ===== Toast ===== */
         #toastContainer {
-            position: fixed; top: 48px; right: 16px; z-index: 10002;
-            display: flex; flex-direction: column; gap: 8px;
+            position: fixed; top: 56px; right: 16px; z-index: 10002;
+            display: flex; flex-direction: column; gap: 10px;
         }
         .toast {
-            padding: 12px 20px; border-radius: var(--radius-sm); font-size: 0.85rem;
-            animation: toastIn 0.3s ease; max-width: 320px;
+            padding: 14px 22px; border-radius: var(--radius-sm); font-size: 0.85rem;
+            animation: toastIn 0.35s var(--transition); max-width: 320px;
             box-shadow: var(--shadow-hover); font-weight: 500;
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
         }
-        .toast-info { background: var(--card-bg); color: var(--text-title); border: 1px solid var(--border); }
-        .toast-success { background: #ecfdf5; color: var(--primary); border: 1px solid rgba(34,197,94,0.2); }
-        .toast-error { background: #fef2f2; color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
-        .toast-warn { background: #fffbeb; color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+        .toast-info { background: rgba(30,30,30,0.9); color: var(--text-title); }
+        .toast-success { background: rgba(6,78,59,0.9); color: var(--primary); border-color: rgba(34,197,94,0.2); }
+        .toast-error { background: rgba(127,29,29,0.9); color: #ef4444; border-color: rgba(239,68,68,0.2); }
+        .toast-warn { background: rgba(120,53,15,0.9); color: #f59e0b; border-color: rgba(245,158,11,0.2); }
         .toast-fade-out { animation: toastOut 0.3s ease forwards; }
-        @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes toastIn { from { opacity: 0; transform: translateX(24px) scale(0.95); } to { opacity: 1; transform: translateX(0) scale(1); } }
         @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
         /* ===== 滚动条 ===== */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
-        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.25); }
 
         /* ===== 选中样式 ===== */
-        ::selection { background: rgba(34,197,94,0.2); color: var(--text-title); }
+        ::selection { background: rgba(34,197,94,0.25); color: var(--text-title); }
+
+        /* ===== 主题选择弹窗 ===== */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(8px); z-index: 20000;
+            display: none; align-items: center; justify-content: center;
+            animation: modalFadeIn 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; }
+        @keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content {
+            background: rgba(20,20,20,0.95);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            width: 90%; max-width: 340px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+            animation: modalSlideIn 0.35s var(--transition);
+        }
+        @keyframes modalSlideIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .modal-title { font-size: 1.1rem; font-weight: 500; color: #fff; margin-bottom: 20px; text-align: center; }
+        .theme-option {
+            display: flex; align-items: center; padding: 14px 16px;
+            border-radius: var(--radius-sm); cursor: pointer;
+            transition: background 0.2s; margin-bottom: 8px;
+            border: 1px solid transparent;
+        }
+        .theme-option:hover { background: rgba(255,255,255,0.05); }
+        .theme-option.active { border-color: var(--primary); background: rgba(34,197,94,0.08); }
+        .theme-option-dot { width: 20px; height: 20px; border-radius: 50%; margin-right: 14px; }
+        .theme-option-label { flex: 1; color: var(--text-title); font-size: 0.9rem; }
+        .modal-close {
+            width: 100%; padding: 14px; margin-top: 16px;
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm); color: var(--text-body);
+            font-size: 0.9rem; cursor: pointer; transition: all 0.2s;
+        }
+        .modal-close:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+        /* 壁纸选择 */
+        .wallpaper-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+            margin-top: 16px;
+        }
+        .wallpaper-item {
+            aspect-ratio: 1; border-radius: var(--radius-sm);
+            cursor: pointer; border: 2px solid transparent;
+            transition: all 0.3s var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .wallpaper-item:hover { transform: scale(1.05); }
+        .wallpaper-item.active { border-color: var(--primary); box-shadow: 0 0 16px rgba(34,197,94,0.3); }
+        .wallpaper-item span {
+            position: absolute; bottom: 4px; left: 4px; right: 4px;
+            font-size: 0.65rem; color: #fff; text-align: center;
+            background: rgba(0,0,0,0.5); border-radius: 4px; padding: 2px 0;
+        }
     </style>
 </head>
 <body>
+    <!-- 动态背景 -->
+    <div class="dynamic-bg" id="dynamicBg"></div>
 
     <!-- Toast 容器 -->
     <div id="toastContainer"></div>
@@ -427,7 +697,8 @@
             </svg>
         </div>
         <div class="boot-title">QingningOS</div>
-        <div class="boot-subtitle">基于 MIUI 10 设计</div>
+        <div class="boot-subtitle">基于 HyperOS 3 设计</div>
+        <div class="boot-powered">Powered by HyperOS 3</div>
         <div class="boot-progress-circle">
             <svg viewBox="0 0 36 36">
                 <circle class="bg" cx="18" cy="18" r="16"/>
@@ -559,7 +830,7 @@
                         </div>
                     </div>
                     <div class="terminal-card-body" style="max-height: none;">
-                        <div class="terminal-content" id="terminalContentFull" style="max-height: calc(100vh - 180px);"></div>
+                        <div class="terminal-content" id="terminalContentFull" style="max-height: calc(100vh - 200px);"></div>
                         <div class="terminal-input-row">
                             <span class="terminal-prompt" id="terminalPromptFull">$ </span>
                             <input type="text" class="terminal-input" id="terminalInputFull" autocomplete="off" spellcheck="false" placeholder="输入命令...">
@@ -583,18 +854,30 @@
                 <div class="settings-list">
                     <div class="settings-item" id="settingTheme">
                         <div class="settings-icon purple">&#127912;</div>
-                        <span class="settings-label">主题</span>
+                        <span class="settings-label">主题色</span>
                         <span class="settings-value" id="settingThemeValue">绿色</span>
                         <span class="settings-arrow">&#8250;</span>
                     </div>
+                    <div class="settings-item" id="settingMode">
+                        <div class="settings-icon cyan">&#127769;</div>
+                        <span class="settings-label">显示模式</span>
+                        <span class="settings-value" id="settingModeValue">深色</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                    <div class="settings-item" id="settingWallpaper">
+                        <div class="settings-icon blue">&#127748;</div>
+                        <span class="settings-label">动态壁纸</span>
+                        <span class="settings-value" id="settingWallpaperValue">默认</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
                     <div class="settings-item" id="settingLang">
-                        <div class="settings-icon blue">&#127760;</div>
+                        <div class="settings-icon green">&#127760;</div>
                         <span class="settings-label">语言</span>
                         <span class="settings-value">简体中文</span>
                         <span class="settings-arrow">&#8250;</span>
                     </div>
                     <div class="settings-item" id="settingAbout">
-                        <div class="settings-icon green">&#8505;</div>
+                        <div class="settings-icon purple">&#8505;</div>
                         <span class="settings-label">关于</span>
                         <span class="settings-arrow">&#8250;</span>
                     </div>
@@ -633,10 +916,66 @@
         </div>
     </div>
 
+    <!-- 悬浮操作按钮 -->
+    <button class="fab-btn" id="fabBtn" title="快捷命令">+</button>
+
     <!-- ===== 关机画面 ===== -->
     <div id="shutdownScreen">
         <div class="shutdown-spinner"></div>
         <div class="shutdown-text" id="shutdownText">正在关闭系统...</div>
+    </div>
+
+    <!-- 主题选择弹窗 -->
+    <div class="modal-overlay" id="themeModal">
+        <div class="modal-content">
+            <div class="modal-title">选择主题色</div>
+            <div class="theme-option" data-theme="绿色">
+                <div class="theme-option-dot" style="background:#22c55e"></div>
+                <span class="theme-option-label">青柠绿</span>
+            </div>
+            <div class="theme-option" data-theme="蓝色">
+                <div class="theme-option-dot" style="background:#3b82f6"></div>
+                <span class="theme-option-label">海洋蓝</span>
+            </div>
+            <div class="theme-option" data-theme="紫色">
+                <div class="theme-option-dot" style="background:#a855f7"></div>
+                <span class="theme-option-label">梦幻紫</span>
+            </div>
+            <div class="theme-option" data-theme="红色">
+                <div class="theme-option-dot" style="background:#ef4444"></div>
+                <span class="theme-option-label">活力红</span>
+            </div>
+            <button class="modal-close" id="themeModalClose">关闭</button>
+        </div>
+    </div>
+
+    <!-- 显示模式弹窗 -->
+    <div class="modal-overlay" id="modeModal">
+        <div class="modal-content">
+            <div class="modal-title">显示模式</div>
+            <div class="theme-option" data-mode="dark">
+                <div class="theme-option-dot" style="background:#0a0a0a;border:1px solid #333"></div>
+                <span class="theme-option-label">深色模式</span>
+            </div>
+            <div class="theme-option" data-mode="light">
+                <div class="theme-option-dot" style="background:#f0f0f0;border:1px solid #ccc"></div>
+                <span class="theme-option-label">浅色模式</span>
+            </div>
+            <div class="theme-option" data-mode="auto">
+                <div class="theme-option-dot" style="background:linear-gradient(135deg,#0a0a0a 50%,#f0f0f0 50%)"></div>
+                <span class="theme-option-label">自动</span>
+            </div>
+            <button class="modal-close" id="modeModalClose">关闭</button>
+        </div>
+    </div>
+
+    <!-- 壁纸选择弹窗 -->
+    <div class="modal-overlay" id="wallpaperModal">
+        <div class="modal-content">
+            <div class="modal-title">选择壁纸</div>
+            <div class="wallpaper-grid" id="wallpaperGrid"></div>
+            <button class="modal-close" id="wallpaperModalClose">关闭</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
