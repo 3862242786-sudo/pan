@@ -3,333 +3,409 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>QingningOS Terminal v2.0</title>
+    <title>QingningOS</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #22c55e;
+            --primary-light: #4ade80;
+            --bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --text-title: #333333;
+            --text-body: #666666;
+            --text-dim: #999999;
+            --border: #e5e5e5;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --shadow-hover: 0 4px 20px rgba(0,0,0,0.1);
+            --radius: 14px;
+            --radius-sm: 10px;
+            --radius-xl: 18px;
+        }
         body {
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            background-color: #0a0e1a; color: #22c55e; line-height: 1.6;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background-color: var(--bg); color: var(--text-title); line-height: 1.5;
             overflow: hidden; width: 100vw; height: 100vh; user-select: none;
         }
 
-        /* ===== 开机画面 ===== */
+        /* ===== 开机动画 ===== */
         #bootScreen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10000;
+            background: #ffffff; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-        .boot-ascii-logo {
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.5rem, 1.5vw, 1rem);
-            color: #22c55e;
-            white-space: pre;
-            line-height: 1.3;
+        .boot-logo-svg {
+            width: 80px; height: 80px;
             opacity: 0;
-            animation: bootAsciiIn 0.8s ease-out 0.3s forwards;
-            text-shadow: 0 0 20px rgba(34,197,94,0.4);
+            animation: bootFadeIn 0.6s ease-out 0.2s forwards;
         }
-        .boot-version-text {
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 0.9rem;
-            color: #22c55e;
-            margin-top: 16px;
-            opacity: 0;
-            animation: bootFadeIn 0.8s ease-out 0.8s forwards;
+        .boot-logo-svg svg { width: 100%; height: 100%; }
+        .boot-title {
+            font-size: 1.4rem; font-weight: 600; color: var(--text-title);
+            margin-top: 20px; letter-spacing: 1px;
+            opacity: 0; animation: bootFadeIn 0.6s ease-out 0.5s forwards;
         }
-        .boot-powered-text {
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 0.7rem;
-            color: #64748b;
-            position: absolute;
-            bottom: 60px;
-            right: 30px;
-            opacity: 0;
-            animation: bootFadeIn 0.8s ease-out 1s forwards;
+        .boot-subtitle {
+            font-size: 0.8rem; color: var(--text-dim); margin-top: 6px;
+            opacity: 0; animation: bootFadeIn 0.6s ease-out 0.7s forwards;
         }
-        .boot-progress-container {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 240px;
-            height: 3px;
-            background: rgba(34,197,94,0.1);
-            border-radius: 3px;
-            overflow: hidden;
-            opacity: 0;
-            animation: bootFadeIn 0.5s ease-out 1.2s forwards;
+        .boot-progress-circle {
+            position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+            width: 36px; height: 36px;
+            opacity: 0; animation: bootFadeIn 0.5s ease-out 0.9s forwards;
         }
-        .boot-progress-fill {
-            height: 100%; width: 0%; background: #22c55e; border-radius: 3px;
-            animation: bootProgress 2s ease-in-out 1.2s forwards;
-            box-shadow: 0 0 8px rgba(34,197,94,0.5);
-        }
-        @keyframes bootAsciiIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
+        .boot-progress-circle svg { transform: rotate(-90deg); }
+        .boot-progress-circle circle { fill: none; stroke-width: 3; }
+        .boot-progress-circle .bg { stroke: #e5e5e5; }
+        .boot-progress-circle .fill {
+            stroke: var(--primary); stroke-linecap: round;
+            stroke-dasharray: 100; stroke-dashoffset: 100;
+            animation: bootCircleProgress 2s ease-in-out 1s forwards;
         }
         @keyframes bootFadeIn {
-            from { opacity: 0; transform: translateY(8px); }
+            from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        @keyframes bootProgress {
-            0% { width: 0%; }
-            30% { width: 40%; }
-            60% { width: 70%; }
-            100% { width: 100%; }
+        @keyframes bootCircleProgress {
+            0% { stroke-dashoffset: 100; }
+            30% { stroke-dashoffset: 60; }
+            60% { stroke-dashoffset: 30; }
+            100% { stroke-dashoffset: 0; }
         }
 
         /* ===== 激活码界面 ===== */
         #activationScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0a0e1a; z-index: 9998;
-            align-items: center; justify-content: center;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            background: #ffffff; z-index: 9998; flex-direction: column;
+            padding: 0 24px; overflow-y: auto;
         }
-        .activation-box {
-            color: #22c55e;
-            white-space: pre;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-            line-height: 1.5;
-            text-align: center;
+        .activation-header {
+            padding-top: 80px; padding-bottom: 32px; text-align: center;
         }
-        .activation-box .border-line { color: #22c55e; }
-        .activation-box .text-content { color: #22c55e; }
-        .activation-box .text-dim { color: #64748b; }
-        .activation-box .text-warn { color: #eab308; }
-        .activation-input-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 0;
-            margin-bottom: 0;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-            color: #22c55e;
+        .activation-header h1 {
+            font-size: 1.6rem; font-weight: 600; color: var(--text-title);
+        }
+        .activation-header p {
+            font-size: 0.85rem; color: var(--text-dim); margin-top: 8px;
+        }
+        .activation-card {
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); padding: 28px 24px;
+        }
+        .activation-input-wrap {
+            margin-bottom: 20px;
+        }
+        .activation-input-wrap label {
+            display: block; font-size: 0.8rem; color: var(--text-dim); margin-bottom: 8px;
         }
         .activation-input {
-            width: 220px;
-            padding: 6px 12px;
-            background: rgba(34,197,94,0.05);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #22c55e;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-            outline: none;
-            caret-color: #22c55e;
+            width: 100%; padding: 14px 16px;
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            font-size: 1rem; color: var(--text-title); outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
         }
         .activation-input:focus {
-            border-color: #22c55e;
-            box-shadow: 0 0 8px rgba(34,197,94,0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(34,197,94,0.1);
         }
-        .activation-input::placeholder { color: #475569; }
-        .activation-buttons-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-top: 4px;
-            margin-bottom: 0;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-        }
+        .activation-input::placeholder { color: #cccccc; }
         .activation-btn {
-            padding: 6px 20px;
-            background: rgba(34,197,94,0.1);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #22c55e;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-            cursor: pointer;
-            transition: all 0.2s;
+            width: 100%; padding: 14px; border: none; border-radius: 999px;
+            background: var(--primary); color: #fff; font-size: 1rem; font-weight: 600;
+            cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+            font-family: inherit;
         }
-        .activation-btn:hover {
-            background: rgba(34,197,94,0.2);
-            border-color: #22c55e;
-            box-shadow: 0 0 12px rgba(34,197,94,0.2);
-        }
+        .activation-btn:active { transform: scale(0.97); }
+        .activation-btn:hover { box-shadow: 0 4px 16px rgba(34,197,94,0.35); }
         .activation-link {
-            color: #64748b;
-            text-decoration: none;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: clamp(0.55rem, 1.2vw, 0.85rem);
-            cursor: pointer;
-            transition: color 0.2s;
+            display: block; text-align: center; margin-top: 16px;
+            color: var(--text-dim); font-size: 0.85rem; text-decoration: none;
+            transition: color 0.2s; cursor: pointer;
         }
-        .activation-link:hover { color: #22c55e; }
+        .activation-link:hover { color: var(--primary); }
         .activation-error {
-            color: #ef4444;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 0.75rem;
-            text-align: center;
-            min-height: 18px;
-            margin-top: 8px;
+            color: #ef4444; font-size: 0.8rem; text-align: center;
+            min-height: 20px; margin-top: 10px;
         }
+        .activation-perm-list {
+            margin-top: 28px; background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); padding: 20px 24px;
+        }
+        .activation-perm-list h3 {
+            font-size: 0.9rem; color: var(--text-title); margin-bottom: 12px;
+        }
+        .perm-item {
+            display: flex; align-items: center; padding: 10px 0;
+            border-bottom: 1px solid var(--border); font-size: 0.85rem;
+        }
+        .perm-item:last-child { border-bottom: none; }
+        .perm-dot {
+            width: 8px; height: 8px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
+        }
+        .perm-dot.green { background: var(--primary); }
+        .perm-dot.blue { background: #3b82f6; }
+        .perm-dot.orange { background: #f59e0b; }
+        .perm-dot.gray { background: #9ca3af; }
+        .perm-name { color: var(--text-title); font-weight: 500; }
+        .perm-desc { color: var(--text-dim); margin-left: auto; font-size: 0.8rem; }
 
-        /* ===== 终端主界面 ===== */
-        #terminalScreen {
+        /* ===== 主界面框架 ===== */
+        #mainScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0a0e1a; z-index: 9997;
-            flex-direction: column;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+            background: var(--bg); z-index: 9997; flex-direction: column;
         }
 
         /* 顶部状态栏 */
-        .terminal-statusbar {
-            height: 28px;
-            background: rgba(34,197,94,0.05);
-            border-bottom: 1px solid rgba(34,197,94,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 16px;
-            font-size: 0.72rem;
-            color: #64748b;
-            flex-shrink: 0;
-            z-index: 10;
+        .statusbar {
+            height: 36px; background: var(--card-bg);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 20px; font-size: 0.8rem; color: var(--text-body);
+            flex-shrink: 0; z-index: 10; border-bottom: 1px solid var(--border);
         }
-        .terminal-statusbar-left { color: #22c55e; font-weight: 600; }
-        .terminal-statusbar-right { display: flex; gap: 16px; align-items: center; }
-        .terminal-statusbar-right .status-item { color: #64748b; }
-        .terminal-statusbar-right .status-value { color: #22c55e; }
-        .terminal-statusbar-right .status-separator { color: #1e293b; }
+        .statusbar-left { font-weight: 500; }
+        .statusbar-right { display: flex; gap: 12px; align-items: center; }
+        .statusbar-icon { width: 16px; height: 16px; fill: var(--text-body); }
 
-        /* 终端内容区域 */
+        /* 内容区域 */
+        .main-content {
+            flex: 1; overflow-y: auto; padding: 16px 16px 80px;
+            position: relative;
+        }
+
+        /* 用户卡片 */
+        .user-card {
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); padding: 20px;
+            display: flex; align-items: center; gap: 16px;
+            margin-bottom: 16px;
+        }
+        .user-avatar {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.4rem; font-weight: 600; flex-shrink: 0;
+        }
+        .user-info { flex: 1; min-width: 0; }
+        .user-name { font-size: 1.1rem; font-weight: 600; color: var(--text-title); }
+        .user-meta { font-size: 0.75rem; color: var(--text-dim); margin-top: 4px; }
+        .user-badge {
+            display: inline-block; padding: 2px 10px; border-radius: 999px;
+            font-size: 0.7rem; font-weight: 500; margin-top: 6px;
+        }
+        .user-badge.admin { background: rgba(34,197,94,0.1); color: var(--primary); }
+        .user-badge.system { background: rgba(245,158,11,0.1); color: #f59e0b; }
+        .user-badge.user { background: rgba(156,163,175,0.1); color: #9ca3af; }
+
+        /* 快捷功能网格 */
+        .app-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            margin-bottom: 16px;
+        }
+        .app-grid-item {
+            background: var(--card-bg); border-radius: var(--radius);
+            box-shadow: var(--shadow); padding: 14px 8px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            cursor: pointer; transition: transform 0.15s, box-shadow 0.2s;
+        }
+        .app-grid-item:active { transform: scale(0.95); }
+        .app-grid-item:hover { box-shadow: var(--shadow-hover); }
+        .app-grid-icon {
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+        }
+        .app-grid-icon.green { background: rgba(34,197,94,0.1); color: var(--primary); }
+        .app-grid-icon.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .app-grid-icon.purple { background: rgba(168,85,247,0.1); color: #a855f7; }
+        .app-grid-icon.orange { background: rgba(249,115,22,0.1); color: #f97316; }
+        .app-grid-icon.red { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .app-grid-icon.cyan { background: rgba(6,182,212,0.1); color: #06b6d4; }
+        .app-grid-icon.pink { background: rgba(236,72,153,0.1); color: #ec4899; }
+        .app-grid-icon.yellow { background: rgba(234,179,8,0.1); color: #eab308; }
+        .app-grid-label { font-size: 0.7rem; color: var(--text-body); text-align: center; }
+
+        /* 终端区域 */
+        .terminal-card {
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .terminal-card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            cursor: pointer; user-select: none;
+        }
+        .terminal-card-title {
+            font-size: 0.9rem; font-weight: 600; color: var(--text-title);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .terminal-card-toggle {
+            font-size: 0.75rem; color: var(--primary); font-weight: 500;
+            transition: transform 0.2s;
+        }
+        .terminal-card.expanded .terminal-card-toggle { transform: rotate(180deg); }
+        .terminal-card-body {
+            max-height: 0; overflow: hidden; transition: max-height 0.35s ease;
+        }
+        .terminal-card.expanded .terminal-card-body { max-height: 50vh; }
         .terminal-content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 16px;
-            font-size: 0.82rem;
-            line-height: 1.6;
-            position: relative;
+            padding: 12px 16px; font-size: 0.8rem; line-height: 1.6;
+            color: var(--text-body); max-height: 38vh; overflow-y: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         }
-        /* 滚动渐变遮罩 */
-        .terminal-content-wrapper {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-        }
-        .terminal-content-wrapper::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 30px;
-            background: linear-gradient(to bottom, #0a0e1a, transparent);
-            pointer-events: none;
-            z-index: 5;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .terminal-content-wrapper.scrolled::after {
-            opacity: 1;
-        }
-
-        /* 终端行样式 */
-        .term-line { white-space: pre-wrap; word-break: break-all; }
-        .term-line.cmd { color: #e2e8f0; }
-        .term-line.info { color: #22c55e; }
-        .term-line.error { color: #ef4444; }
-        .term-line.warn { color: #eab308; }
-        .term-line.dim { color: #64748b; }
-        .term-line.success { color: #22c55e; font-weight: bold; }
-        .term-line.system { color: #22c55e; opacity: 0.7; }
-        .term-line.highlight { color: #22c55e; text-shadow: 0 0 8px rgba(34,197,94,0.3); }
-        .term-line.white { color: #e2e8f0; }
-        .term-line .prompt-prefix { color: #22c55e; }
-        .term-line .prompt-path { color: #64748b; }
-        .term-line .prompt-arrow { color: #22c55e; }
-
-        /* 底部输入行 */
         .terminal-input-row {
-            display: flex;
-            align-items: center;
-            padding: 8px 16px;
-            border-top: 1px solid rgba(34,197,94,0.1);
-            background: rgba(10,14,26,0.8);
-            flex-shrink: 0;
-            font-size: 0.82rem;
+            display: flex; align-items: center;
+            padding: 10px 16px; border-top: 1px solid var(--border);
+            background: #fafafa;
         }
         .terminal-prompt {
-            color: #22c55e;
-            margin-right: 8px;
-            white-space: nowrap;
-            font-size: 0.82rem;
+            color: var(--primary); margin-right: 8px; white-space: nowrap;
+            font-size: 0.8rem; font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         }
-        .terminal-prompt .bracket { color: #64748b; }
-        .terminal-prompt .user { color: #22c55e; }
-        .terminal-prompt .at { color: #64748b; }
-        .terminal-prompt .host { color: #22c55e; }
-        .terminal-prompt .path { color: #64748b; }
-        .terminal-prompt .arrow { color: #22c55e; }
         .terminal-input {
-            flex: 1;
-            background: none;
-            border: none;
-            color: #e2e8f0;
+            flex: 1; background: none; border: none;
+            color: var(--text-title); font-size: 0.8rem; outline: none;
             font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 0.82rem;
-            outline: none;
-            caret-color: #22c55e;
+        }
+        .term-line { white-space: pre-wrap; word-break: break-all; }
+        .term-line.cmd { color: var(--text-title); }
+        .term-line.info { color: var(--primary); }
+        .term-line.error { color: #ef4444; }
+        .term-line.warn { color: #f59e0b; }
+        .term-line.dim { color: var(--text-dim); }
+        .term-line.success { color: var(--primary); font-weight: bold; }
+        .term-line.system { color: var(--text-dim); }
+        .term-line.highlight { color: var(--primary); }
+        .term-line.white { color: var(--text-body); }
+
+        /* 页面切换 */
+        .page { display: none; animation: pageIn 0.25s ease; }
+        .page.active { display: block; }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 光标闪烁 */
-        @keyframes cursorBlink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
+        /* 应用列表 */
+        .app-list { background: var(--card-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow); overflow: hidden; }
+        .app-list-item {
+            display: flex; align-items: center; padding: 14px 18px;
+            border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: background 0.15s;
         }
-        .cursor-blink {
-            animation: cursorBlink 1s step-end infinite;
+        .app-list-item:last-child { border-bottom: none; }
+        .app-list-item:active { background: #f9fafb; }
+        .app-list-icon {
+            width: 44px; height: 44px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; margin-right: 14px; flex-shrink: 0;
         }
+        .app-list-info { flex: 1; min-width: 0; }
+        .app-list-name { font-size: 0.95rem; font-weight: 500; color: var(--text-title); }
+        .app-list-desc { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+        .app-list-action {
+            padding: 6px 16px; border-radius: 999px; font-size: 0.75rem; font-weight: 500;
+            border: 1px solid var(--primary); color: var(--primary); background: transparent;
+            cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+        }
+        .app-list-action:hover { background: var(--primary); color: #fff; }
+        .app-list-action.installed { border-color: var(--border); color: var(--text-dim); }
+        .app-list-action.installed:hover { background: transparent; color: var(--text-dim); }
+
+        /* 我的页面 */
+        .profile-header {
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); padding: 32px 20px; text-align: center; margin-bottom: 16px;
+        }
+        .profile-avatar {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 1.8rem; font-weight: 600; margin: 0 auto;
+        }
+        .profile-name { font-size: 1.2rem; font-weight: 600; color: var(--text-title); margin-top: 12px; }
+        .profile-code { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+        .settings-list {
+            background: var(--card-bg); border-radius: var(--radius-xl);
+            box-shadow: var(--shadow); overflow: hidden;
+        }
+        .settings-item {
+            display: flex; align-items: center; padding: 16px 20px;
+            border-bottom: 1px solid var(--border); cursor: pointer;
+            transition: background 0.15s;
+        }
+        .settings-item:last-child { border-bottom: none; }
+        .settings-item:active { background: #f9fafb; }
+        .settings-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; margin-right: 14px; flex-shrink: 0;
+        }
+        .settings-icon.green { background: rgba(34,197,94,0.1); color: var(--primary); }
+        .settings-icon.blue { background: rgba(59,130,246,0.1); color: #3b82f6; }
+        .settings-icon.purple { background: rgba(168,85,247,0.1); color: #a855f7; }
+        .settings-icon.orange { background: rgba(249,115,22,0.1); color: #f97316; }
+        .settings-icon.red { background: rgba(239,68,68,0.1); color: #ef4444; }
+        .settings-label { flex: 1; font-size: 0.95rem; color: var(--text-title); }
+        .settings-arrow { color: var(--text-dim); font-size: 0.8rem; }
+        .settings-value { color: var(--text-dim); font-size: 0.8rem; margin-right: 8px; }
+
+        /* 底部导航栏 */
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 64px;
+            background: var(--card-bg); border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-around;
+            z-index: 100; padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 6px 16px; cursor: pointer; transition: color 0.2s;
+            color: var(--text-dim); border: none; background: none; font-family: inherit;
+        }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+        .nav-item span { font-size: 0.65rem; }
 
         /* ===== 关机画面 ===== */
         #shutdownScreen {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; z-index: 10001;
+            background: #ffffff; z-index: 10001;
             align-items: center; justify-content: center; flex-direction: column;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         }
-        .shutdown-text {
-            color: #64748b;
-            font-size: 0.85rem;
-            animation: shutdownPulse 1.5s ease-in-out infinite;
+        .shutdown-text { color: var(--text-dim); font-size: 0.9rem; }
+        .shutdown-spinner {
+            width: 36px; height: 36px; margin-bottom: 16px;
+            border: 3px solid var(--border); border-top-color: var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite;
         }
-        @keyframes shutdownPulse {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
         /* ===== Toast ===== */
         #toastContainer {
-            position: fixed; top: 40px; right: 20px; z-index: 10002;
+            position: fixed; top: 48px; right: 16px; z-index: 10002;
             display: flex; flex-direction: column; gap: 8px;
         }
         .toast {
-            padding: 10px 20px; border-radius: 6px; font-size: 0.8rem;
-            font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
-            animation: toastIn 0.3s ease;
-            max-width: 400px;
-            border: 1px solid;
+            padding: 12px 20px; border-radius: var(--radius-sm); font-size: 0.85rem;
+            animation: toastIn 0.3s ease; max-width: 320px;
+            box-shadow: var(--shadow-hover); font-weight: 500;
         }
-        .toast-info { background: rgba(10,14,26,0.95); border-color: rgba(34,197,94,0.3); color: #22c55e; }
-        .toast-success { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.4); color: #22c55e; }
-        .toast-error { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); color: #ef4444; }
-        .toast-warn { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.3); color: #eab308; }
+        .toast-info { background: var(--card-bg); color: var(--text-title); border: 1px solid var(--border); }
+        .toast-success { background: #ecfdf5; color: var(--primary); border: 1px solid rgba(34,197,94,0.2); }
+        .toast-error { background: #fef2f2; color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+        .toast-warn { background: #fffbeb; color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
         .toast-fade-out { animation: toastOut 0.3s ease forwards; }
         @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
 
         /* ===== 滚动条 ===== */
-        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(34,197,94,0.2); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(34,197,94,0.35); }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
         /* ===== 选中样式 ===== */
-        ::selection {
-            background: rgba(34,197,94,0.3);
-            color: #22c55e;
-        }
+        ::selection { background: rgba(34,197,94,0.2); color: var(--text-title); }
     </style>
 </head>
 <body>
@@ -339,49 +415,227 @@
 
     <!-- ===== 开机画面 ===== -->
     <div id="bootScreen">
-        <div class="boot-ascii-logo" id="bootLogo"></div>
-        <div class="boot-version-text">QingningOS Terminal v2.0</div>
-        <div class="boot-powered-text">Powered by Web</div>
-        <div class="boot-progress-container">
-            <div class="boot-progress-fill"></div>
+        <div class="boot-logo-svg">
+            <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M25 65 C25 45 35 30 50 30 C65 30 75 45 75 65 C75 75 65 80 50 80 C35 80 25 75 25 65Z" fill="#22c55e"/>
+                <circle cx="38" cy="50" r="5" fill="#ffffff"/>
+                <circle cx="62" cy="50" r="5" fill="#ffffff"/>
+                <path d="M42 62 Q50 70 58 62" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none"/>
+                <ellipse cx="30" cy="35" rx="8" ry="5" fill="#22c55e" opacity="0.6"/>
+                <ellipse cx="70" cy="30" rx="10" ry="6" fill="#22c55e" opacity="0.5"/>
+                <ellipse cx="80" cy="45" rx="6" ry="4" fill="#22c55e" opacity="0.4"/>
+            </svg>
+        </div>
+        <div class="boot-title">QingningOS</div>
+        <div class="boot-subtitle">基于 MIUI 10 设计</div>
+        <div class="boot-progress-circle">
+            <svg viewBox="0 0 36 36">
+                <circle class="bg" cx="18" cy="18" r="16"/>
+                <circle class="fill" cx="18" cy="18" r="16"/>
+            </svg>
         </div>
     </div>
 
     <!-- ===== 激活码界面 ===== -->
     <div id="activationScreen">
-        <div class="activation-box" id="activationBox"></div>
+        <div class="activation-header">
+            <h1>欢迎使用 QingningOS</h1>
+            <p>请输入激活码开始使用</p>
+        </div>
+        <div class="activation-card">
+            <div class="activation-input-wrap">
+                <label>激活码</label>
+                <input type="text" class="activation-input" id="activationInput" placeholder="格式: xt + 数字 (如 xt2024)" autofocus>
+            </div>
+            <button class="activation-btn" id="activateBtn">激活</button>
+            <a class="activation-link" href="profile.html">没有激活码？前往获取</a>
+            <div class="activation-error" id="activationError"></div>
+        </div>
+        <div class="activation-perm-list">
+            <h3>权限说明</h3>
+            <div class="perm-item">
+                <div class="perm-dot orange"></div>
+                <span class="perm-name">XT0000</span>
+                <span class="perm-desc">系统 (体验模式)</span>
+            </div>
+            <div class="perm-item">
+                <div class="perm-dot green"></div>
+                <span class="perm-name">XT0001</span>
+                <span class="perm-desc">站长 (最高权限)</span>
+            </div>
+            <div class="perm-item">
+                <div class="perm-dot blue"></div>
+                <span class="perm-name">XT0002 ~ XT1999</span>
+                <span class="perm-desc">管理员</span>
+            </div>
+            <div class="perm-item">
+                <div class="perm-dot gray"></div>
+                <span class="perm-name">XT2000+</span>
+                <span class="perm-desc">普通用户</span>
+            </div>
+        </div>
     </div>
 
-    <!-- ===== 终端主界面 ===== -->
-    <div id="terminalScreen">
+    <!-- ===== 主界面 ===== -->
+    <div id="mainScreen">
         <!-- 顶部状态栏 -->
-        <div class="terminal-statusbar">
-            <div class="terminal-statusbar-left">QingningOS Terminal v2.0</div>
-            <div class="terminal-statusbar-right">
-                <span class="status-item">用户: <span class="status-value" id="statusUser">--</span></span>
-                <span class="status-separator">|</span>
-                <span class="status-item">激活码: <span class="status-value" id="statusCode">--</span></span>
-                <span class="status-separator">|</span>
-                <span class="status-item">权限: <span class="status-value" id="statusPerm">--</span></span>
-                <span class="status-separator">|</span>
-                <span class="status-item" id="statusClock">--</span>
+        <div class="statusbar">
+            <div class="statusbar-left" id="statusClock">--:--</div>
+            <div class="statusbar-right">
+                <svg class="statusbar-icon" viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+                <span id="statusBattery">100%</span>
             </div>
         </div>
 
-        <!-- 终端内容区域 -->
-        <div class="terminal-content-wrapper" id="terminalContentWrapper">
-            <div class="terminal-content" id="terminalContent"></div>
+        <!-- 内容区域 -->
+        <div class="main-content" id="mainContent">
+            <!-- 首页 -->
+            <div class="page active" id="pageHome">
+                <div class="user-card">
+                    <div class="user-avatar" id="userAvatar">Q</div>
+                    <div class="user-info">
+                        <div class="user-name" id="userName">--</div>
+                        <div class="user-meta" id="userMeta">激活码: -- | 权限: --</div>
+                        <span class="user-badge" id="userBadge">--</span>
+                    </div>
+                </div>
+                <div class="app-grid">
+                    <div class="app-grid-item" data-app="终端">
+                        <div class="app-grid-icon green">&#128187;</div>
+                        <span class="app-grid-label">终端</span>
+                    </div>
+                    <div class="app-grid-item" data-app="文件管理">
+                        <div class="app-grid-icon blue">&#128193;</div>
+                        <span class="app-grid-label">文件管理</span>
+                    </div>
+                    <div class="app-grid-item" data-app="浏览器">
+                        <div class="app-grid-icon purple">&#127760;</div>
+                        <span class="app-grid-label">浏览器</span>
+                    </div>
+                    <div class="app-grid-item" data-app="设置">
+                        <div class="app-grid-icon orange">&#9881;</div>
+                        <span class="app-grid-label">设置</span>
+                    </div>
+                    <div class="app-grid-item" data-app="商店">
+                        <div class="app-grid-icon red">&#128722;</div>
+                        <span class="app-grid-label">商店</span>
+                    </div>
+                    <div class="app-grid-item" data-app="杀毒">
+                        <div class="app-grid-icon cyan">&#128737;</div>
+                        <span class="app-grid-label">杀毒</span>
+                    </div>
+                    <div class="app-grid-item" data-app="计算器">
+                        <div class="app-grid-icon pink">&#128290;</div>
+                        <span class="app-grid-label">计算器</span>
+                    </div>
+                    <div class="app-grid-item" data-app="日历">
+                        <div class="app-grid-icon yellow">&#128197;</div>
+                        <span class="app-grid-label">日历</span>
+                    </div>
+                </div>
+                <div class="terminal-card" id="terminalCard">
+                    <div class="terminal-card-header" id="terminalCardHeader">
+                        <div class="terminal-card-title">
+                            <span>&#128187;</span> 终端
+                        </div>
+                        <div class="terminal-card-toggle">&#9662;</div>
+                    </div>
+                    <div class="terminal-card-body">
+                        <div class="terminal-content" id="terminalContent"></div>
+                        <div class="terminal-input-row">
+                            <span class="terminal-prompt" id="terminalPrompt">$ </span>
+                            <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false" placeholder="输入命令...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 终端页面 -->
+            <div class="page" id="pageTerminal">
+                <div class="terminal-card expanded" style="border-radius: var(--radius-xl);">
+                    <div class="terminal-card-header" style="cursor: default;">
+                        <div class="terminal-card-title">
+                            <span>&#128187;</span> 终端
+                        </div>
+                    </div>
+                    <div class="terminal-card-body" style="max-height: none;">
+                        <div class="terminal-content" id="terminalContentFull" style="max-height: calc(100vh - 180px);"></div>
+                        <div class="terminal-input-row">
+                            <span class="terminal-prompt" id="terminalPromptFull">$ </span>
+                            <input type="text" class="terminal-input" id="terminalInputFull" autocomplete="off" spellcheck="false" placeholder="输入命令...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 应用页面 -->
+            <div class="page" id="pageApps">
+                <div class="app-list" id="appList"></div>
+            </div>
+
+            <!-- 我的页面 -->
+            <div class="page" id="pageProfile">
+                <div class="profile-header">
+                    <div class="profile-avatar" id="profileAvatar">Q</div>
+                    <div class="profile-name" id="profileName">--</div>
+                    <div class="profile-code" id="profileCode">激活码: --</div>
+                </div>
+                <div class="settings-list">
+                    <div class="settings-item" id="settingTheme">
+                        <div class="settings-icon purple">&#127912;</div>
+                        <span class="settings-label">主题</span>
+                        <span class="settings-value" id="settingThemeValue">绿色</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                    <div class="settings-item" id="settingLang">
+                        <div class="settings-icon blue">&#127760;</div>
+                        <span class="settings-label">语言</span>
+                        <span class="settings-value">简体中文</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                    <div class="settings-item" id="settingAbout">
+                        <div class="settings-icon green">&#8505;</div>
+                        <span class="settings-label">关于</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                    <div class="settings-item" id="settingReboot">
+                        <div class="settings-icon orange">&#8634;</div>
+                        <span class="settings-label">重启</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                    <div class="settings-item" id="settingShutdown">
+                        <div class="settings-icon red">&#9211;</div>
+                        <span class="settings-label">退出</span>
+                        <span class="settings-arrow">&#8250;</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- 底部输入行 -->
-        <div class="terminal-input-row">
-            <span class="terminal-prompt" id="terminalPrompt"></span>
-            <input type="text" class="terminal-input" id="terminalInput" autocomplete="off" spellcheck="false" autofocus>
+        <!-- 底部导航栏 -->
+        <div class="bottom-nav">
+            <button class="nav-item active" data-page="home">
+                <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <span>首页</span>
+            </button>
+            <button class="nav-item" data-page="terminal">
+                <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 12h4v2H4v-2zm10 6H4v-2h10v2zm6-6h-2v-2h2v2zm0-4h-8V6h8v2z"/></svg>
+                <span>终端</span>
+            </button>
+            <button class="nav-item" data-page="apps">
+                <svg viewBox="0 0 24 24"><path d="M4 8h4V4H4v4zm6 12h4v-4h-4v4zm-6 0h4v-4H4v4zm0-6h4v-4H4v4zm6 0h4v-4h-4v4zm6-10v4h4V4h-4zm-6 4h4V4h-4v4zm6 6h4v-4h-4v4zm0 6h4v-4h-4v4z"/></svg>
+                <span>应用</span>
+            </button>
+            <button class="nav-item" data-page="profile">
+                <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                <span>我的</span>
+            </button>
         </div>
     </div>
 
     <!-- ===== 关机画面 ===== -->
     <div id="shutdownScreen">
+        <div class="shutdown-spinner"></div>
         <div class="shutdown-text" id="shutdownText">正在关闭系统...</div>
     </div>
 

@@ -1,8 +1,8 @@
-// ===== QingningOS Terminal v2.0 - 核心逻辑 =====
+// ===== QingningOS - MIUI 10 风格 - 核心逻辑 =====
 
 const QNOS_VERSION = '2.0';
 const QNOS_KERNEL = '6.1.0-qn';
-const QNOS_CODENAME = 'Qingning Terminal';
+const QNOS_CODENAME = 'QingningOS MIUI';
 
 // ===== 状态管理 =====
 let currentActivationCode = '';
@@ -15,28 +15,23 @@ let startTime = Date.now();
 let antivirusRealTime = true;
 let currentThemeColor = '#22c55e';
 let currentThemeName = '绿色';
-let currentMode = 'normal'; // 'normal' or 'trial'
+let currentMode = 'normal';
 let systemAnnouncement = '';
 let clockInterval = null;
-
-// ===== ASCII Art Logo =====
-const ASCII_LOGO = `  ██████╗██╗   ██╗██████╗ ██████╗ ███████╗
- ██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗██╔════╝
- ██║      ╚████╔╝ ██████╔╝██████╔╝█████╗  
- ██║       ╚██╔╝  ██╔══██╗██╔══██╗██╔══╝  
- ╚██████╗   ██║   ██████╔╝██║  ██║███████╗
-  ╚═════╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚══════╝`;
+let currentPage = 'home';
+let terminalExpanded = false;
+let activeTerminal = 'home'; // 'home' or 'full'
 
 // ===== 模拟文件系统 =====
 let fileSystem = {
     '/home/user': {
         '桌面': {
-            '欢迎.txt': { size: '1.2 KB', date: '2026-01-15', type: 'file', content: '欢迎使用 QingningOS Terminal v2.0!\n这是一个基于网页的终端操作系统。\n输入 帮助 查看可用命令。' },
-            '说明.md': { size: '0.8 KB', date: '2026-01-15', type: 'file', content: '# QingningOS Terminal\n\n版本: v2.0\n内核: 6.1.0-qn\n\n## 快速开始\n- 输入 帮助 查看所有命令\n- 输入 系统信息 查看系统状态\n- 输入 列表 查看当前目录文件' }
+            '欢迎.txt': { size: '1.2 KB', date: '2026-01-15', type: 'file', content: '欢迎使用 QingningOS!\n这是一个基于 MIUI 10 设计的网页操作系统。\n输入 帮助 查看可用命令。' },
+            '说明.md': { size: '0.8 KB', date: '2026-01-15', type: 'file', content: '# QingningOS\n\n版本: v2.0\n内核: 6.1.0-qn\n\n## 快速开始\n- 输入 帮助 查看所有命令\n- 输入 系统信息 查看系统状态\n- 输入 列表 查看当前目录文件' }
         },
         '文档': {
             '笔记.txt': { size: '2.1 KB', date: '2026-02-10', type: 'file', content: '这是一个笔记文件。\n你可以在终端中使用 写入 命令来编辑文件内容。' },
-            '项目计划.md': { size: '3.5 KB', date: '2026-03-05', type: 'file', content: '# 项目计划\n\n## 阶段一\n- 完成终端界面设计\n- 实现基本命令系统\n\n## 阶段二\n- 添加文件管理功能\n- 集成应用商店' }
+            '项目计划.md': { size: '3.5 KB', date: '2026-03-05', type: 'file', content: '# 项目计划\n\n## 阶段一\n- 完成 MIUI 10 风格界面设计\n- 实现基本命令系统\n\n## 阶段二\n- 添加文件管理功能\n- 集成应用商店' }
         },
         '下载': {
             '安装包.qpk': { size: '45.2 MB', date: '2026-05-01', type: 'file', content: '[二进制文件 - 无法显示内容]' }
@@ -52,14 +47,14 @@ let fileSystem = {
 
 // ===== 模拟应用商店 =====
 let appStoreApps = [
-    { id: 'app-office', name: '青柠办公', version: '1.0.0', size: '25 MB', desc: '文档编辑工具', installed: false },
-    { id: 'app-music', name: '青柠音乐', version: '1.2.0', size: '18 MB', desc: '本地音乐播放器', installed: false },
-    { id: 'app-video', name: '青柠视频', version: '2.0.0', size: '35 MB', desc: '视频播放器', installed: false },
-    { id: 'app-notes', name: '青柠笔记', version: '1.1.0', size: '8 MB', desc: '轻量笔记工具', installed: false },
-    { id: 'app-weather', name: '青柠天气', version: '1.0.1', size: '5 MB', desc: '天气预报应用', installed: false },
-    { id: 'app-code', name: '青柠代码', version: '2.1.0', size: '45 MB', desc: '代码编辑器', installed: false },
-    { id: 'app-terminal-plus', name: '终端增强', version: '1.0.0', size: '3 MB', desc: '终端功能增强插件', installed: false },
-    { id: 'app-themes', name: '主题包', version: '1.5.0', size: '12 MB', desc: '额外主题色方案', installed: false }
+    { id: 'app-office', name: '青柠办公', version: '1.0.0', size: '25 MB', desc: '文档编辑工具', installed: false, icon: 'green', emoji: '\u{1F4C4}' },
+    { id: 'app-music', name: '青柠音乐', version: '1.2.0', size: '18 MB', desc: '本地音乐播放器', installed: false, icon: 'purple', emoji: '\u{1F3B5}' },
+    { id: 'app-video', name: '青柠视频', version: '2.0.0', size: '35 MB', desc: '视频播放器', installed: false, icon: 'red', emoji: '\u{1F3AC}' },
+    { id: 'app-notes', name: '青柠笔记', version: '1.1.0', size: '8 MB', desc: '轻量笔记工具', installed: false, icon: 'yellow', emoji: '\u{1F4DD}' },
+    { id: 'app-weather', name: '青柠天气', version: '1.0.1', size: '5 MB', desc: '天气预报应用', installed: false, icon: 'blue', emoji: '\u{2600}' },
+    { id: 'app-code', name: '青柠代码', version: '2.1.0', size: '45 MB', desc: '代码编辑器', installed: false, icon: 'cyan', emoji: '\u{1F4BB}' },
+    { id: 'app-terminal-plus', name: '终端增强', version: '1.0.0', size: '3 MB', desc: '终端功能增强插件', installed: false, icon: 'orange', emoji: '\u{1F4AD}' },
+    { id: 'app-themes', name: '主题包', version: '1.5.0', size: '12 MB', desc: '额外主题色方案', installed: false, icon: 'pink', emoji: '\u{1F3A8}' }
 ];
 
 // ===== 模拟进程 =====
@@ -127,8 +122,6 @@ function showToast(message, type = 'info') {
 
 // ===== 开机动画 =====
 function startBoot() {
-    const bootLogo = document.getElementById('bootLogo');
-    bootLogo.textContent = ASCII_LOGO;
     setTimeout(() => {
         document.getElementById('bootScreen').style.display = 'none';
         showActivationScreen();
@@ -144,52 +137,10 @@ function showActivationScreen() {
     }
     const screen = document.getElementById('activationScreen');
     screen.style.display = 'flex';
-    renderActivationBox();
+    bindActivationEvents();
 }
 
-function renderActivationBox() {
-    const box = document.getElementById('activationBox');
-    box.innerHTML = `
-<span class="border-line">╔══════════════════════════════════════════╗</span>
-<span class="border-line">║        青柠OS 终端 - 系统激活            ║</span>
-<span class="border-line">╠══════════════════════════════════════════╣</span>
-<span class="border-line">║                                          ║</span>
-<span class="text-content">║  请输入激活码开始使用系统                ║</span>
-<span class="text-dim">║  格式: xt + 数字 (如 xt2024)            ║</span>
-<span class="border-line">║                                          ║</span>
-<span class="text-content">║  ></span> <input type="text" class="activation-input" id="activationInput" placeholder="输入激活码" autofocus>
-<span class="border-line">║                                          ║</span>
-`;
-    // 添加按钮行
-    const buttonsDiv = document.createElement('div');
-    buttonsDiv.className = 'activation-buttons-row';
-    buttonsDiv.style.marginTop = '8px';
-    buttonsDiv.innerHTML = `
-        <button class="activation-btn" id="activateBtn">[激活]</button>
-        <a class="activation-link" href="profile.html">[没有激活码?前往获取]</a>
-    `;
-    box.appendChild(buttonsDiv);
-
-    // 权限说明
-    const permDiv = document.createElement('div');
-    permDiv.style.marginTop = '16px';
-    permDiv.style.whiteSpace = 'pre';
-    permDiv.style.lineHeight = '1.6';
-    permDiv.style.fontSize = 'clamp(0.5rem, 1vw, 0.75rem)';
-    permDiv.innerHTML = `<span class="text-dim">  权限等级:
-  XT0000 = 系统 (体验模式)
-  xt0001 = 站长 (最高权限)
-  xt0002~xt1999 = 管理员
-  xt2000+ = 普通用户</span>`;
-    box.appendChild(permDiv);
-
-    // 错误提示
-    const errorDiv = document.createElement('div');
-    errorDiv.className = 'activation-error';
-    errorDiv.id = 'activationError';
-    box.appendChild(errorDiv);
-
-    // 绑定事件
+function bindActivationEvents() {
     setTimeout(() => {
         const input = document.getElementById('activationInput');
         const btn = document.getElementById('activateBtn');
@@ -234,69 +185,230 @@ function activateSystem(code) {
 
     localStorage.setItem('qn_terminal_code', code);
     document.getElementById('activationScreen').style.display = 'none';
-    showTerminal();
+    showMainScreen();
 }
 
-// ===== 终端主界面 =====
-function showTerminal() {
-    const screen = document.getElementById('terminalScreen');
+// ===== 主界面 =====
+function showMainScreen() {
+    const screen = document.getElementById('mainScreen');
     screen.style.display = 'flex';
 
-    // 更新状态栏
-    updateStatusBar();
+    // 更新用户信息
+    updateUserInfo();
 
     // 启动时钟
     updateClock();
     clockInterval = setInterval(updateClock, 1000);
 
-    // 显示欢迎信息
-    showWelcomeMessage();
+    // 绑定导航
+    bindNavigation();
 
-    // 更新提示符
+    // 绑定快捷功能
+    bindAppGrid();
+
+    // 绑定终端卡片展开/收起
+    bindTerminalCard();
+
+    // 绑定设置项
+    bindSettings();
+
+    // 渲染应用列表
+    renderAppList();
+
+    // 显示欢迎信息到终端
+    showWelcomeMessage();
     updatePrompt();
 
-    // 聚焦输入
-    const input = document.getElementById('terminalInput');
-    input.focus();
-
-    // 绑定事件
-    input.addEventListener('keydown', handleInput);
-    screen.addEventListener('click', () => input.focus());
-
-    // 滚动遮罩
-    const content = document.getElementById('terminalContent');
-    const wrapper = document.getElementById('terminalContentWrapper');
-    content.addEventListener('scroll', () => {
-        if (content.scrollTop > 20) {
-            wrapper.classList.add('scrolled');
-        } else {
-            wrapper.classList.remove('scrolled');
-        }
-    });
+    // 绑定终端输入
+    bindTerminalInput();
 }
 
-function updateStatusBar() {
-    document.getElementById('statusUser').textContent = currentUsername;
-    document.getElementById('statusCode').textContent = currentActivationCode;
-    document.getElementById('statusPerm').textContent = currentPermission ? currentPermission.name : '--';
+function updateUserInfo() {
+    const nameEl = document.getElementById('userName');
+    const metaEl = document.getElementById('userMeta');
+    const badgeEl = document.getElementById('userBadge');
+    const avatarEl = document.getElementById('userAvatar');
+    const profileName = document.getElementById('profileName');
+    const profileCode = document.getElementById('profileCode');
+    const profileAvatar = document.getElementById('profileAvatar');
+
+    const displayName = currentUsername === 'user' ? '用户' :
+                        currentUsername === 'admin' ? '管理员' : '系统';
+    const initial = displayName.charAt(0);
+
+    if (nameEl) nameEl.textContent = displayName;
+    if (metaEl) metaEl.textContent = `激活码: ${currentActivationCode} | 权限: ${currentPermission ? currentPermission.name : '--'}`;
+    if (badgeEl) {
+        badgeEl.textContent = currentPermission ? currentPermission.name : '--';
+        badgeEl.className = 'user-badge ' + (currentPermission ? currentPermission.level : 'user');
+    }
+    if (avatarEl) avatarEl.textContent = initial;
+    if (profileName) profileName.textContent = displayName;
+    if (profileCode) profileCode.textContent = `激活码: ${currentActivationCode}`;
+    if (profileAvatar) profileAvatar.textContent = initial;
 }
 
 function updateClock() {
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
-    const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
-    document.getElementById('statusClock').textContent = dateStr;
+    const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    const clockEl = document.getElementById('statusClock');
+    if (clockEl) clockEl.textContent = timeStr;
 }
 
-function updatePrompt() {
-    const prompt = document.getElementById('terminalPrompt');
-    const displayPath = currentPath === '/home/user' ? '~' : currentPath.replace('/home/user', '~');
-    prompt.innerHTML = `<span class="bracket">[</span><span class="user">${currentUsername}</span><span class="at">@</span><span class="host">青柠OS</span> <span class="path">${displayPath}</span><span class="bracket">]</span><span class="arrow"> > </span>`;
+// ===== 底部导航切换 =====
+function bindNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const page = item.dataset.page;
+            switchPage(page);
+        });
+    });
+}
+
+function switchPage(page) {
+    currentPage = page;
+
+    // 更新导航状态
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.page === page);
+    });
+
+    // 切换页面显示
+    document.querySelectorAll('.page').forEach(p => {
+        p.classList.toggle('active', p.id === 'page' + capitalize(page));
+    });
+
+    // 同步终端内容
+    if (page === 'terminal') {
+        syncTerminalToFull();
+        setTimeout(() => {
+            const input = document.getElementById('terminalInputFull');
+            if (input) input.focus();
+        }, 100);
+    } else if (page === 'home') {
+        syncTerminalToHome();
+    }
+}
+
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ===== 快捷功能网格 =====
+function bindAppGrid() {
+    const items = document.querySelectorAll('.app-grid-item');
+    items.forEach(item => {
+        item.addEventListener('click', () => {
+            const app = item.dataset.app;
+            handleAppClick(app);
+        });
+    });
+}
+
+function handleAppClick(app) {
+    switch (app) {
+        case '终端':
+            switchPage('terminal');
+            break;
+        case '文件管理':
+            switchPage('terminal');
+            setTimeout(() => {
+                executeCommand('列表');
+                focusTerminalInput();
+            }, 200);
+            break;
+        case '浏览器':
+            showToast('浏览器: 请使用终端 浏览 命令', 'info');
+            break;
+        case '设置':
+            switchPage('profile');
+            break;
+        case '商店':
+            switchPage('terminal');
+            setTimeout(() => {
+                executeCommand('商店');
+                focusTerminalInput();
+            }, 200);
+            break;
+        case '杀毒':
+            switchPage('terminal');
+            setTimeout(() => {
+                executeCommand('扫描');
+                focusTerminalInput();
+            }, 200);
+            break;
+        case '计算器':
+            showToast('计算器功能开发中', 'info');
+            break;
+        case '日历':
+            switchPage('terminal');
+            setTimeout(() => {
+                executeCommand('日期');
+                focusTerminalInput();
+            }, 200);
+            break;
+    }
+}
+
+// ===== 终端卡片展开/收起 =====
+function bindTerminalCard() {
+    const header = document.getElementById('terminalCardHeader');
+    const card = document.getElementById('terminalCard');
+    if (header && card) {
+        header.addEventListener('click', () => {
+            terminalExpanded = !terminalExpanded;
+            card.classList.toggle('expanded', terminalExpanded);
+            if (terminalExpanded) {
+                setTimeout(() => {
+                    const input = document.getElementById('terminalInput');
+                    if (input) input.focus();
+                }, 100);
+            }
+        });
+    }
+}
+
+// ===== 终端输入绑定 =====
+function bindTerminalInput() {
+    const homeInput = document.getElementById('terminalInput');
+    const fullInput = document.getElementById('terminalInputFull');
+
+    if (homeInput) {
+        homeInput.addEventListener('keydown', (e) => handleInput(e, 'home'));
+    }
+    if (fullInput) {
+        fullInput.addEventListener('keydown', (e) => handleInput(e, 'full'));
+    }
+}
+
+function focusTerminalInput() {
+    if (currentPage === 'terminal') {
+        const input = document.getElementById('terminalInputFull');
+        if (input) input.focus();
+    } else {
+        const input = document.getElementById('terminalInput');
+        if (input) input.focus();
+    }
+}
+
+function getActiveContentId() {
+    return currentPage === 'terminal' ? 'terminalContentFull' : 'terminalContent';
+}
+
+function getActiveInputId() {
+    return currentPage === 'terminal' ? 'terminalInputFull' : 'terminalInput';
+}
+
+function getActivePromptId() {
+    return currentPage === 'terminal' ? 'terminalPromptFull' : 'terminalPrompt';
 }
 
 // ===== 终端输出 =====
 function printLine(text, className = '') {
-    const content = document.getElementById('terminalContent');
+    const content = document.getElementById(getActiveContentId());
+    if (!content) return;
     const line = document.createElement('div');
     line.className = `term-line ${className}`;
     line.textContent = text;
@@ -305,7 +417,8 @@ function printLine(text, className = '') {
 }
 
 function printHTML(html, className = '') {
-    const content = document.getElementById('terminalContent');
+    const content = document.getElementById(getActiveContentId());
+    if (!content) return;
     const line = document.createElement('div');
     line.className = `term-line ${className}`;
     line.innerHTML = html;
@@ -314,7 +427,8 @@ function printHTML(html, className = '') {
 }
 
 function printEmpty() {
-    const content = document.getElementById('terminalContent');
+    const content = document.getElementById(getActiveContentId());
+    if (!content) return;
     const line = document.createElement('div');
     line.className = 'term-line';
     line.innerHTML = '&nbsp;';
@@ -322,28 +436,37 @@ function printEmpty() {
 }
 
 function scrollToBottom() {
-    const content = document.getElementById('terminalContent');
+    const content = document.getElementById(getActiveContentId());
+    if (!content) return;
     setTimeout(() => {
         content.scrollTop = content.scrollHeight;
     }, 10);
 }
 
+// ===== 同步终端内容 =====
+function syncTerminalToFull() {
+    const homeContent = document.getElementById('terminalContent');
+    const fullContent = document.getElementById('terminalContentFull');
+    if (homeContent && fullContent) {
+        fullContent.innerHTML = homeContent.innerHTML;
+        fullContent.scrollTop = fullContent.scrollHeight;
+    }
+}
+
+function syncTerminalToHome() {
+    const homeContent = document.getElementById('terminalContent');
+    const fullContent = document.getElementById('terminalContentFull');
+    if (homeContent && fullContent) {
+        homeContent.innerHTML = fullContent.innerHTML;
+    }
+}
+
 // ===== 欢迎信息 =====
 function showWelcomeMessage() {
     printEmpty();
-    printLine('╔══════════════════════════════════════════════════════════════╗', 'info');
-    printLine('║                                                            ║', 'info');
-    printLine('║   ██████╗██╗   ██╗██████╗ ██████╗ ███████╗                  ║', 'info');
-    printLine('║  ██╔════╝╚██╗ ██╔╝██╔══██╗██╔══██╗██╔════╝                 ║', 'info');
-    printLine('║  ██║      ╚████╔╝ ██████╔╝██████╔╝█████╗                   ║', 'info');
-    printLine('║  ██║       ╚██╔╝  ██╔══██╗██╔══██╗██╔══╝                   ║', 'info');
-    printLine('║  ╚██████╗   ██║   ██████╔╝██║  ██║███████╗                  ║', 'info');
-    printLine('║   ╚═════╝   ╚═╝   ╚═════╝ ╚═╝  ╚═╝╚══════╝                  ║', 'info');
-    printLine('║                                                            ║', 'info');
-    printLine('║   QingningOS Terminal v2.0                                 ║', 'highlight');
-    printLine('║   内核: 6.1.0-qn                                           ║', 'dim');
-    printLine('║                                                            ║', 'info');
-    printLine('╚══════════════════════════════════════════════════════════════╝', 'info');
+    printLine('  QingningOS Terminal v2.0', 'highlight');
+    printLine('  基于 MIUI 10 设计', 'dim');
+    printLine('  内核: 6.1.0-qn', 'dim');
     printEmpty();
 
     const now = new Date();
@@ -367,18 +490,21 @@ function showWelcomeMessage() {
 }
 
 // ===== 输入处理 =====
-function handleInput(e) {
-    const input = document.getElementById('terminalInput');
+function handleInput(e, source) {
+    const input = document.getElementById(source === 'full' ? 'terminalInputFull' : 'terminalInput');
+    if (!input) return;
 
     if (e.key === 'Enter') {
         const cmd = input.value.trim();
         if (cmd) {
             commandHistory.push(cmd);
             commandHistoryIndex = commandHistory.length;
-            // 显示输入的命令
             const displayPath = currentPath === '/home/user' ? '~' : currentPath.replace('/home/user', '~');
-            printHTML(`<span class="prompt-prefix">[${currentUsername}@青柠OS ${displayPath}]</span><span class="prompt-arrow"> > </span><span style="color:#e2e8f0">${escapeHtml(cmd)}</span>`, 'cmd');
+            printHTML(`<span style="color:var(--primary)">[${currentUsername}@青柠OS ${displayPath}]</span><span style="color:var(--primary)"> > </span><span style="color:var(--text-title)">${escapeHtml(cmd)}</span>`, 'cmd');
             executeCommand(cmd);
+            // 同步到另一个终端
+            if (source === 'home') syncTerminalToFull();
+            else syncTerminalToHome();
         }
         input.value = '';
     } else if (e.key === 'ArrowUp') {
@@ -416,18 +542,16 @@ function tabComplete(input) {
     const parts = val.split(/\s+/);
     const first = parts[0];
 
-    // 命令补全
     const allCommands = getAllCommandNames();
     if (parts.length === 1) {
         const matches = allCommands.filter(c => c.startsWith(first));
         if (matches.length === 1) {
             input.value = matches[0] + ' ';
         } else if (matches.length > 1) {
-            printHTML(`<span class="prompt-prefix">[${currentUsername}@青柠OS]</span><span class="prompt-arrow"> > </span><span style="color:#e2e8f0">${escapeHtml(val)}</span>`, 'cmd');
+            printHTML(`<span style="color:var(--primary)">[${currentUsername}@青柠OS]</span><span style="color:var(--primary)"> > </span><span style="color:var(--text-title)">${escapeHtml(val)}</span>`, 'cmd');
             printLine('  ' + matches.join('  '), 'dim');
         }
     } else {
-        // 文件名补全
         const partial = parts[parts.length - 1];
         const currentDir = getCurrentDir();
         if (currentDir) {
@@ -437,7 +561,7 @@ function tabComplete(input) {
                 parts[parts.length - 1] = matches[0];
                 input.value = parts.join(' ');
             } else if (matches.length > 1) {
-                printHTML(`<span class="prompt-prefix">[${currentUsername}@青柠OS]</span><span class="prompt-arrow"> > </span><span style="color:#e2e8f0">${escapeHtml(val)}</span>`, 'cmd');
+                printHTML(`<span style="color:var(--primary)">[${currentUsername}@青柠OS]</span><span style="color:var(--primary)"> > </span><span style="color:var(--text-title)">${escapeHtml(val)}</span>`, 'cmd');
                 printLine('  ' + matches.join('  '), 'dim');
             }
         }
@@ -457,6 +581,15 @@ function getAllCommandNames() {
     ];
 }
 
+function updatePrompt() {
+    const promptHome = document.getElementById('terminalPrompt');
+    const promptFull = document.getElementById('terminalPromptFull');
+    const displayPath = currentPath === '/home/user' ? '~' : currentPath.replace('/home/user', '~');
+    const html = `<span style="color:var(--primary)">[${currentUsername}@青柠OS ${displayPath}]</span><span style="color:var(--primary)"> > </span>`;
+    if (promptHome) promptHome.innerHTML = html;
+    if (promptFull) promptFull.innerHTML = html;
+}
+
 // ===== 获取当前目录 =====
 function getCurrentDir() {
     let dir = fileSystem;
@@ -473,12 +606,25 @@ function getCurrentDir() {
     return current;
 }
 
+function getDirByPath(path) {
+    if (path === '/home/user') return fileSystem['/home/user'];
+    const parts = path.replace('/home/user/', '').split('/').filter(Boolean);
+    let current = fileSystem['/home/user'];
+    for (const part of parts) {
+        if (current && current[part] && typeof current[part] === 'object' && current[part].type !== 'file') {
+            current = current[part];
+        } else {
+            return null;
+        }
+    }
+    return current;
+}
+
 function resolvePath(path) {
     if (!path) return currentPath;
     if (path === '~') return '/home/user';
     if (path.startsWith('~/')) return '/home/user/' + path.substring(2);
     if (path.startsWith('/')) return path;
-    // 相对路径
     let base = currentPath === '/home/user' ? '/home/user' : currentPath;
     if (!base.endsWith('/')) base += '/';
     return base + path;
@@ -490,7 +636,6 @@ function executeCommand(cmdLine) {
     const cmd = parts[0];
     const args = parts.slice(1).map(a => a.replace(/^"|"$/g, ''));
 
-    // 命令别名映射
     const aliasMap = {
         'help': '帮助', 'ls': '列表', 'cd': '进入', 'cat': '查看',
         'mkdir': '新建', 'rm': '删除', 'touch': '创建', 'clear': '清屏',
@@ -545,72 +690,73 @@ function executeCommand(cmdLine) {
         default:
             printLine(`  未知命令: "${cmd}"，输入 帮助 查看可用命令`, 'error');
     }
+    updatePrompt();
 }
 
 // ===== 基本命令 =====
 
 function cmdHelp() {
     printEmpty();
-    printLine('╔══════════════════════════════════════════════════╗', 'info');
-    printLine('║                  可用命令列表                    ║', 'info');
-    printLine('╠══════════════════════════════════════════════════╣', 'info');
-    printLine('║  基本命令                                        ║', 'highlight');
-    printLine('║  帮助        显示此帮助信息                      ║', 'dim');
-    printLine('║  清屏        清除终端屏幕                        ║', 'dim');
-    printLine('║  列表 [路径]  列出当前目录文件                    ║', 'dim');
-    printLine('║  进入 <目录>  进入指定目录                        ║', 'dim');
-    printLine('║  返回        返回上级目录                        ║', 'dim');
-    printLine('║  查看 <文件>  查看文件内容                        ║', 'dim');
-    printLine('║  创建 <文件>  创建新文件                          ║', 'dim');
-    printLine('║  新建 <目录>  新建文件夹                          ║', 'dim');
-    printLine('║  删除 <名称>  删除文件/文件夹                     ║', 'dim');
-    printLine('║  重命名 <旧> <新>  重命名文件                    ║', 'dim');
-    printLine('║  复制 <源> <目标>  复制文件                      ║', 'dim');
-    printLine('║  移动 <源> <目标>  移动文件                      ║', 'dim');
-    printLine('║  写入 <文件> "内容"  写入内容到文件               ║', 'dim');
-    printLine('║  日期        显示当前日期时间                    ║', 'dim');
-    printLine('║  我是谁      显示当前用户信息                    ║', 'dim');
-    printLine('║  权限        显示当前权限等级                    ║', 'dim');
-    printLine('║  路径        显示当前路径                        ║', 'dim');
-    printLine('╠══════════════════════════════════════════════════╣', 'info');
-    printLine('║  系统命令                                        ║', 'highlight');
-    printLine('║  系统信息    显示系统信息 (neofetch)              ║', 'dim');
-    printLine('║  进程        显示运行中的进程                    ║', 'dim');
-    printLine('║  结束 <PID>  结束指定进程                        ║', 'dim');
-    printLine('║  内存        显示内存使用情况                    ║', 'dim');
-    printLine('║  网络        显示网络状态                        ║', 'dim');
-    printLine('║  磁盘        显示磁盘使用情况                    ║', 'dim');
-    printLine('╠══════════════════════════════════════════════════╣', 'info');
-    printLine('║  青柠命令                                        ║', 'highlight');
-    printLine('║  浏览 <网址>  打开浏览器访问网址                  ║', 'dim');
-    printLine('║  商店        打开应用商店                        ║', 'dim');
-    printLine('║  安装 <应用>  安装应用                            ║', 'dim');
-    printLine('║  卸载 <应用>  卸载应用                            ║', 'dim');
-    printLine('║  扫描        运行杀毒扫描                        ║', 'dim');
-    printLine('║  防护 <状态>  查看/切换实时防护                  ║', 'dim');
-    printLine('║  更新        检查系统更新                        ║', 'dim');
-    printLine('║  壁纸 <编号>  更换壁纸 (1/2/3)                   ║', 'dim');
-    printLine('║  主题 <颜色>  切换主题色                         ║', 'dim');
-    printLine('╠══════════════════════════════════════════════════╣', 'info');
-    printLine('║  管理员命令 (需要管理员权限)                    ║', 'warn');
-    printLine('║  用户        管理用户                            ║', 'dim');
-    printLine('║  授权        授权激活码                          ║', 'dim');
-    printLine('║  公告        发布系统公告                        ║', 'dim');
-    printLine('║  重启        重启终端                            ║', 'dim');
-    printLine('║  关机        关闭终端                            ║', 'dim');
-    printLine('╠══════════════════════════════════════════════════╣', 'info');
-    printLine('║  系统命令 (需要系统权限)                        ║', 'warn');
-    printLine('║  重置        重置整个系统                        ║', 'dim');
-    printLine('║  还原        还原系统设置                        ║', 'dim');
-    printLine('║  清除        清除所有数据                        ║', 'dim');
-    printLine('║  模式        切换体验/正常模式                   ║', 'dim');
-    printLine('╚══════════════════════════════════════════════════╝', 'info');
+    printLine('  ══════════════════════════════════════════════════', 'info');
+    printLine('                    可用命令列表', 'info');
+    printLine('  ══════════════════════════════════════════════════', 'info');
+    printEmpty();
+    printLine('  基本命令', 'highlight');
+    printLine('  帮助        显示此帮助信息', 'dim');
+    printLine('  清屏        清除终端屏幕', 'dim');
+    printLine('  列表 [路径]  列出当前目录文件', 'dim');
+    printLine('  进入 <目录>  进入指定目录', 'dim');
+    printLine('  返回        返回上级目录', 'dim');
+    printLine('  查看 <文件>  查看文件内容', 'dim');
+    printLine('  创建 <文件>  创建新文件', 'dim');
+    printLine('  新建 <目录>  新建文件夹', 'dim');
+    printLine('  删除 <名称>  删除文件/文件夹', 'dim');
+    printLine('  重命名 <旧> <新>  重命名文件', 'dim');
+    printLine('  复制 <源> <目标>  复制文件', 'dim');
+    printLine('  移动 <源> <目标>  移动文件', 'dim');
+    printLine('  写入 <文件> "内容"  写入内容到文件', 'dim');
+    printLine('  日期        显示当前日期时间', 'dim');
+    printLine('  我是谁      显示当前用户信息', 'dim');
+    printLine('  权限        显示当前权限等级', 'dim');
+    printLine('  路径        显示当前路径', 'dim');
+    printEmpty();
+    printLine('  系统命令', 'highlight');
+    printLine('  系统信息    显示系统信息', 'dim');
+    printLine('  进程        显示运行中的进程', 'dim');
+    printLine('  结束 <PID>  结束指定进程', 'dim');
+    printLine('  内存        显示内存使用情况', 'dim');
+    printLine('  网络        显示网络状态', 'dim');
+    printLine('  磁盘        显示磁盘使用情况', 'dim');
+    printEmpty();
+    printLine('  青柠命令', 'highlight');
+    printLine('  浏览 <网址>  打开浏览器访问网址', 'dim');
+    printLine('  商店        打开应用商店', 'dim');
+    printLine('  安装 <应用>  安装应用', 'dim');
+    printLine('  卸载 <应用>  卸载应用', 'dim');
+    printLine('  扫描        运行杀毒扫描', 'dim');
+    printLine('  防护 <状态>  查看/切换实时防护', 'dim');
+    printLine('  更新        检查系统更新', 'dim');
+    printLine('  壁纸 <编号>  更换壁纸 (1/2/3)', 'dim');
+    printLine('  主题 <颜色>  切换主题色', 'dim');
+    printEmpty();
+    printLine('  管理员命令 (需要管理员权限)', 'warn');
+    printLine('  用户        管理用户', 'dim');
+    printLine('  授权        授权激活码', 'dim');
+    printLine('  公告        发布系统公告', 'dim');
+    printLine('  重启        重启终端', 'dim');
+    printLine('  关机        关闭终端', 'dim');
+    printEmpty();
+    printLine('  系统命令 (需要系统权限)', 'warn');
+    printLine('  重置        重置整个系统', 'dim');
+    printLine('  还原        还原系统设置', 'dim');
+    printLine('  清除        清除所有数据', 'dim');
+    printLine('  模式        切换体验/正常模式', 'dim');
     printEmpty();
 }
 
 function cmdClear() {
-    const content = document.getElementById('terminalContent');
-    content.innerHTML = '';
+    const content = document.getElementById(getActiveContentId());
+    if (content) content.innerHTML = '';
 }
 
 function cmdList(targetPath) {
@@ -628,9 +774,9 @@ function cmdList(targetPath) {
     for (const name of entries) {
         const item = dir[name];
         if (item && typeof item === 'object' && item.type === 'file') {
-            printLine(`  📄 ${name.padEnd(20)} ${item.size.padStart(10)}  ${item.date}`, 'white');
+            printLine(`  \u{1F4C4} ${name.padEnd(20)} ${item.size.padStart(10)}  ${item.date}`, 'white');
         } else {
-            printLine(`  📁 ${name}/`, 'info');
+            printLine(`  \u{1F4C1} ${name}/`, 'info');
         }
     }
     printEmpty();
@@ -807,12 +953,14 @@ function cmdWrite(filename, content) {
     if (!dir) return;
     const now = new Date();
     const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const blobSize = new Blob([content]).size;
+    const sizeStr = blobSize < 1024 ? blobSize + ' B' : (blobSize / 1024).toFixed(1) + ' KB';
     if (dir[filename] && typeof dir[filename] === 'object' && dir[filename].type === 'file') {
         dir[filename].content = content;
-        dir[filename].size = new Blob([content]).size < 1024 ? new Blob([content]).size + ' B' : (new Blob([content]).size / 1024).toFixed(1) + ' KB';
+        dir[filename].size = sizeStr;
         dir[filename].date = dateStr;
     } else {
-        dir[filename] = { size: new Blob([content]).size < 1024 ? new Blob([content]).size + ' B' : (new Blob([content]).size / 1024).toFixed(1) + ' KB', date: dateStr, type: 'file', content: content };
+        dir[filename] = { size: sizeStr, date: dateStr, type: 'file', content: content };
     }
     printLine(`  ${trialPrefix()}已写入内容到: ${filename}`, 'success');
 }
@@ -854,24 +1002,23 @@ function cmdNeofetch() {
     const hours = Math.floor((uptime % 86400000) / 3600000);
     const mins = Math.floor((uptime % 3600000) / 60000);
     const installedCount = appStoreApps.filter(a => a.installed).length;
-    const totalApps = appStoreApps.length;
 
     printEmpty();
-    printLine('╔══════════════════════════════════════════╗', 'info');
-    printLine('║          QingningOS Terminal v2.0       ║', 'info');
-    printLine('╠══════════════════════════════════════════╣', 'info');
-    printLine(`║  用户:     ${currentUsername.padEnd(28)}║`, 'white');
-    printLine(`║  激活码:   ${currentActivationCode.padEnd(28)}║`, 'white');
-    printLine(`║  权限:     ${currentPermission.name.padEnd(28)}║`, 'white');
-    printLine(`║  内核:     ${QNOS_KERNEL.padEnd(28)}║`, 'dim');
-    printLine(`║  终端:     QingningOS Terminal v${QNOS_VERSION.padEnd(19)}║`, 'dim');
-    printLine(`║  运行时间: ${days}天 ${hours}小时 ${mins}分${' '.repeat(Math.max(0, 16 - String(days).length - String(hours).length - String(mins).length))}║`, 'dim');
-    printLine(`║  内存:     256MB / 1024MB${' '.repeat(16)}║`, 'dim');
-    printLine(`║  CPU:      Qingning vCPU @ 3.2GHz${' '.repeat(12)}║`, 'dim');
-    printLine(`║  网络:     已连接 (QingningOS-WiFi)${' '.repeat(8)}║`, 'info');
-    printLine(`║  杀毒:     实时防护${antivirusRealTime ? '已开启' : '已关闭'}${' '.repeat(18)}║`, antivirusRealTime ? 'info' : 'warn');
-    printLine(`║  已安装:   ${installedCount} 个应用${' '.repeat(Math.max(0, 20 - String(installedCount).length))}║`, 'dim');
-    printLine('╚══════════════════════════════════════════╝', 'info');
+    printLine('  ══════════════════════════════════════════', 'info');
+    printLine('           QingningOS Terminal v2.0', 'info');
+    printLine('  ══════════════════════════════════════════', 'info');
+    printLine(`  用户:     ${currentUsername}`, 'white');
+    printLine(`  激活码:   ${currentActivationCode}`, 'white');
+    printLine(`  权限:     ${currentPermission.name}`, 'white');
+    printLine(`  内核:     ${QNOS_KERNEL}`, 'dim');
+    printLine(`  终端:     QingningOS Terminal v${QNOS_VERSION}`, 'dim');
+    printLine(`  运行时间: ${days}天 ${hours}小时 ${mins}分`, 'dim');
+    printLine(`  内存:     256MB / 1024MB`, 'dim');
+    printLine(`  CPU:      Qingning vCPU @ 3.2GHz`, 'dim');
+    printLine(`  网络:     已连接 (QingningOS-WiFi)`, 'info');
+    printLine(`  杀毒:     实时防护${antivirusRealTime ? '已开启' : '已关闭'}`, antivirusRealTime ? 'info' : 'warn');
+    printLine(`  已安装:   ${installedCount} 个应用`, 'dim');
+    printLine('  ══════════════════════════════════════════', 'info');
     printEmpty();
 }
 
@@ -913,11 +1060,11 @@ function cmdMemory() {
     const percent = ((usedMem / totalMem) * 100).toFixed(1);
     const barLen = 30;
     const filled = Math.round((usedMem / totalMem) * barLen);
-    const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
+    const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
 
     printEmpty();
-    printLine(`  内存使用情况`, 'info');
-    printLine(`  ──────────────────────────────────────`, 'dim');
+    printLine('  内存使用情况', 'info');
+    printLine('  ──────────────────────────────────────', 'dim');
     printLine(`  总内存:   ${totalMem} MB`, 'white');
     printLine(`  已使用:   ${usedMem} MB (${percent}%)`, 'white');
     printLine(`  可用:     ${totalMem - usedMem} MB`, 'white');
@@ -946,7 +1093,7 @@ function cmdDisk() {
     const percent = ((used / total) * 100).toFixed(1);
     const barLen = 30;
     const filled = Math.round((used / total) * barLen);
-    const bar = '█'.repeat(filled) + '░'.repeat(barLen - filled);
+    const bar = '\u2588'.repeat(filled) + '\u2591'.repeat(barLen - filled);
 
     printEmpty();
     printLine('  磁盘使用情况', 'info');
@@ -976,16 +1123,16 @@ function cmdBrowse(url) {
 
 function cmdStore() {
     printEmpty();
-    printLine('╔══════════════════════════════════════════════════════════╗', 'info');
-    printLine('║                    青柠应用商店                         ║', 'info');
-    printLine('╠══════════════════════════════════════════════════════════╣', 'info');
+    printLine('  ══════════════════════════════════════════════════════════', 'info');
+    printLine('                    青柠应用商店', 'info');
+    printLine('  ══════════════════════════════════════════════════════════', 'info');
     for (const app of appStoreApps) {
         const status = app.installed ? '[已安装]' : '[安装]';
         const statusClass = app.installed ? 'dim' : 'info';
-        printLine(`║  ${app.name.padEnd(12)} v${app.version.padEnd(8)} ${app.size.padEnd(8)} ${app.desc}`, 'white');
-        printHTML(`║  ${' '.repeat(14)}<span class="${statusClass}">${status}</span>`, 'dim');
+        printLine(`  ${app.name.padEnd(12)} v${app.version.padEnd(8)} ${app.size.padEnd(8)} ${app.desc}`, 'white');
+        printHTML(`  ${' '.repeat(14)}<span class="${statusClass}">${status}</span>`, 'dim');
     }
-    printLine('╚══════════════════════════════════════════════════════════╝', 'info');
+    printLine('  ══════════════════════════════════════════════════════════', 'info');
     printEmpty();
     printLine('  使用 "安装 <应用名>" 安装应用', 'dim');
     printLine('  使用 "卸载 <应用名>" 卸载应用', 'dim');
@@ -1007,11 +1154,11 @@ function cmdInstall(appName) {
         return;
     }
     printLine(`  ${trialPrefix()}正在安装 ${appName}...`, 'info');
-    // 模拟安装延迟
     setTimeout(() => {
         app.installed = true;
         printLine(`  ${trialPrefix()}安装完成: ${appName} v${app.version}`, 'success');
         showToast(`${appName} 安装完成`, 'success');
+        renderAppList();
     }, 800);
 }
 
@@ -1031,6 +1178,7 @@ function cmdUninstall(appName) {
     }
     app.installed = false;
     printLine(`  ${trialPrefix()}已卸载: ${appName}`, 'success');
+    renderAppList();
 }
 
 function cmdScan() {
@@ -1047,14 +1195,14 @@ function cmdScan() {
     }, 1500);
     setTimeout(() => {
         printEmpty();
-        printLine('╔══════════════════════════════════════════╗', 'info');
-        printLine('║           扫描结果 - 安全               ║', 'success');
-        printLine('╠══════════════════════════════════════════╣', 'info');
-        printLine('║  扫描文件数: 1,247                       ║', 'white');
-        printLine('║  威胁发现:   0                           ║', 'success');
-        printLine('║  扫描耗时:   3.2秒                       ║', 'dim');
-        printLine('║  状态:       系统安全                    ║', 'success');
-        printLine('╚══════════════════════════════════════════╝', 'info');
+        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('           扫描结果 - 安全', 'success');
+        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  扫描文件数: 1,247', 'white');
+        printLine('  威胁发现:   0', 'success');
+        printLine('  扫描耗时:   3.2秒', 'dim');
+        printLine('  状态:       系统安全', 'success');
+        printLine('  ══════════════════════════════════════════', 'info');
         printEmpty();
     }, 2200);
 }
@@ -1079,22 +1227,22 @@ function cmdUpdate() {
     printLine('  正在检查更新...', 'info');
     setTimeout(() => {
         printEmpty();
-        printLine('╔══════════════════════════════════════════╗', 'info');
-        printLine('║           系统更新检查                   ║', 'info');
-        printLine('╠══════════════════════════════════════════╣', 'info');
-        printLine('║  当前版本: v2.0                          ║', 'white');
-        printLine('║  最新版本: v2.0                          ║', 'white');
-        printLine('║  状态:     已是最新版本                 ║', 'success');
-        printLine('╚══════════════════════════════════════════╝', 'info');
+        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('           系统更新检查', 'info');
+        printLine('  ══════════════════════════════════════════', 'info');
+        printLine('  当前版本: v2.0', 'white');
+        printLine('  最新版本: v2.0', 'white');
+        printLine('  状态:     已是最新版本', 'success');
+        printLine('  ══════════════════════════════════════════', 'info');
         printEmpty();
     }, 1200);
 }
 
 function cmdWallpaper(id) {
     const wallpapers = {
-        '1': { name: '深色渐变', style: 'linear-gradient(135deg, #0a0e1a 0%, #0d1117 30%, #0f1923 60%, #0a1628 100%)' },
-        '2': { name: '星空', style: 'linear-gradient(135deg, #0a0e1a 0%, #0d1117 25%, #111827 50%, #0f172a 75%, #0a0e1a 100%)' },
-        '3': { name: '深海', style: 'linear-gradient(135deg, #0a0e1a 0%, #0a1628 25%, #0c1a3a 50%, #0a2040 75%, #0a0e1a 100%)' }
+        '1': { name: '浅色渐变', style: 'linear-gradient(135deg, #f5f5f5 0%, #ffffff 50%, #f0f0f0 100%)' },
+        '2': { name: '青柠', style: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 50%, #ecfdf5 100%)' },
+        '3': { name: '天空', style: 'linear-gradient(135deg, #eff6ff 0%, #ffffff 50%, #f0f9ff 100%)' }
     };
     if (!id || !wallpapers[id]) {
         printLine('  壁纸: 用法: 壁纸 1/2/3', 'error');
@@ -1105,7 +1253,7 @@ function cmdWallpaper(id) {
         return;
     }
     const wp = wallpapers[id];
-    document.getElementById('terminalScreen').style.background = wp.style;
+    document.getElementById('mainScreen').style.background = wp.style;
     document.body.style.background = wp.style;
     printLine(`  ${trialPrefix()}壁纸已更换为: ${wp.name}`, 'success');
 }
@@ -1120,10 +1268,10 @@ function cmdTheme(color) {
     }
     currentThemeColor = themes[color];
     currentThemeName = color;
-    document.documentElement.style.setProperty('--theme-color', currentThemeColor);
-    // 更新CSS变量 - 简单通过class切换
+    document.documentElement.style.setProperty('--primary', currentThemeColor);
     printLine(`  ${trialPrefix()}主题色已切换为: ${color}`, 'success');
     showToast(`主题已切换: ${color}`, 'info');
+    updateThemeValue();
 }
 
 // ===== 管理员命令 =====
@@ -1199,8 +1347,10 @@ function cmdReboot() {
     if (!requireAdmin()) return;
     printLine('  正在重启终端...', 'warn');
     setTimeout(() => {
-        const content = document.getElementById('terminalContent');
-        content.innerHTML = '';
+        const contentHome = document.getElementById('terminalContent');
+        const contentFull = document.getElementById('terminalContentFull');
+        if (contentHome) contentHome.innerHTML = '';
+        if (contentFull) contentFull.innerHTML = '';
         commandHistory = [];
         commandHistoryIndex = -1;
         currentPath = '/home/user';
@@ -1208,6 +1358,7 @@ function cmdReboot() {
         showWelcomeMessage();
         updatePrompt();
         printLine('  系统已重启完成', 'success');
+        showToast('系统已重启', 'success');
     }, 1500);
 }
 
@@ -1215,7 +1366,7 @@ function cmdShutdown() {
     if (!requireAdmin()) return;
     printLine('  正在关闭系统...', 'warn');
     setTimeout(() => {
-        document.getElementById('terminalScreen').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'none';
         const shutdownScreen = document.getElementById('shutdownScreen');
         shutdownScreen.style.display = 'flex';
         document.getElementById('shutdownText').textContent = '系统已关闭 - 刷新页面以重新启动';
@@ -1243,10 +1394,13 @@ function cmdRestore() {
         currentThemeName = '绿色';
         antivirusRealTime = true;
         systemAnnouncement = '';
-        document.getElementById('terminalScreen').style.background = '#0a0e1a';
-        document.body.style.background = '#0a0e1a';
+        document.getElementById('mainScreen').style.background = '';
+        document.body.style.background = '';
+        document.documentElement.style.setProperty('--primary', '#22c55e');
         updatePrompt();
+        updateThemeValue();
         printLine('  系统设置已还原为默认值', 'success');
+        showToast('系统已还原', 'success');
     }, 1000);
 }
 
@@ -1270,6 +1424,7 @@ function cmdPurge() {
             { pid: 2, name: 'qn-terminal', cpu: 2.1, mem: 45 }
         ];
         printLine('  所有数据已清除', 'success');
+        renderAppList();
     }, 1000);
 }
 
@@ -1291,20 +1446,84 @@ function cmdMode(mode) {
     }
 }
 
-// ===== 辅助函数 =====
-
-function getDirByPath(path) {
-    if (path === '/home/user') return fileSystem['/home/user'];
-    const parts = path.replace('/home/user/', '').split('/').filter(Boolean);
-    let current = fileSystem['/home/user'];
-    for (const part of parts) {
-        if (current && current[part] && typeof current[part] === 'object' && current[part].type !== 'file') {
-            current = current[part];
-        } else {
-            return null;
-        }
+// ===== 应用列表渲染 =====
+function renderAppList() {
+    const list = document.getElementById('appList');
+    if (!list) return;
+    list.innerHTML = '';
+    for (const app of appStoreApps) {
+        const item = document.createElement('div');
+        item.className = 'app-list-item';
+        item.innerHTML = `
+            <div class="app-list-icon ${app.icon}">${app.emoji}</div>
+            <div class="app-list-info">
+                <div class="app-list-name">${app.name}</div>
+                <div class="app-list-desc">${app.desc} &middot; v${app.version} &middot; ${app.size}</div>
+            </div>
+            <button class="app-list-action ${app.installed ? 'installed' : ''}" data-app="${app.name}">
+                ${app.installed ? '已安装' : '安装'}
+            </button>
+        `;
+        list.appendChild(item);
     }
-    return current;
+
+    // 绑定安装/卸载按钮
+    list.querySelectorAll('.app-list-action').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const appName = btn.dataset.app;
+            const app = appStoreApps.find(a => a.name === appName);
+            if (app.installed) {
+                executeCommand(`卸载 ${appName}`);
+            } else {
+                executeCommand(`安装 ${appName}`);
+            }
+        });
+    });
+}
+
+// ===== 设置项绑定 =====
+function bindSettings() {
+    const themeItem = document.getElementById('settingTheme');
+    const aboutItem = document.getElementById('settingAbout');
+    const rebootItem = document.getElementById('settingReboot');
+    const shutdownItem = document.getElementById('settingShutdown');
+
+    if (themeItem) {
+        themeItem.addEventListener('click', () => {
+            const themes = ['绿色', '蓝色', '紫色', '红色'];
+            const idx = themes.indexOf(currentThemeName);
+            const next = themes[(idx + 1) % themes.length];
+            executeCommand(`主题 ${next}`);
+        });
+    }
+
+    if (aboutItem) {
+        aboutItem.addEventListener('click', () => {
+            switchPage('terminal');
+            setTimeout(() => {
+                executeCommand('系统信息');
+                focusTerminalInput();
+            }, 200);
+        });
+    }
+
+    if (rebootItem) {
+        rebootItem.addEventListener('click', () => {
+            executeCommand('重启');
+        });
+    }
+
+    if (shutdownItem) {
+        shutdownItem.addEventListener('click', () => {
+            executeCommand('关机');
+        });
+    }
+}
+
+function updateThemeValue() {
+    const el = document.getElementById('settingThemeValue');
+    if (el) el.textContent = currentThemeName;
 }
 
 // ===== 初始化 =====
