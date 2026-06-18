@@ -940,16 +940,22 @@
             var userEmail = localStorage.getItem('qn_user_email') || '';
             var isAdmin = localStorage.getItem('qn_is_admin') === 'true';
             var isLoggedIn = localStorage.getItem('qn_logged_in') === 'true';
+            var archiveKey = localStorage.getItem('qn_archive_key') || '';
 
-            // 延迟模拟权限验证（等待 auth2.js 初始化）
+            // 延迟模拟权限验证
             setTimeout(function() {
                 loadingEl.classList.add('hidden');
 
                 // 判断是否有权限
                 var hasPermission = false;
 
-                // 方式1：通过激活码判断
-                if (activationCode) {
+                // 方式1：档案室访问密钥（最优先）
+                if (archiveKey && archiveKey.startsWith('QINGNING_ADMIN_')) {
+                    hasPermission = true;
+                }
+
+                // 方式2：通过激活码判断
+                if (!hasPermission && activationCode) {
                     var code = activationCode.toLowerCase();
                     if (code === 'xt0000' || code === 'xt0001') {
                         hasPermission = true;
@@ -962,12 +968,12 @@
                     }
                 }
 
-                // 方式2：通过管理员标记判断（兼容普通登录用户）
+                // 方式3：通过管理员标记判断
                 if (!hasPermission && isLoggedIn && isAdmin) {
                     hasPermission = true;
                 }
 
-                // 方式3：通过邮箱判断（站长邮箱）
+                // 方式4：通过邮箱判断（站长邮箱）
                 if (!hasPermission && userEmail === '3862242786@qq.com') {
                     hasPermission = true;
                 }
@@ -979,7 +985,7 @@
 
                 // 权限通过
                 if (navEmailEl) {
-                    navEmailEl.textContent = userEmail || activationCode || '管理员';
+                    navEmailEl.textContent = userEmail || '管理员';
                 }
                 contentEl.classList.add('show');
                 renderProjects('');

@@ -248,6 +248,10 @@ function saveLoginState(email) {
     localStorage.setItem('qn_logged_in', 'true');
     localStorage.setItem('qn_user_email', email);
     localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+    // 生成档案室访问密钥（仅管理员）
+    if (isAdmin) {
+        localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+    }
 }
 
 // ===== 找回密码 =====
