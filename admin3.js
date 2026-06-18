@@ -146,29 +146,123 @@ async function adminDeleteFile(fileName) {
 // ===== 用户管理 =====
 async function loadUsers() {
     const userList = document.getElementById('userList');
-    userList.innerHTML = `
-        <div class="admin-notice">
-            <p>📌 <strong>用户管理说明</strong></p>
-            <p>由于安全原因，用户管理需要通过 Supabase 控制台操作。</p>
-            <p style="margin-top:12px;"><strong>操作步骤：</strong></p>
-            <p>1. 打开 <a href="https://supabase.com/dashboard" target="_blank" style="color:#65a30d;">Supabase Dashboard</a></p>
-            <p>2. 点击左侧菜单「Authentication」→「Users」</p>
-            <p>3. 在这里可以查看、删除用户</p>
-        </div>
-    `;
+    userList.innerHTML = '<div class="loading-text">加载用户列表中...</div>';
 
-    // 尝试获取用户数量（可能失败）
+    let users = [];
+    let usedFallback = false;
+
+    // 1. 尝试通过 Supabase Auth Admin API 获取用户列表
     try {
-        const { count, error } = await supabaseClient
-            .from('profiles')
-            .select('*', { count: 'exact', head: true });
-        
-        if (!error && count !== null) {
-            document.getElementById('totalUsers').textContent = count;
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const accessToken = sessionData?.session?.access_token;
+
+        if (accessToken) {
+            // 使用 Supabase Management API 的 listUsers 端点
+            const supabaseUrl = supabaseClient.supabaseUrl;
+            const response = await fetch(supabaseUrl + '/auth/v1/admin/users', {
+                headers: {
+                    'Authorization': 'Bearer ' + accessToken,
+                    'apikey': supabaseClient.supabaseKey
+                }
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                users = (result.users || []).map(u => ({
+                    email: u.email || '未知',
+                    created_at: u.created_at || '',
+                    last_sign_in_at: u.last_sign_in_at || u.updated_at || '',
+                    id: u.id || ''
+                }));
+            }
         }
     } catch (e) {
-        // profiles 表可能不存在，忽略错误
+        console.warn('通过 Admin API 获取用户列表失败:', e);
     }
+
+    // 2. 如果 Admin API 失败，从 localStorage 中收集已知用户
+    if (users.length === 0) {
+        usedFallback = true;
+        const knownUsers = new Map();
+
+        // 遍历 localStorage 中所有 qn_profile_ 开头的键
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('qn_profile_')) {
+                try {
+                    const profile = JSON.parse(localStorage.getItem(key));
+                    if (profile && profile.email) {
+                        knownUsers.set(profile.email, {
+                            email: profile.email,
+                            created_at: profile.created_at || '',
+                            last_sign_in_at: profile.updated_at || '',
+                            id: ''
+                        });
+                    }
+                } catch (e) { /* 忽略解析错误 */ }
+            }
+        }
+
+        // 也从 qn_user_email 获取当前管理员邮箱
+        const adminEmail = localStorage.getItem('qn_user_email');
+        if (adminEmail && !knownUsers.has(adminEmail)) {
+            knownUsers.set(adminEmail, {
+                email: adminEmail,
+                created_at: '',
+                last_sign_in_at: '',
+                id: ''
+            });
+        }
+
+        users = Array.from(knownUsers.values());
+    }
+
+    // 更新用户总数
+    document.getElementById('totalUsers').textContent = users.length;
+
+    if (users.length === 0) {
+        userList.innerHTML = `
+            <div class="admin-notice">
+                <p>📌 <strong>用户管理说明</strong></p>
+                <p>当前未找到任何用户数据。</p>
+                <p style="margin-top:12px;"><strong>操作步骤：</strong></p>
+                <p>1. 打开 <a href="https://supabase.com/dashboard" target="_blank" style="color:#65a30d;">Supabase Dashboard</a></p>
+                <p>2. 点击左侧菜单「Authentication」→「Users」</p>
+                <p>3. 在这里可以查看、删除用户</p>
+            </div>
+        `;
+        return;
+    }
+
+    // 构建用户列表 HTML
+    let html = '';
+
+    if (usedFallback) {
+        html += `<div class="admin-notice" style="margin-bottom:12px;">
+            <p>⚠️ 以下为本地已知的用户信息（非完整列表）。完整用户管理请前往 <a href="https://supabase.com/dashboard" target="_blank" style="color:#65a30d;">Supabase Dashboard</a>。</p>
+        </div>`;
+    }
+
+    // 按创建时间倒序排列
+    users.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+
+    users.forEach(user => {
+        const email = user.email;
+        const created = user.created_at ? new Date(user.created_at).toLocaleString('zh-CN') : '未知';
+        const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('zh-CN') : '从未登录';
+
+        html += `
+            <div class="user-row" data-email="${email.toLowerCase()}">
+                <div class="user-info">
+                    <span class="user-email">👤 ${email}</span>
+                    <span class="user-meta">注册：${created}</span>
+                    <span class="user-meta">最后登录：${lastLogin}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    userList.innerHTML = html;
 }
 
 function searchUsers() {
@@ -184,7 +278,9 @@ function searchUsers() {
 function saveAnnouncement() {
     const text = document.getElementById('announcement').value.trim();
     localStorage.setItem('qn_announcement', text);
-    
+    // 同步公告到云端，确保首页能读取
+    saveSettingsToCloud();
+
     const msg = document.getElementById('announcementMsg');
     if (text) {
         msg.textContent = '✅ 公告已保存！将在首页显示。';
@@ -204,7 +300,9 @@ function clearAnnouncement() {
     document.getElementById('announcement').value = '';
     localStorage.removeItem('qn_announcement');
     document.getElementById('announcementPreview').style.display = 'none';
-    
+    // 同步清除公告到云端
+    saveSettingsToCloud();
+
     const msg = document.getElementById('announcementMsg');
     msg.textContent = '✅ 公告已清除！';
     msg.style.color = '#64748b';

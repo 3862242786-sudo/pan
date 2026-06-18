@@ -15,6 +15,16 @@ document.querySelectorAll('.nav-links a').forEach(link => {
     });
 });
 
+// 点击页面其他区域自动关闭移动端菜单
+document.addEventListener('click', function(e) {
+    if (navLinks && navLinks.classList.contains('active')) {
+        var navbar = document.querySelector('.navbar');
+        if (navbar && !navbar.contains(e.target)) {
+            navLinks.classList.remove('active');
+        }
+    }
+});
+
 // ===== 平滑滚动 =====
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
@@ -52,26 +62,22 @@ function filterFiles(category) {
 // ===== 搜索文件 =====
 function searchFiles() {
     const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-    const files = document.querySelectorAll('.file-card');
+    const files = document.querySelectorAll('.file-item');
     let foundCount = 0;
     
     files.forEach(file => {
-        const fileName = file.dataset.name.toLowerCase();
-        const fileTitle = file.querySelector('h3').textContent.toLowerCase();
-        const fileDesc = file.querySelector('.file-desc').textContent.toLowerCase();
+        const nameEl = file.querySelector('.file-name');
+        const fileName = nameEl ? nameEl.textContent.toLowerCase() : '';
         
-        if (fileName.includes(searchTerm) || fileTitle.includes(searchTerm) || fileDesc.includes(searchTerm)) {
+        if (fileName.includes(searchTerm)) {
             file.classList.remove('hidden');
+            file.style.display = '';
             foundCount++;
         } else {
             file.classList.add('hidden');
+            file.style.display = 'none';
         }
     });
-    
-    // 重置分类标签
-    const tabs = document.querySelectorAll('.category-tabs .tab');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    tabs[0].classList.add('active');
     
     // 显示搜索结果提示
     if (searchTerm && foundCount === 0) {
@@ -86,11 +92,64 @@ document.getElementById('searchInput')?.addEventListener('keypress', function(e)
     }
 });
 
+// ===== Toast 提示组件 =====
+function showToast(message, type, duration) {
+    type = type || 'success';
+    duration = duration || 3500;
+
+    // 确保 toast 容器存在
+    var container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    var icons = {
+        success: '\u2705',
+        error: '\u274c',
+        info: '\u2139\ufe0f'
+    };
+
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML =
+        '<span class="toast-icon">' + (icons[type] || icons.info) + '</span>' +
+        '<span class="toast-message">' + message + '</span>' +
+        '<button class="toast-close" onclick="this.parentElement.classList.add(\'toast-exit\');setTimeout(function(){this.parentElement.remove()}.bind(this),300)">&times;</button>';
+
+    container.appendChild(toast);
+
+    // 自动消失
+    setTimeout(function() {
+        if (toast.parentElement) {
+            toast.classList.add('toast-exit');
+            setTimeout(function() {
+                if (toast.parentElement) toast.remove();
+            }, 300);
+        }
+    }, duration);
+}
+
 // ===== 表单提交 =====
 function handleSubmit(e) {
     e.preventDefault();
-    alert('感谢您的留言！我会尽快回复您。');
-    e.target.reset();
+    var form = e.target;
+    var name = form.querySelector('input[type="text"]').value.trim();
+    var email = form.querySelector('input[type="email"]').value.trim();
+    var message = form.querySelector('textarea').value.trim();
+
+    // 验证
+    if (!name || !email || !message) {
+        showToast('请填写完整的留言信息', 'error');
+        return;
+    }
+
+    // 模拟提交（无后端）
+    console.log('[留言提交]', { name: name, email: email, message: message });
+    showToast('留言已提交，管理员会尽快回复', 'success', 4000);
+    form.reset();
 }
 
 // ===== 页面加载动画 =====

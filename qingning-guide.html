@@ -28,9 +28,18 @@
         .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
         .toc {
             background: #1e293b; border-radius: 16px; padding: 28px; border: 1px solid #334155;
-            margin-bottom: 40px; position: sticky; top: 80px;
+            margin-bottom: 40px;
         }
-        .toc h2 { font-size: 18px; margin-bottom: 16px; color: #22c55e; }
+        .toc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .toc h2 { font-size: 18px; color: #22c55e; margin: 0; }
+        .toc-toggle {
+            background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer;
+            width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.3s;
+        }
+        .toc-toggle:hover { background: #334155; color: #22c55e; }
+        .toc-content { overflow: hidden; transition: max-height 0.3s ease; }
+        .toc-content.collapsed { max-height: 0; }
         .toc ul { list-style: none; }
         .toc li { margin: 8px 0; }
         .toc a { color: #94a3b8; text-decoration: none; font-size: 14px; transition: color 0.3s; }
@@ -87,7 +96,6 @@
             .nav-links { display: none; }
             .hero h1 { font-size: 28px; }
             .container { padding: 20px 16px; }
-            .toc { position: static; }
         }
     </style>
 </head>
@@ -114,18 +122,23 @@
     <div class="container">
         <!-- 目录 -->
         <div class="toc">
-            <h2>📋 目录</h2>
-            <ul>
-                <li><a href="#s1">一、快速开始</a></li>
-                <li><a href="#s2">二、青柠网盘使用指南</a></li>
-                <li><a href="#s3">三、青柠杀毒（Windows）使用指南</a></li>
-                <li><a href="#s4">四、青柠杀毒（Android）使用指南</a></li>
-                <li><a href="#s5">五、青柠桌面安装与使用</a></li>
-                <li><a href="#s6">六、青柠应用商店使用指南</a></li>
-                <li><a href="#s7">七、Windows魔改工具使用指南</a></li>
-                <li><a href="#s8">八、常见问题解答（FAQ）</a></li>
-                <li><a href="#s9">九、版本更新日志</a></li>
-            </ul>
+            <div class="toc-header">
+                <h2>📋 目录</h2>
+                <button class="toc-toggle" onclick="document.querySelector('.toc-content').classList.toggle('collapsed');this.textContent=this.textContent==='−'?'＋':'−';" title="收起/展开">−</button>
+            </div>
+            <div class="toc-content">
+                <ul>
+                    <li><a href="#s1">一、快速开始</a></li>
+                    <li><a href="#s2">二、青柠网盘使用指南</a></li>
+                    <li><a href="#s3">三、青柠杀毒（Windows）使用指南</a></li>
+                    <li><a href="#s4">四、青柠杀毒（Android）使用指南</a></li>
+                    <li><a href="#s5">五、青柠桌面安装与使用</a></li>
+                    <li><a href="#s6">六、青柠应用商店使用指南</a></li>
+                    <li><a href="#s7">七、Windows魔改工具使用指南</a></li>
+                    <li><a href="#s8">八、常见问题解答（FAQ）</a></li>
+                    <li><a href="#s9">九、版本更新日志</a></li>
+                </ul>
+            </div>
         </div>
 
         <!-- 快速开始 -->

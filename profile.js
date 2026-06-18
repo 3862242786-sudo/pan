@@ -122,8 +122,9 @@
     }
 
     // ===== 图片压缩为 Base64 =====
-    function fileToBase64(file, maxSize) {
+    function fileToBase64(file, maxSize, quality) {
         maxSize = maxSize || 800;
+        quality = (quality !== undefined) ? quality : 0.8;
         return new Promise(function (resolve, reject) {
             var reader = new FileReader();
             reader.onload = function () {
@@ -138,7 +139,7 @@
                     canvas.width = w;
                     canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                    resolve(canvas.toDataURL('image/jpeg', quality));
                 };
                 img.onerror = reject;
                 img.src = reader.result;
@@ -146,6 +147,24 @@
             reader.onerror = reject;
             reader.readAsDataURL(file);
         });
+    }
+
+    // ===== localStorage 容量检查 =====
+    function canSaveToLocalStorage(data) {
+        try {
+            // 估算当前 localStorage 已用空间
+            var totalSize = 0;
+            for (var i = 0; i < localStorage.length; i++) {
+                var key = localStorage.key(i);
+                totalSize += key.length + (localStorage.getItem(key) || '').length;
+            }
+            // 估算新数据大小（UTF-16 每字符 2 字节）
+            var newDataSize = JSON.stringify(data).length * 2;
+            // localStorage 通常限制为 5MB，留 100KB 安全余量
+            return (totalSize + newDataSize) < (5 * 1024 * 1024 - 100 * 1024);
+        } catch (e) {
+            return false;
+        }
     }
 
     // ===== 初始化 =====
@@ -196,23 +215,38 @@
 
     // ===== 未登录提示 =====
     function showLoginPrompt() {
-        profileName.textContent = '请先登录';
-        profileBio.textContent = '登录后即可查看和编辑个人主页';
-        profileAvatar.textContent = '?';
-        editBtn.style.display = 'none';
-        privacyToggle.style.display = 'none';
-        worksLoading.style.display = 'none';
-        worksEmpty.style.display = 'block';
-        worksEmpty.querySelector('p').textContent = '登录后即可查看作品';
+        if (profileName) profileName.textContent = '请先登录';
+        if (profileBio) profileBio.textContent = '登录后即可查看和编辑个人主页';
+        if (profileAvatar) profileAvatar.textContent = '?';
+        if (editBtn) editBtn.style.display = 'none';
+        if (privacyToggle) privacyToggle.style.display = 'none';
+        if (worksLoading) worksLoading.style.display = 'none';
+        if (worksEmpty) {
+            worksEmpty.style.display = 'block';
+            var emptyP = worksEmpty.querySelector('p');
+            if (emptyP) emptyP.textContent = '登录后即可查看作品';
+        }
 
         // 在操作按钮区域显示登录按钮
         var actions = document.getElementById('profileActions');
-        actions.innerHTML = '<a href="auth.html" class="btn btn-primary" style="margin-top:20px">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
-            '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>' +
-            '<polyline points="10 17 15 12 10 7"/>' +
-            '<line x1="15" y1="12" x2="3" y2="12"/>' +
-            '</svg> 前往登录</a>';
+        if (actions) {
+            actions.innerHTML = '<a href="auth.html" class="btn btn-primary" style="margin-top:20px">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">' +
+                '<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>' +
+                '<polyline points="10 17 15 12 10 7"/>' +
+                '<line x1="15" y1="12" x2="3" y2="12"/>' +
+                '</svg> 前往登录</a>';
+        }
+
+        // 隐藏标签页和收藏区域
+        var tabsBar = document.querySelector('.profile-tabs');
+        if (tabsBar) tabsBar.style.display = 'none';
+        var tabFavorites = document.getElementById('tabFavorites');
+        if (tabFavorites) tabFavorites.style.display = 'none';
+        var addWorkArea = document.getElementById('addWorkArea');
+        if (addWorkArea) addWorkArea.style.display = 'none';
+        var accountInfo = document.getElementById('accountInfo');
+        if (accountInfo) accountInfo.style.display = 'none';
     }
 
     // ===== 设置个人主页 =====
@@ -403,8 +437,13 @@
         }
         try {
             showToast('正在处理头像...', 'info');
-            var base64 = await fileToBase64(file, 400);
+            var base64 = await fileToBase64(file, 400, 0.6);
             profileData.avatar_url = base64;
+            // 检查 localStorage 容量是否足够
+            if (!canSaveToLocalStorage(profileData)) {
+                showToast('图片过大，请选择更小的图片', 'error');
+                return;
+            }
             saveProfileData(currentEmail, profileData);
             profileAvatar.innerHTML = '<img src="' + base64 + '" alt="头像">';
             navAvatar.innerHTML = '<img src="' + base64 + '" alt="头像">';
@@ -596,6 +635,68 @@
     function generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     }
+
+    // ===== 查看作品详情 =====
+    window.viewWork = function (workId) {
+        var works = loadWorks(viewEmail);
+        var work = null;
+        for (var i = 0; i < works.length; i++) {
+            if (works[i].id === workId) {
+                work = works[i];
+                break;
+            }
+        }
+        if (!work) {
+            showToast('作品不存在', 'error');
+            return;
+        }
+
+        var modal = document.getElementById('viewWorkModal');
+        if (!modal) return;
+
+        // 填充内容
+        document.getElementById('viewWorkTitle').textContent = work.title || '未命名';
+        document.getElementById('viewWorkDate').textContent = formatDate(work.created_at);
+        document.getElementById('viewWorkDesc').textContent = work.description || '暂无描述';
+        document.getElementById('viewWorkDesc').style.display = work.description ? 'block' : 'none';
+
+        // 渲染图片列表
+        var imagesContainer = document.getElementById('viewWorkImages');
+        imagesContainer.innerHTML = '';
+        if (work.images && work.images.length > 0) {
+            imagesContainer.style.display = 'flex';
+            work.images.forEach(function (src) {
+                var img = document.createElement('img');
+                img.src = src;
+                img.alt = work.title;
+                img.style.cssText = 'max-width:100%; max-height:400px; object-fit:contain; border-radius:10px; cursor:pointer;';
+                img.onclick = function () { window.previewWorkImage(src); };
+                imagesContainer.appendChild(img);
+            });
+        } else {
+            imagesContainer.style.display = 'none';
+        }
+
+        modal.style.display = 'block';
+    };
+
+    window.closeViewWorkModal = function () {
+        var modal = document.getElementById('viewWorkModal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.previewWorkImage = function (src) {
+        var overlay = document.getElementById('workImageOverlay');
+        var img = document.getElementById('workOverlayImage');
+        if (!overlay || !img) return;
+        img.src = src;
+        overlay.style.display = 'flex';
+    };
+
+    window.closeWorkImageOverlay = function () {
+        var overlay = document.getElementById('workImageOverlay');
+        if (overlay) overlay.style.display = 'none';
+    };
 
     // ===== 启动 =====
     if (document.readyState === 'loading') {

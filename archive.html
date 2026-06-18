@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠档案室 - 历史版本管理</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* ===== 基础重置 ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #e2e8f0;
+            background-color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            min-height: 100vh;
+        }
+
+        /* ===== 导航栏 ===== */
+        .archive-navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .archive-nav-left { display: flex; align-items: center; gap: 12px; }
+        .archive-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .archive-logo svg { width: 28px; height: 28px; color: #22c55e; flex-shrink: 0; }
+        .archive-logo span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .archive-nav-right { display: flex; align-items: center; gap: 12px; }
+        .archive-user-info {
+            font-size: 13px; color: #94a3b8;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .archive-user-info .user-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #22c55e; display: inline-block;
+        }
+        .btn-back-admin {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back-admin:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+        .btn-back-admin svg { width: 16px; height: 16px; }
+
+        /* ===== 主内容 ===== */
+        .archive-main { max-width: 1200px; margin: 0 auto; padding: 88px 24px 40px; }
+
+        /* ===== 页面标题 ===== */
+        .archive-header { text-align: center; margin-bottom: 32px; }
+        .archive-header h1 {
+            font-size: 32px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 8px; display: flex; align-items: center;
+            justify-content: center; gap: 12px;
+        }
+        .archive-header h1 svg { width: 32px; height: 32px; color: #22c55e; }
+        .archive-header p { font-size: 15px; color: #64748b; max-width: 600px; margin: 0 auto; }
+
+        /* ===== 统计栏 ===== */
+        .archive-stats {
+            display: flex; align-items: center; justify-content: center;
+            gap: 40px; margin-bottom: 32px; flex-wrap: wrap;
+        }
+        .stat-item { text-align: center; }
+        .stat-value {
+            font-size: 28px; font-weight: 700; color: #22c55e; line-height: 1.2;
+        }
+        .stat-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+        /* ===== 搜索栏 ===== */
+        .archive-search { max-width: 480px; margin: 0 auto 32px; position: relative; }
+        .archive-search input {
+            width: 100%; padding: 12px 16px 12px 44px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(100, 116, 139, 0.2);
+            border-radius: 10px; color: #e2e8f0; font-size: 14px;
+            font-family: inherit; outline: none; transition: all 0.2s ease;
+        }
+        .archive-search input::placeholder { color: #475569; }
+        .archive-search input:focus {
+            border-color: rgba(34, 197, 94, 0.5);
+            background: rgba(30, 41, 59, 1);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+        .archive-search svg {
+            position: absolute; left: 14px; top: 50%;
+            transform: translateY(-50%); width: 18px; height: 18px; color: #475569;
+        }
+
+        /* ===== 项目卡片 ===== */
+        .archive-card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(100, 116, 139, 0.15);
+            border-radius: 16px; margin-bottom: 20px; overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .archive-card:hover {
+            border-color: rgba(34, 197, 94, 0.25);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2); transform: translateY(-2px);
+        }
+        .archive-card-header {
+            padding: 20px 24px; display: flex; align-items: flex-start;
+            justify-content: space-between; gap: 16px; cursor: pointer; user-select: none;
+        }
+        .archive-card-header:hover { background: rgba(34, 197, 94, 0.03); }
+        .archive-card-info { flex: 1; min-width: 0; }
+        .archive-card-title {
+            display: flex; align-items: center; gap: 10px;
+            margin-bottom: 6px; flex-wrap: wrap;
+        }
+        .archive-card-title .card-icon { font-size: 22px; flex-shrink: 0; }
+        .archive-card-title h2 { font-size: 18px; font-weight: 600; color: #f1f5f9; }
+        .version-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 10px; background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3); border-radius: 20px;
+            font-size: 12px; font-weight: 600; color: #22c55e;
+        }
+        .status-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 500;
+        }
+        .status-tag.status-active {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.25); color: #4ade80;
+        }
+        .status-tag.status-archived {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.25); color: #f87171;
+        }
+        .archive-card-desc { font-size: 13px; color: #64748b; }
+        .archive-card-meta {
+            display: flex; align-items: center; gap: 16px;
+            margin-top: 8px; font-size: 12px; color: #475569;
+        }
+        .archive-card-meta span { display: flex; align-items: center; gap: 4px; }
+        .archive-card-meta svg { width: 14px; height: 14px; }
+        .archive-card-toggle {
+            display: flex; align-items: center; justify-content: center;
+            width: 32px; height: 32px; border-radius: 8px;
+            background: rgba(100, 116, 139, 0.1); color: #64748b;
+            flex-shrink: 0; transition: all 0.3s ease;
+        }
+        .archive-card-toggle svg { width: 18px; height: 18px; transition: transform 0.3s ease; }
+        .archive-card.expanded .archive-card-toggle svg { transform: rotate(180deg); }
+        .archive-card-toggle:hover { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+
+        /* ===== 卡片内容区 ===== */
+        .archive-card-body { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
+        .archive-card.expanded .archive-card-body { max-height: 5000px; }
+
+        /* ===== 版本对比栏 ===== */
+        .compare-bar {
+            margin: 0 24px 12px; padding: 12px 16px;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px; display: flex; align-items: center;
+            gap: 10px; flex-wrap: wrap; font-size: 13px;
+        }
+        .compare-bar label { color: #94a3b8; font-size: 12px; white-space: nowrap; }
+        .compare-bar select {
+            padding: 6px 10px; background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(100, 116, 139, 0.25); border-radius: 6px;
+            color: #e2e8f0; font-size: 12px; font-family: inherit; outline: none;
+            min-width: 140px;
+        }
+        .compare-bar select:focus { border-color: rgba(59, 130, 246, 0.5); }
+        .compare-bar .compare-arrow { color: #64748b; font-size: 16px; }
+        .btn-compare {
+            padding: 6px 14px; background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3); color: #60a5fa;
+            border-radius: 6px; font-size: 12px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease; font-family: inherit;
+        }
+        .btn-compare:hover { background: rgba(59, 130, 246, 0.3); }
+        .btn-compare:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ===== 对比结果 ===== */
+        .compare-result {
+            margin: 0 24px 16px; padding: 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(100, 116, 139, 0.15);
+            border-radius: 10px; display: none;
+        }
+        .compare-result.show { display: block; }
+        .compare-result h4 {
+            font-size: 14px; color: #94a3b8; margin-bottom: 12px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .compare-diff-stats {
+            display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+        }
+        .diff-stat {
+            padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;
+        }
+        .diff-stat.additions { background: rgba(34, 197, 94, 0.12); color: #4ade80; }
+        .diff-stat.deletions { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .diff-stat.changes { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
+        .compare-files-list { max-height: 300px; overflow-y: auto; }
+        .compare-file-item {
+            padding: 8px 12px; border-bottom: 1px solid rgba(100, 116, 139, 0.08);
+            font-size: 12px; display: flex; align-items: center; gap: 8px;
+        }
+        .compare-file-item:last-child { border-bottom: none; }
+        .compare-file-item .file-status {
+            padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;
+        }
+        .file-status.added { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .file-status.modified { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .file-status.removed { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .compare-file-item .file-patch-link {
+            margin-left: auto; color: #60a5fa; text-decoration: none; font-size: 11px;
+        }
+        .compare-file-item .file-patch-link:hover { text-decoration: underline; }
+
+        /* ===== 版本表格 ===== */
+        .archive-table-wrapper { padding: 0 24px 20px; overflow-x: auto; }
+        .archive-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .archive-table thead th {
+            text-align: left; padding: 10px 12px;
+            background: rgba(15, 23, 42, 0.5); color: #64748b;
+            font-weight: 600; font-size: 12px; text-transform: uppercase;
+            letter-spacing: 0.5px; border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+            white-space: nowrap;
+        }
+        .archive-table tbody td {
+            padding: 12px; border-bottom: 1px solid rgba(100, 116, 139, 0.08);
+            color: #cbd5e1; white-space: nowrap;
+        }
+        .archive-table tbody tr { transition: background 0.15s ease; }
+        .archive-table tbody tr:hover { background: rgba(34, 197, 94, 0.04); }
+        .archive-table tbody tr:last-child td { border-bottom: none; }
+
+        .version-badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+        }
+        .version-badge.latest { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .version-badge.old { background: rgba(100, 116, 139, 0.1); color: #94a3b8; }
+
+        .commit-msg { max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+
+        .file-actions { display: flex; align-items: center; gap: 6px; }
+        .btn-file-action {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 5px 12px; border-radius: 6px; font-size: 12px;
+            font-weight: 500; text-decoration: none; cursor: pointer;
+            transition: all 0.2s ease; border: none; font-family: inherit;
+        }
+        .btn-file-action svg { width: 14px; height: 14px; }
+        .btn-download {
+            background: rgba(34, 197, 94, 0.12); color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.25);
+        }
+        .btn-download:hover { background: rgba(34, 197, 94, 0.25); border-color: rgba(34, 197, 94, 0.5); }
+        .btn-preview {
+            background: rgba(59, 130, 246, 0.12); color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        .btn-preview:hover { background: rgba(59, 130, 246, 0.25); border-color: rgba(59, 130, 246, 0.5); }
+
+        /* ===== 加载动画（项目内） ===== */
+        .version-loading {
+            padding: 40px 24px; text-align: center; color: #64748b; font-size: 14px;
+        }
+        .version-loading .mini-spinner {
+            display: inline-block; width: 24px; height: 24px;
+            border: 2px solid rgba(34, 197, 94, 0.15); border-top-color: #22c55e;
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+            margin-bottom: 10px;
+        }
+        .version-loading p { margin-top: 8px; }
+
+        .version-error {
+            padding: 30px 24px; text-align: center; color: #f87171; font-size: 14px;
+        }
+        .version-error .retry-btn {
+            margin-top: 10px; padding: 6px 16px;
+            background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171; border-radius: 6px; font-size: 12px; cursor: pointer;
+            font-family: inherit; transition: all 0.2s ease;
+        }
+        .version-error .retry-btn:hover { background: rgba(239, 68, 68, 0.25); }
+
+        .version-empty {
+            padding: 30px 24px; text-align: center; color: #475569; font-size: 14px;
+        }
+
+        /* ===== 底部统计 ===== */
+        .archive-footer {
+            margin-top: 40px; padding: 24px;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(100, 116, 139, 0.15);
+            border-radius: 16px; display: flex; align-items: center;
+            justify-content: center; gap: 40px; flex-wrap: wrap;
+        }
+        .archive-footer-item { text-align: center; }
+        .archive-footer-item .footer-value {
+            font-size: 28px; font-weight: 700; color: #22c55e; line-height: 1.2;
+        }
+        .archive-footer-item .footer-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+        /* ===== 权限不足 ===== */
+        .archive-permission-denied {
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 80vh; text-align: center; padding: 40px 24px;
+        }
+        .archive-permission-denied.show { display: flex; }
+        .permission-icon {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: rgba(239, 68, 68, 0.1); display: flex;
+            align-items: center; justify-content: center; margin-bottom: 24px;
+        }
+        .permission-icon svg { width: 40px; height: 40px; color: #ef4444; }
+        .archive-permission-denied h2 { font-size: 24px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
+        .archive-permission-denied p { font-size: 15px; color: #64748b; max-width: 400px; margin-bottom: 24px; }
+        .permission-actions { display: flex; gap: 12px; }
+        .permission-actions a {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 8px; font-size: 14px;
+            font-weight: 500; text-decoration: none; transition: all 0.2s ease;
+        }
+        .permission-actions .btn-login { background: #22c55e; color: #0f172a; }
+        .permission-actions .btn-login:hover { background: #16a34a; }
+        .permission-actions .btn-home {
+            background: rgba(100, 116, 139, 0.15); color: #94a3b8;
+            border: 1px solid rgba(100, 116, 139, 0.2);
+        }
+        .permission-actions .btn-home:hover { background: rgba(100, 116, 139, 0.25); }
+
+        /* ===== 全局加载动画 ===== */
+        .archive-loading {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; min-height: 80vh; text-align: center;
+        }
+        .archive-loading.hidden { display: none; }
+        .loading-spinner {
+            width: 48px; height: 48px;
+            border: 3px solid rgba(34, 197, 94, 0.15); border-top-color: #22c55e;
+            border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .archive-loading p { color: #64748b; font-size: 14px; }
+
+        /* ===== 隐藏/显示 ===== */
+        .archive-content { display: none; }
+        .archive-content.show { display: block; }
+
+        /* ===== 无搜索结果 ===== */
+        .no-results {
+            text-align: center; padding: 60px 20px; color: #64748b;
+        }
+        .no-results svg { margin-bottom: 16px; color: #475569; }
+        .no-results p { font-size: 15px; }
+
+        /* ===== 响应式 ===== */
+        @media (max-width: 768px) {
+            .archive-navbar { padding: 0 16px; }
+            .archive-user-info { display: none; }
+            .archive-main { padding: 80px 16px 32px; }
+            .archive-header h1 { font-size: 24px; }
+            .archive-card-header { padding: 16px; }
+            .archive-table-wrapper { padding: 0 12px 16px; }
+            .archive-footer { gap: 24px; padding: 20px 16px; }
+            .archive-footer-item .footer-value { font-size: 22px; }
+            .archive-stats { gap: 24px; }
+            .stat-value { font-size: 22px; }
+            .compare-bar { margin: 0 12px 12px; flex-direction: column; align-items: stretch; }
+            .compare-bar select { width: 100%; }
+            .compare-result { margin: 0 12px 16px; }
+            .commit-msg { max-width: 120px; }
+            .btn-file-action { padding: 4px 8px; font-size: 11px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 导航栏 -->
+    <nav class="archive-navbar">
+        <div class="archive-nav-left">
+            <a href="index.html" class="archive-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
+                </svg>
+                <span>青柠档案室</span>
+            </a>
+        </div>
+        <div class="archive-nav-right">
+            <span class="archive-user-info" id="navUserInfo">
+                <span class="user-dot"></span>
+                <span id="navUserEmail">加载中...</span>
+            </span>
+            <a href="admin.html" class="btn-back-admin">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M19 12H5"/>
+                    <polyline points="12 19 5 12 12 5"/>
+                </svg>
+                返回管理后台
+            </a>
+        </div>
+    </nav>
+
+    <!-- 加载中 -->
+    <div class="archive-loading" id="loadingState">
+        <div class="loading-spinner"></div>
+        <p>正在验证权限...</p>
+    </div>
+
+    <!-- 权限不足 -->
+    <div class="archive-permission-denied" id="permissionDenied">
+        <div class="permission-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        </div>
+        <h2>权限不足</h2>
+        <p>此页面仅限管理员、站长或系统权限用户访问。请使用管理员账户登录后重试。</p>
+        <div class="permission-actions">
+            <a href="auth.html" class="btn-login">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                前往登录
+            </a>
+            <a href="index.html" class="btn-home">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                返回首页
+            </a>
+        </div>
+    </div>
+
+    <!-- 主内容 -->
+    <div class="archive-content" id="archiveContent">
+        <main class="archive-main">
+            <!-- 页面标题 -->
+            <div class="archive-header">
+                <h1>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    </svg>
+                    青柠系历史版本档案室
+                </h1>
+                <p>通过 GitHub API 管理青柠系所有项目的历史版本，支持版本回溯、文件下载与差异对比</p>
+            </div>
+
+            <!-- 统计栏 -->
+            <div class="archive-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="statProjects">12</div>
+                    <div class="stat-label">总项目数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statVersions">--</div>
+                    <div class="stat-label">总版本数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="statUpdated">--</div>
+                    <div class="stat-label">最新更新</div>
+                </div>
+            </div>
+
+            <!-- 搜索栏 -->
+            <div class="archive-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="text" id="searchInput" placeholder="搜索项目名称、文件名或提交信息..." oninput="filterProjects()">
+            </div>
+
+            <!-- 项目列表容器 -->
+            <div id="projectList"></div>
+
+            <!-- 底部统计 -->
+            <div class="archive-footer">
+                <div class="archive-footer-item">
+                    <div class="footer-value" id="footerProjects">12</div>
+                    <div class="footer-label">总项目数</div>
+                </div>
+                <div class="archive-footer-item">
+                    <div class="footer-value" id="footerVersions">--</div>
+                    <div class="footer-label">总版本数</div>
+                </div>
+                <div class="archive-footer-item">
+                    <div class="footer-value" id="footerUpdated">--</div>
+                    <div class="footer-label">最新更新</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
+    <script>
+        // ===== GitHub API 配置 =====
+        var GITHUB_REPO = '3862242786-sudo/3862242786-sudo.github.io';
+        var PATH_PREFIX = 'pan/';
+
+        // ===== 项目数据 =====
+        var projects = [
+            { name: '青柠网盘', file: 'index.html', desc: '网盘主页', icon: '\u2601\uFE0F' },
+            { name: '青柠社区', file: 'qingning-community.html', desc: '社交社区', icon: '\uD83D\uDCAC' },
+            { name: '青柠杀毒', file: 'antivirus-app.html', desc: '杀毒软件', icon: '\uD83D\uDEE1\uFE0F' },
+            { name: '个人主页', file: 'profile.html', desc: '用户资料', icon: '\uD83D\uDC64' },
+            { name: '青柠OS终端', file: 'qingning-os-web.html', desc: 'OS模拟器（已封存）', icon: '\uD83D\uDCBB', status: 'archived' },
+            { name: '青柠桌面', file: 'qingning-desktop.html', desc: '桌面环境', icon: '\uD83D\uDDA5\uFE0F' },
+            { name: '青柠应用商店', file: 'qingning-store.html', desc: '应用商店', icon: '\uD83C\uDFEA' },
+            { name: '使用教程', file: 'qingning-guide.html', desc: '使用指南', icon: '\uD83D\uDCD6' },
+            { name: '登录注册', file: 'auth.html', desc: '认证页面', icon: '\uD83D\uDD10' },
+            { name: '管理后台', file: 'admin.html', desc: '后台管理', icon: '\u2699\uFE0F' },
+            { name: 'APP下载', file: 'app.html', desc: '应用下载页', icon: '\uD83D\uDCF1' },
+            { name: '关于我们', file: 'about.html', desc: '关于页面', icon: '\u2139\uFE0F' }
+        ];
+
+        // 版本缓存：{ filename: [ {version, sha, date, message, author}, ... ] }
+        var versionsCache = {};
+        // 加载状态：{ filename: 'loading' | 'loaded' | 'error' }
+        var loadState = {};
+        // 全局统计
+        var totalVersions = 0;
+        var latestUpdateDate = '--';
+
+        // ===== GitHub API：获取版本历史 =====
+        async function fetchVersions(filename) {
+            if (versionsCache[filename]) return versionsCache[filename];
+
+            loadState[filename] = 'loading';
+            updateCardBody(filename);
+
+            try {
+                var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/commits?path=' + PATH_PREFIX + filename + '&per_page=100';
+                var resp = await fetch(url);
+
+                if (!resp.ok) {
+                    throw new Error('API 请求失败: ' + resp.status);
+                }
+
+                var commits = await resp.json();
+
+                // 检查是否为数组（API 错误时可能返回对象）
+                if (!Array.isArray(commits)) {
+                    throw new Error('返回数据格式异常');
+                }
+
+                var versions = commits.map(function(c, i) {
+                    return {
+                        version: i === 0 ? '最新' : '#' + (commits.length - i),
+                        sha: c.sha,
+                        date: c.commit.author.date,
+                        message: (c.commit.message || '').split('\n')[0].substring(0, 50),
+                        author: c.commit.author.name || '未知'
+                    };
+                });
+
+                versionsCache[filename] = versions;
+                loadState[filename] = 'loaded';
+
+                // 更新全局统计
+                totalVersions += versions.length;
+                if (versions.length > 0) {
+                    var verDate = versions[0].date;
+                    if (latestUpdateDate === '--' || verDate > latestUpdateDate) {
+                        latestUpdateDate = verDate.substring(0, 10);
+                    }
+                }
+                updateGlobalStats();
+
+                updateCardBody(filename);
+                return versions;
+            } catch (err) {
+                console.error('获取 ' + filename + ' 版本失败:', err);
+                loadState[filename] = 'error';
+                updateCardBody(filename);
+                return [];
+            }
+        }
+
+        // ===== GitHub API：版本对比 =====
+        async function compareVersions(filename, sha1, sha2) {
+            var resultDiv = document.getElementById('compare-result-' + filename);
+            if (!resultDiv) return;
+
+            resultDiv.classList.add('show');
+            resultDiv.innerHTML = '<div class="version-loading"><div class="mini-spinner"></div><p>正在对比版本差异...</p></div>';
+
+            try {
+                var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/compare/' + sha1 + '...' + sha2;
+                var resp = await fetch(url);
+
+                if (!resp.ok) {
+                    throw new Error('对比请求失败: ' + resp.status);
+                }
+
+                var data = await resp.json();
+
+                var additions = data.status === 'identical' ? 0 : (data.files || []).reduce(function(s, f) { return s + (f.additions || 0); }, 0);
+                var deletions = data.status === 'identical' ? 0 : (data.files || []).reduce(function(s, f) { return s + (f.deletions || 0); }, 0);
+                var changes = data.status === 'identical' ? 0 : (data.files || []).reduce(function(s, f) { return s + (f.changes || 0); }, 0);
+                var files = data.files || [];
+                var totalCommits = data.total_commits || 0;
+
+                var html = '<h4>';
+                html += '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+                html += '对比结果';
+                if (data.status === 'identical') {
+                    html += ' - 两个版本完全相同';
+                } else {
+                    html += ' - 共 ' + totalCommits + ' 次提交';
+                }
+                html += '</h4>';
+
+                if (data.status !== 'identical') {
+                    html += '<div class="compare-diff-stats">';
+                    html += '<span class="diff-stat additions">+' + additions + ' 添加</span>';
+                    html += '<span class="diff-stat deletions">-' + deletions + ' 删除</span>';
+                    html += '<span class="diff-stat changes">' + changes + ' 变更</span>';
+                    html += '</div>';
+
+                    if (files.length > 0) {
+                        html += '<div class="compare-files-list">';
+                        files.forEach(function(f) {
+                            var status = f.status || 'modified';
+                            var statusLabel = status === 'added' ? '新增' : (status === 'removed' ? '删除' : '修改');
+                            html += '<div class="compare-file-item">';
+                            html += '<span class="file-status ' + status + '">' + statusLabel + '</span>';
+                            html += '<span style="color:#cbd5e1;">' + f.filename + '</span>';
+                            html += '<span style="color:#475569;font-size:11px;">+' + (f.additions||0) + ' -' + (f.deletions||0) + '</span>';
+                            if (f.patch) {
+                                html += '<a href="javascript:void(0)" onclick="showPatch(this, \'' + f.filename.replace(/'/g, "\\'") + '\')" class="file-patch-link">查看补丁</a>';
+                            }
+                            html += '</div>';
+                        });
+                        html += '</div>';
+                    }
+                }
+
+                resultDiv.innerHTML = html;
+            } catch (err) {
+                console.error('版本对比失败:', err);
+                resultDiv.innerHTML = '<div class="version-error"><p>对比失败: ' + err.message + '</p><button class="retry-btn" onclick="compareVersions(\'' + filename + '\',\'' + sha1 + '\',\'' + sha2 + '\')">重试</button></div>';
+            }
+        }
+
+        // ===== 查看补丁详情 =====
+        function showPatch(el, filename) {
+            var parent = el.closest('.compare-file-item');
+            var existing = parent.querySelector('.patch-detail');
+            if (existing) {
+                existing.remove();
+                return;
+            }
+            // 补丁内容已在 compare 数据中，这里简化处理
+            var detail = document.createElement('div');
+            detail.className = 'patch-detail';
+            detail.style.cssText = 'margin-top:8px;padding:10px;background:rgba(15,23,42,0.8);border-radius:6px;font-size:11px;color:#94a3b8;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;font-family:monospace;';
+            detail.textContent = '补丁内容请前往 GitHub 查看: https://github.com/' + GITHUB_REPO + '/blob/' + filename;
+            parent.appendChild(detail);
+        }
+
+        // ===== 下载 URL =====
+        function getDownloadUrl(filename, sha) {
+            return 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/' + sha + '/' + PATH_PREFIX + filename;
+        }
+
+        // ===== 预览 URL（GitHub blob 页面） =====
+        function getPreviewUrl(filename, sha) {
+            return 'https://github.com/' + GITHUB_REPO + '/blob/' + sha + '/' + PATH_PREFIX + filename;
+        }
+
+        // ===== 格式化日期 =====
+        function formatDate(dateStr) {
+            if (!dateStr) return '--';
+            var d = new Date(dateStr);
+            var y = d.getFullYear();
+            var m = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            var h = String(d.getHours()).padStart(2, '0');
+            var min = String(d.getMinutes()).padStart(2, '0');
+            return y + '-' + m + '-' + day + ' ' + h + ':' + min;
+        }
+
+        // ===== 更新全局统计 =====
+        function updateGlobalStats() {
+            document.getElementById('statVersions').textContent = totalVersions;
+            document.getElementById('statUpdated').textContent = latestUpdateDate;
+            document.getElementById('footerVersions').textContent = totalVersions;
+            document.getElementById('footerUpdated').textContent = latestUpdateDate;
+        }
+
+        // ===== 更新卡片内容区 =====
+        function updateCardBody(filename) {
+            var bodyEl = document.getElementById('card-body-' + filename);
+            if (!bodyEl) return;
+
+            var state = loadState[filename];
+            var versions = versionsCache[filename];
+
+            if (state === 'loading') {
+                bodyEl.innerHTML = '<div class="version-loading"><div class="mini-spinner"></div><p>正在加载版本历史...</p></div>';
+                return;
+            }
+
+            if (state === 'error') {
+                bodyEl.innerHTML = '<div class="version-error"><p>加载失败，请检查网络后重试</p><button class="retry-btn" onclick="retryLoad(\'' + filename + '\')">刷新重试</button></div>';
+                return;
+            }
+
+            if (!versions || versions.length === 0) {
+                bodyEl.innerHTML = '<div class="version-empty"><p>暂无版本历史记录</p></div>';
+                return;
+            }
+
+            var project = projects.find(function(p) { return p.file === filename; });
+            var statusText = project && project.status === 'archived' ? '已封存' : '正常';
+
+            var html = '';
+
+            // 版本对比栏
+            if (versions.length >= 2) {
+                html += '<div class="compare-bar">';
+                html += '<label>对比版本:</label>';
+                html += '<select id="compare-from-' + filename + '">';
+                versions.forEach(function(v) {
+                    html += '<option value="' + v.sha + '">' + v.version + ' - ' + v.message + '</option>';
+                });
+                html += '</select>';
+                html += '<span class="compare-arrow">\u2192</span>';
+                html += '<select id="compare-to-' + filename + '">';
+                versions.forEach(function(v, i) {
+                    var selected = i === versions.length - 1 ? ' selected' : '';
+                    html += '<option value="' + v.sha + '"' + selected + '>' + v.version + ' - ' + v.message + '</option>';
+                });
+                html += '</select>';
+                html += '<button class="btn-compare" onclick="doCompare(\'' + filename + '\')">对比差异</button>';
+                html += '</div>';
+            }
+
+            // 对比结果区域
+            html += '<div class="compare-result" id="compare-result-' + filename + '"></div>';
+
+            // 版本表格
+            html += '<div class="archive-table-wrapper">';
+            html += '<table class="archive-table">';
+            html += '<thead><tr>';
+            html += '<th>版本</th>';
+            html += '<th>日期</th>';
+            html += '<th>提交信息</th>';
+            html += '<th>作者</th>';
+            html += '<th>操作</th>';
+            html += '</tr></thead>';
+            html += '<tbody>';
+
+            versions.forEach(function(v) {
+                var badgeClass = v.version === '最新' ? 'latest' : 'old';
+                var downloadUrl = getDownloadUrl(filename, v.sha);
+                var previewUrl = getPreviewUrl(filename, v.sha);
+
+                html += '<tr>';
+                html += '<td><span class="version-badge ' + badgeClass + '">' + v.version + '</span></td>';
+                html += '<td style="font-size:12px;color:#94a3b8;">' + formatDate(v.date) + '</td>';
+                html += '<td><span class="commit-msg" title="' + v.message.replace(/"/g, '&quot;') + '">' + v.message + '</span></td>';
+                html += '<td style="font-size:12px;color:#94a3b8;">' + v.author + '</td>';
+                html += '<td><div class="file-actions">';
+                html += '<a href="' + downloadUrl + '" download="' + filename + '" class="btn-file-action btn-download" title="下载该版本">';
+                html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+                html += '下载</a>';
+                html += '<a href="' + previewUrl + '" target="_blank" class="btn-file-action btn-preview" title="在 GitHub 预览">';
+                html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+                html += '预览</a>';
+                html += '</div></td>';
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+
+            bodyEl.innerHTML = html;
+        }
+
+        // ===== 重试加载 =====
+        function retryLoad(filename) {
+            delete versionsCache[filename];
+            delete loadState[filename];
+            fetchVersions(filename);
+        }
+
+        // ===== 执行对比 =====
+        function doCompare(filename) {
+            var fromSel = document.getElementById('compare-from-' + filename);
+            var toSel = document.getElementById('compare-to-' + filename);
+            if (!fromSel || !toSel) return;
+            var sha1 = fromSel.value;
+            var sha2 = toSel.value;
+            if (sha1 === sha2) {
+                var resultDiv = document.getElementById('compare-result-' + filename);
+                if (resultDiv) {
+                    resultDiv.classList.add('show');
+                    resultDiv.innerHTML = '<div style="padding:12px;text-align:center;color:#f59e0b;font-size:13px;">请选择两个不同的版本进行对比</div>';
+                }
+                return;
+            }
+            compareVersions(filename, sha1, sha2);
+        }
+
+        // ===== 渲染项目列表 =====
+        function renderProjects(filter) {
+            var container = document.getElementById('projectList');
+            var html = '';
+            var filteredProjects = projects;
+
+            if (filter && filter.trim()) {
+                var keyword = filter.trim().toLowerCase();
+                filteredProjects = projects.filter(function(p) {
+                    // 搜索项目名、文件名、描述
+                    var baseMatch = p.name.toLowerCase().indexOf(keyword) !== -1 ||
+                                    p.file.toLowerCase().indexOf(keyword) !== -1 ||
+                                    p.desc.toLowerCase().indexOf(keyword) !== -1;
+                    // 搜索已加载的提交信息
+                    if (!baseMatch && versionsCache[p.file]) {
+                        return versionsCache[p.file].some(function(v) {
+                            return v.message.toLowerCase().indexOf(keyword) !== -1;
+                        });
+                    }
+                    return baseMatch;
+                });
+            }
+
+            filteredProjects.forEach(function(project) {
+                var statusClass = project.status === 'archived' ? 'status-archived' : 'status-active';
+                var statusText = project.status === 'archived' ? '已封存' : '正常';
+                var versions = versionsCache[project.file] || [];
+                var versionCount = versions.length;
+                var lastDate = versions.length > 0 ? formatDate(versions[0].date).substring(0, 10) : '--';
+
+                html += '<div class="archive-card" id="card-' + project.file.replace(/\./g, '-') + '" data-name="' + project.name + '" data-file="' + project.file + '">';
+                html += '  <div class="archive-card-header" onclick="toggleCard(\'' + project.file.replace(/\./g, '-') + '\',\'' + project.file + '\')">';
+                html += '    <div class="archive-card-info">';
+                html += '      <div class="archive-card-title">';
+                html += '        <span class="card-icon">' + project.icon + '</span>';
+                html += '        <h2>' + project.name + '</h2>';
+                html += '        <span class="version-tag" id="version-count-' + project.file + '">' + (versionCount > 0 ? versionCount + ' 个版本' : '加载中...') + '</span>';
+                html += '        <span class="status-tag ' + statusClass + '">' + statusText + '</span>';
+                html += '      </div>';
+                html += '      <div class="archive-card-desc">' + project.desc + ' - ' + project.file + '</div>';
+                html += '      <div class="archive-card-meta">';
+                html += '        <span>';
+                html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                html += '          ' + project.file;
+                html += '        </span>';
+                if (lastDate !== '--') {
+                    html += '        <span>';
+                    html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+                    html += '          更新于 ' + lastDate;
+                    html += '        </span>';
+                }
+                html += '      </div>';
+                html += '    </div>';
+                html += '    <div class="archive-card-toggle">';
+                html += '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+                html += '    </div>';
+                html += '  </div>';
+                html += '  <div class="archive-card-body">';
+                html += '    <div id="card-body-' + project.file + '">';
+                // 初始内容，展开时加载
+                html += '    </div>';
+                html += '  </div>';
+                html += '</div>';
+            });
+
+            if (filteredProjects.length === 0) {
+                html = '<div class="no-results">';
+                html += '  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+                html += '  <p>未找到匹配的项目</p>';
+                html += '</div>';
+            }
+
+            container.innerHTML = html;
+
+            // 更新统计
+            document.getElementById('statProjects').textContent = filteredProjects.length;
+            document.getElementById('footerProjects').textContent = filteredProjects.length;
+        }
+
+        // ===== 展开/折叠卡片 =====
+        function toggleCard(cardId, filename) {
+            var card = document.getElementById(cardId);
+            if (!card) return;
+
+            var wasExpanded = card.classList.contains('expanded');
+            card.classList.toggle('expanded');
+
+            // 首次展开时加载版本数据
+            if (!wasExpanded && filename) {
+                if (!versionsCache[filename] && loadState[filename] !== 'loading') {
+                    fetchVersions(filename);
+                } else if (versionsCache[filename]) {
+                    updateCardBody(filename);
+                }
+            }
+        }
+
+        // ===== 搜索过滤 =====
+        function filterProjects() {
+            var keyword = document.getElementById('searchInput').value;
+            renderProjects(keyword);
+        }
+
+        // ===== 权限检查 =====
+        function checkArchivePermission() {
+            var loadingEl = document.getElementById('loadingState');
+            var deniedEl = document.getElementById('permissionDenied');
+            var contentEl = document.getElementById('archiveContent');
+            var navEmailEl = document.getElementById('navUserEmail');
+
+            var activationCode = localStorage.getItem('qn_os_activation_code') || '';
+            var userEmail = localStorage.getItem('qn_user_email') || '';
+
+            // 延迟模拟权限验证（等待 auth2.js 初始化）
+            setTimeout(function() {
+                loadingEl.classList.add('hidden');
+
+                // 未登录（无激活码）
+                if (!activationCode) {
+                    deniedEl.classList.add('show');
+                    return;
+                }
+
+                // 权限判断
+                var code = activationCode.toLowerCase();
+                var hasPermission = false;
+
+                if (code === 'xt0000' || code === 'xt0001') {
+                    // 系统权限 / 站长
+                    hasPermission = true;
+                } else if (code.startsWith('xt')) {
+                    // 提取数字部分
+                    var numPart = code.substring(2);
+                    var num = parseInt(numPart, 10);
+                    if (!isNaN(num) && num >= 2 && num <= 1999) {
+                        // 管理员 xt0002~xt1999
+                        hasPermission = true;
+                    }
+                    // xt2000+ 普通用户，拒绝
+                }
+
+                if (!hasPermission) {
+                    deniedEl.classList.add('show');
+                    return;
+                }
+
+                // 权限通过
+                if (navEmailEl) {
+                    navEmailEl.textContent = userEmail || activationCode;
+                }
+                contentEl.classList.add('show');
+                renderProjects('');
+            }, 600);
+        }
+
+        // ===== 初始化 =====
+        document.addEventListener('DOMContentLoaded', function() {
+            checkArchivePermission();
+        });
+    </script>
+</body>
+</html>

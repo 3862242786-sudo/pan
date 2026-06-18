@@ -118,11 +118,11 @@ async function uploadAllFiles() {
         progressText.textContent = `上传中 (${i + 1}/${selectedFiles.length}): ${file.name}`;
 
         try {
-            // 用时间戳+随机数作为文件名，避免重复
+            // 用时间戳+原始文件名作为存储名，避免重复且保留可读性
             const ext = file.name.split('.').pop();
             const timestamp = Date.now();
-            const random = Math.random().toString(36).substring(2, 8);
-            const fileName = `${timestamp}_${random}.${ext}`;
+            const originalName = file.name.replace(/\.[^.]+$/, ''); // 去掉扩展名
+            const fileName = `${timestamp}_${originalName}.${ext}`;
 
             const { data, error } = await supabaseClient.storage
                 .from('files')
@@ -164,7 +164,7 @@ async function uploadAllFiles() {
                 };
 
                 // 上传确认文件
-                const verifyFileName = `${timestamp}_${random}.qn-verify`;
+                const verifyFileName = `${timestamp}_${originalName}.qn-verify`;
                 const verifyBlob = new Blob([JSON.stringify(verifyData, null, 2)], { type: 'application/json' });
                 
                 try {
@@ -272,7 +272,9 @@ async function loadFiles() {
 
             const size = formatFileSize(file.metadata?.size || 0);
             const date = new Date(file.created_at).toLocaleString('zh-CN');
-            const ext = file.name.split('.').pop().toLowerCase();
+            // 从存储名中提取原始文件名（去掉时间戳前缀）
+            const displayName = file.name.replace(/^\d+_/, '');
+            const ext = displayName.split('.').pop().toLowerCase();
             const icon = getFileIcon(ext);
             
             // 检查是否有对应的确认文件
@@ -286,11 +288,11 @@ async function loadFiles() {
                     <div class="file-info">
                         <span class="file-icon">${icon}</span>
                         <div class="file-detail">
-                            <span class="file-name">${file.name} ${verifyBadge}</span>
+                            <span class="file-name">${displayName} ${verifyBadge}</span>
                             <span class="file-meta">${size} · ${date}</span>
                         </div>
                     </div>
-                    <a href="javascript:void(0)" onclick="downloadFile('${urlData.publicUrl}','${file.name}')" class="file-download-btn">下载</a>
+                    <a href="javascript:void(0)" onclick="downloadFile('${urlData.publicUrl}','${displayName}')" class="file-download-btn">下载</a>
                 </div>
             `;
         });

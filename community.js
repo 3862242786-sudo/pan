@@ -50,6 +50,16 @@
         if (diff < 60000) return '刚刚';
         if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
         if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+
+        // 判断是否是昨天
+        var todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var yesterdayStart = new Date(todayStart.getTime() - 86400000);
+        if (d >= yesterdayStart && d < todayStart) {
+            var hours = d.getHours();
+            var minutes = String(d.getMinutes()).padStart(2, '0');
+            return '昨天 ' + hours + ':' + minutes;
+        }
+
         if (diff < 604800000) return Math.floor(diff / 86400000) + ' 天前';
         return d.getFullYear() + '-' +
             String(d.getMonth() + 1).padStart(2, '0') + '-' +
@@ -257,13 +267,20 @@
     }
 
     function showLoggedInUI() {
-        $('#loginPrompt').style.display = 'none';
-        $('#composeBox').classList.remove('hidden');
-        $('#tabsBar').style.display = 'flex';
-        $('#navLoginBtn').style.display = 'none';
-        $('#navPostBtn').style.display = '';
-        $('#navAvatar').style.display = 'flex';
-        $('#sidebarCard').style.display = 'block';
+        var loginPrompt = $('#loginPrompt');
+        if (loginPrompt) loginPrompt.style.display = 'none';
+        var composeBox = $('#composeBox');
+        if (composeBox) composeBox.classList.remove('hidden');
+        var tabsBar = $('#tabsBar');
+        if (tabsBar) tabsBar.style.display = 'flex';
+        var navLoginBtn = $('#navLoginBtn');
+        if (navLoginBtn) navLoginBtn.style.display = 'none';
+        var navPostBtn = $('#navPostBtn');
+        if (navPostBtn) navPostBtn.style.display = '';
+        var navAvatar = $('#navAvatar');
+        if (navAvatar) navAvatar.style.display = 'flex';
+        var sidebarCard = $('#sidebarCard');
+        if (sidebarCard) sidebarCard.style.display = 'block';
 
         // 渲染导航头像
         renderAvatar($('#navAvatar'), currentUser, 36);
@@ -277,13 +294,21 @@
     }
 
     function showLoggedOutUI() {
-        $('#loginPrompt').style.display = 'block';
-        $('#composeBox').classList.add('hidden');
-        $('#tabsBar').style.display = 'none';
-        $('#navLoginBtn').style.display = '';
-        $('#navPostBtn').style.display = 'none';
-        $('#navAvatar').style.display = 'none';
-        $('#sidebarCard').style.display = 'none';
+        var loginPrompt = $('#loginPrompt');
+        if (loginPrompt) loginPrompt.style.display = 'block';
+        var composeBox = $('#composeBox');
+        if (composeBox) composeBox.classList.add('hidden');
+        // 标签栏保留可见，允许未登录用户切换标签浏览
+        var tabsBar = $('#tabsBar');
+        if (tabsBar) tabsBar.style.display = 'flex';
+        var navLoginBtn = $('#navLoginBtn');
+        if (navLoginBtn) navLoginBtn.style.display = '';
+        var navPostBtn = $('#navPostBtn');
+        if (navPostBtn) navPostBtn.style.display = 'none';
+        var navAvatar = $('#navAvatar');
+        if (navAvatar) navAvatar.style.display = 'none';
+        var sidebarCard = $('#sidebarCard');
+        if (sidebarCard) sidebarCard.style.display = 'none';
     }
 
     // ===== 渲染侧边栏 =====
@@ -509,8 +534,17 @@
         }
         headerHTML += '</div>';
 
-        // 内容
-        var contentHTML = post.content ? '<div class="post-content">' + escapeHtml(post.content) + '</div>' : '';
+        // 内容（超过5行自动折叠）
+        var contentHTML = '';
+        if (post.content) {
+            var lines = post.content.split('\n');
+            var needsCollapse = lines.length > 5;
+            var collapseClass = needsCollapse ? ' collapsed' : '';
+            contentHTML = '<div class="post-content' + collapseClass + '" id="postContent-' + post.id + '">' + escapeHtml(post.content) + '</div>';
+            if (needsCollapse) {
+                contentHTML += '<button class="post-expand-btn" onclick="togglePostExpand(\'' + post.id + '\', this)">展开全文</button>';
+            }
+        }
 
         // 图片
         var imagesHTML = '';
@@ -532,10 +566,13 @@
             '<svg viewBox="0 0 24 24" fill="' + (isLiked ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
             '<span>' + likeCount + '</span></button>' +
-            '<button class="post-action-btn" onclick="toggleComments(\'' + post.id + '\')">' +
+            '<button class="post-action-btn' + (!commentsEnabled ? ' disabled' : '') + '" ' +
+            (commentsEnabled ? 'onclick="toggleComments(\'' + post.id + '\')"' : '') + '>' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-            '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-            '<span>' + commentCount + '</span></button>' +
+            '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
+            (!commentsEnabled ? '<line x1="3" y1="3" x2="21" y2="21"/>' : '') +
+            '</svg>' +
+            '<span>' + (commentsEnabled ? commentCount : '') + '</span></button>' +
             (isOwn ? '<button class="post-action-btn" title="' + (commentsEnabled ? '关闭评论' : '开启评论') + '" onclick="toggleCommentsEnabled(\'' + post.id + '\', this)">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
             '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>' +
@@ -552,7 +589,16 @@
 
         // 评论区
         var commentsHTML = '<div class="comments-section" id="comments-' + post.id + '">';
-        if (commentCount > 0) {
+
+        // 评论关闭提示 - 直接显示在评论区位置
+        if (!commentsEnabled) {
+            commentsHTML += '<div class="comments-closed-notice">' +
+                '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+                '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>' +
+                '作者已关闭评论</div>';
+        }
+
+        if (commentsEnabled && commentCount > 0) {
             // 预览前2条
             var previewCount = Math.min(2, commentCount);
             var previewText = '';
@@ -572,7 +618,7 @@
 
         // 评论列表
         commentsHTML += '<div class="comments-list" id="commentsList-' + post.id + '" style="display:none;">';
-        if (post.comments) {
+        if (commentsEnabled && post.comments) {
             post.comments.forEach(function (c) {
                 var cAuthor = getUserProfile(c.author_email);
                 var cLiked = currentUser && c.likes && c.likes.indexOf(currentUser.email) !== -1;
@@ -595,8 +641,8 @@
         }
         commentsHTML += '</div>';
 
-        // 评论输入框（仅评论开启时显示）
-        if (currentUser) {
+        // 评论输入框（仅评论开启且已登录时显示）
+        if (commentsEnabled && currentUser) {
             commentsHTML += '<div class="comment-input-row" id="commentInputRow-' + post.id + '" style="display:none;">' +
                 '<input class="comment-input" id="commentInput-' + post.id + '" placeholder="写评论..." ' +
                 'onkeydown="handleCommentKeydown(event, \'' + post.id + '\')">' +
@@ -604,11 +650,6 @@
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
                 '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
                 '</button></div>';
-        }
-
-        // 评论关闭提示
-        if (!commentsEnabled) {
-            commentsHTML += '<div style="text-align:center; padding:8px; color:#64748b; font-size:13px;">评论已关闭</div>';
         }
 
         commentsHTML += '</div>';
@@ -670,6 +711,11 @@
 
     // ===== 评论 =====
     window.toggleComments = function (postId) {
+        if (!currentUser) {
+            showToast('请先登录', 'error');
+            return;
+        }
+
         // 检查评论是否开启
         var posts = loadPosts();
         var post = posts.find(function (p) { return p.id === postId; });
@@ -897,6 +943,19 @@
         window.location.href = 'profile.html?user=' + encodeURIComponent(email);
     };
 
+    // ===== 帖子内容展开/折叠 =====
+    window.togglePostExpand = function (postId, btn) {
+        var contentEl = document.getElementById('postContent-' + postId);
+        if (!contentEl) return;
+        if (contentEl.classList.contains('collapsed')) {
+            contentEl.classList.remove('collapsed');
+            btn.textContent = '收起';
+        } else {
+            contentEl.classList.add('collapsed');
+            btn.textContent = '展开全文';
+        }
+    };
+
     // ===== 图片预览 =====
     window.previewImage = function (src) {
         var overlay = $('#imageOverlay');
@@ -1104,7 +1163,7 @@
             }
 
             var item = document.createElement('div');
-            item.className = 'notif-item' + (notif.read ? '' : ' unread');
+            item.className = 'notif-item' + (notif.read ? ' read' : ' unread');
             item.innerHTML =
                 '<div class="notif-icon ' + iconClass + '">' + iconContent + '</div>' +
                 '<div class="notif-body">' +
@@ -1143,6 +1202,12 @@
             updateNotifBadge();
         }
     }
+
+    window.markAllNotifsReadAndRender = function () {
+        markAllNotifsRead();
+        renderNotifications();
+        showToast('已全部标记为已读', 'success');
+    };
 
     // ===== 聚焦发帖框 =====
     window.focusCompose = function () {

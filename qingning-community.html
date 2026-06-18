@@ -115,10 +115,16 @@
         }
         .compose-images-preview .img-item .img-remove {
             position: absolute; top: 4px; right: 4px;
-            background: rgba(0,0,0,0.6); color: #fff; border: none;
+            background: #ef4444; color: #fff; border: none;
             width: 22px; height: 22px; border-radius: 50%;
-            font-size: 14px; cursor: pointer;
+            font-size: 14px; line-height: 1; cursor: pointer;
             display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: background 0.2s;
+            padding: 0;
+        }
+        .compose-images-preview .img-item .img-remove:hover {
+            background: #dc2626;
         }
         .compose-bottom {
             display: flex; align-items: center; justify-content: space-between;
@@ -199,6 +205,25 @@
             margin-bottom: 12px; word-break: break-word;
             white-space: pre-wrap;
         }
+        .post-content.collapsed {
+            max-height: 8.5em;
+            overflow: hidden;
+            position: relative;
+        }
+        .post-content.collapsed::after {
+            content: '';
+            position: absolute; bottom: 0; left: 0; right: 0;
+            height: 3em;
+            background: linear-gradient(transparent, #1e293b);
+            pointer-events: none;
+        }
+        .post-expand-btn {
+            background: transparent; border: none;
+            color: #22c55e; font-size: 13px; cursor: pointer;
+            padding: 4px 0; margin-bottom: 8px;
+            transition: color 0.3s;
+        }
+        .post-expand-btn:hover { color: #16a34a; }
         .post-images {
             display: grid; gap: 6px; margin-bottom: 12px;
             border-radius: 12px; overflow: hidden;
@@ -230,6 +255,19 @@
             border-top: 1px solid #1e293b;
         }
         .comments-section.open { display: block; }
+        .comments-closed-notice {
+            display: flex; align-items: center; gap: 8px;
+            padding: 10px 16px; margin: 4px 0;
+            background: rgba(100,116,139,0.1);
+            border: 1px solid rgba(100,116,139,0.2);
+            border-radius: 10px; color: #64748b;
+            font-size: 13px;
+        }
+        .comments-closed-notice svg { flex-shrink: 0; opacity: 0.6; }
+        .post-action-btn.disabled {
+            opacity: 0.4; cursor: not-allowed;
+        }
+        .post-action-btn.disabled:hover { color: #64748b; }
         .comment-preview {
             margin-bottom: 8px; font-size: 13px; color: #64748b;
             cursor: pointer;
@@ -325,18 +363,34 @@
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
         }
         .notif-panel.open { display: block; }
-        .notif-panel-title {
-            font-size: 16px; font-weight: 700; color: #e2e8f0;
-            margin-bottom: 12px; padding-bottom: 8px;
-            border-bottom: 1px solid #334155;
-        }
         .notif-item {
             display: flex; gap: 10px; padding: 10px;
-            border-radius: 10px; transition: background 0.3s;
+            border-radius: 10px; transition: background 0.3s, opacity 0.3s;
             cursor: pointer;
         }
         .notif-item:hover { background: rgba(34,197,94,0.05); }
         .notif-item.unread { background: rgba(34,197,94,0.08); }
+        .notif-item.read {
+            opacity: 0.5;
+        }
+        .notif-item.read:hover { opacity: 0.7; }
+        .notif-panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid #334155;
+        }
+        .notif-panel-title {
+            font-size: 16px; font-weight: 700; color: #e2e8f0;
+        }
+        .notif-mark-all-btn {
+            background: transparent; border: 1px solid #334155;
+            color: #94a3b8; border-radius: 8px; padding: 4px 12px;
+            font-size: 12px; cursor: pointer; transition: all 0.3s;
+            white-space: nowrap;
+        }
+        .notif-mark-all-btn:hover {
+            border-color: #22c55e; color: #22c55e;
+        }
         .notif-icon {
             width: 36px; height: 36px; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
@@ -532,7 +586,7 @@
         <div class="nav-links">
             <a class="active" id="navHome" onclick="switchPage('home')">首页</a>
             <a id="navDiscover" onclick="switchPage('discover')">发现</a>
-            <a id="navMessages" onclick="toggleNotifPanel()">
+            <a id="navMessages" onclick="event.stopPropagation(); toggleNotifPanel()">
                 <span class="nav-notif-badge">
                     消息
                     <span class="badge-count" id="navNotifCount" style="display:none;">0</span>
@@ -551,7 +605,10 @@
 
     <!-- ===== 通知面板 ===== -->
     <div class="notif-panel" id="notifPanel">
-        <div class="notif-panel-title">通知</div>
+        <div class="notif-panel-header">
+            <div class="notif-panel-title">通知</div>
+            <button class="notif-mark-all-btn" onclick="markAllNotifsReadAndRender()">全部标记已读</button>
+        </div>
         <div id="notifList">
             <div class="notif-empty">暂无通知</div>
         </div>
@@ -679,7 +736,7 @@
                     <line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
             </div>
-            <div class="mobile-nav-item" id="mobNavMessages" onclick="toggleNotifPanel()">
+            <div class="mobile-nav-item" id="mobNavMessages" onclick="event.stopPropagation(); toggleNotifPanel()">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -729,5 +786,11 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth2.js"></script>
     <script src="community.js"></script>
+
+    <!-- 页脚 -->
+    <footer style="text-align:center;padding:40px 20px 80px;color:#64748b;font-size:13px;background:#0f172a;">
+        <p>&copy; 2024-2026 青柠网盘</p>
+        <p style="margin-top:4px;">王梓豪制作</p>
+    </footer>
 </body>
 </html>

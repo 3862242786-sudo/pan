@@ -2,14 +2,32 @@
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
 
-// CDN 加载保护
-if (typeof window.supabase === 'undefined') {
-    document.addEventListener('DOMContentLoaded', () => {
-        document.body.innerHTML = '<div style="text-align:center;padding:80px 20px;font-family:sans-serif;"><div style="font-size:48px;margin-bottom:16px;">⚠️</div><h2 style="color:#1e293b;">加载失败</h2><p style="color:#64748b;margin-top:8px;">无法加载登录组件，请检查网络连接后刷新页面。</p></div>';
-    });
-} else {
-    var supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// CDN 加载保护（延迟检查 + 超时重试）
+var supabaseClient;
+
+function initSupabase(retries) {
+    if (typeof window.supabase !== 'undefined') {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    } else if (retries > 0) {
+        // CDN 可能还在加载，延迟后重试
+        setTimeout(function() { initSupabase(retries - 1); }, 500);
+    } else {
+        // 所有重试都失败，显示错误提示（不替换整个页面）
+        document.addEventListener('DOMContentLoaded', function() {
+            var errDiv = document.createElement('div');
+            errDiv.style.cssText = 'text-align:center;padding:80px 20px;font-family:sans-serif;';
+            errDiv.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">&#9888;&#65039;</div>' +
+                '<h2 style="color:#1e293b;">加载失败</h2>' +
+                '<p style="color:#64748b;margin-top:8px;">无法加载登录组件，请检查网络连接后刷新页面。</p>';
+            document.body.prepend(errDiv);
+        });
+    }
 }
+
+// 在 DOMContentLoaded 后初始化，给 CDN 足够加载时间
+document.addEventListener('DOMContentLoaded', function() {
+    initSupabase(5); // 最多重试5次，每次间隔500ms
+});
 
 // 站长邮箱（管理员）
 const ADMIN_EMAIL = '3862242786@qq.com';
@@ -57,7 +75,7 @@ async function handleRegister(e) {
         const resp = await fetch(data.publicUrl + '?t=' + Date.now());
         if (resp.ok) {
             const settings = await resp.json();
-            if (settings.allowRegister === 'false') {
+            if (settings.allowRegister === false || settings.allowRegister === 'false') {
                 showMessage('registerMessage', '注册功能已关闭，请联系站长', true);
                 return;
             }
