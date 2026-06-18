@@ -165,7 +165,6 @@
 
         /* ===== 卡片内容区 ===== */
         .archive-card-body { max-height: 0; overflow: hidden; transition: max-height 0.5s ease; }
-        .archive-card.expanded .archive-card-body { max-height: 5000px; }
 
         /* ===== 版本对比栏 ===== */
         .compare-bar {
@@ -545,6 +544,33 @@
         var totalVersions = 0;
         var latestUpdateDate = '--';
 
+        // ===== GitHub API 速率限制控制 =====
+        var apiRequestCount = 0;
+        var MAX_API_REQUESTS = 50;
+        var lastRequestTime = 0;
+        var API_REQUEST_INTERVAL = 1000; // 1秒间隔
+
+        async function rateLimitedFetch(url) {
+            apiRequestCount++;
+            if (apiRequestCount > MAX_API_REQUESTS) {
+                throw new Error('请求过于频繁，请稍后再试');
+            }
+            // 确保两次请求之间至少间隔 1 秒
+            var now = Date.now();
+            var elapsed = now - lastRequestTime;
+            if (elapsed < API_REQUEST_INTERVAL) {
+                await new Promise(function(resolve) {
+                    setTimeout(resolve, API_REQUEST_INTERVAL - elapsed);
+                });
+            }
+            lastRequestTime = Date.now();
+            var resp = await fetch(url);
+            if (resp.status === 403) {
+                throw new Error('API 请求次数已达上限，请等待 1 小时后重试');
+            }
+            return resp;
+        }
+
         // ===== GitHub API：获取版本历史 =====
         async function fetchVersions(filename) {
             if (versionsCache[filename]) return versionsCache[filename];
@@ -554,22 +580,40 @@
 
             try {
                 var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/commits?path=' + PATH_PREFIX + filename + '&per_page=100';
-                var resp = await fetch(url);
+                var allCommits = [];
+                var maxPages = 10;
+                var pageNum = 0;
 
-                if (!resp.ok) {
-                    throw new Error('API 请求失败: ' + resp.status);
+                while (url && pageNum < maxPages) {
+                    var resp = await rateLimitedFetch(url);
+
+                    if (!resp.ok) {
+                        throw new Error('API 请求失败: ' + resp.status);
+                    }
+
+                    var commits = await resp.json();
+
+                    // 检查是否为数组（API 错误时可能返回对象）
+                    if (!Array.isArray(commits)) {
+                        throw new Error('返回数据格式异常');
+                    }
+
+                    allCommits = allCommits.concat(commits);
+                    pageNum++;
+
+                    // 读取 Link header 获取下一页 URL
+                    var linkHeader = resp.headers.get('Link') || '';
+                    var nextMatch = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+                    if (nextMatch && nextMatch[1]) {
+                        url = nextMatch[1];
+                    } else {
+                        url = null;
+                    }
                 }
 
-                var commits = await resp.json();
-
-                // 检查是否为数组（API 错误时可能返回对象）
-                if (!Array.isArray(commits)) {
-                    throw new Error('返回数据格式异常');
-                }
-
-                var versions = commits.map(function(c, i) {
+                var versions = allCommits.map(function(c, i) {
                     return {
-                        version: i === 0 ? '最新' : '#' + (commits.length - i),
+                        version: i === 0 ? '最新' : '#' + (allCommits.length - i),
                         sha: c.sha,
                         date: c.commit.author.date,
                         message: (c.commit.message || '').split('\n')[0].substring(0, 50),
@@ -610,7 +654,11 @@
 
             try {
                 var url = 'https://api.github.com/repos/' + GITHUB_REPO + '/compare/' + sha1 + '...' + sha2;
-                var resp = await fetch(url);
+                var resp = await rateLimitedFetch(url);
+
+                if (resp.status === 409) {
+                    throw new Error('这两个版本没有共同祖先，无法对比');
+                }
 
                 if (!resp.ok) {
                     throw new Error('对比请求失败: ' + resp.status);
@@ -651,7 +699,8 @@
                             html += '<span style="color:#cbd5e1;">' + f.filename + '</span>';
                             html += '<span style="color:#475569;font-size:11px;">+' + (f.additions||0) + ' -' + (f.deletions||0) + '</span>';
                             if (f.patch) {
-                                html += '<a href="javascript:void(0)" onclick="showPatch(this, \'' + f.filename.replace(/'/g, "\\'") + '\')" class="file-patch-link">查看补丁</a>';
+                                var escapedPatch = f.patch.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '');
+                                html += '<a href="javascript:void(0)" onclick="showPatch(this, \'' + f.filename.replace(/'/g, "\\'") + '\', \'' + escapedPatch + '\')" class="file-patch-link">查看补丁</a>';
                             }
                             html += '</div>';
                         });
@@ -667,24 +716,52 @@
         }
 
         // ===== 查看补丁详情 =====
-        function showPatch(el, filename) {
+        function showPatch(el, filename, patchContent) {
+            if (!el) return;
             var parent = el.closest('.compare-file-item');
+            if (!parent) return;
             var existing = parent.querySelector('.patch-detail');
             if (existing) {
                 existing.remove();
                 return;
             }
-            // 补丁内容已在 compare 数据中，这里简化处理
             var detail = document.createElement('div');
             detail.className = 'patch-detail';
             detail.style.cssText = 'margin-top:8px;padding:10px;background:rgba(15,23,42,0.8);border-radius:6px;font-size:11px;color:#94a3b8;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;font-family:monospace;';
-            detail.textContent = '补丁内容请前往 GitHub 查看: https://github.com/' + GITHUB_REPO + '/blob/' + filename;
+            if (patchContent) {
+                detail.textContent = patchContent;
+            } else {
+                detail.textContent = '补丁内容请前往 GitHub 查看: https://github.com/' + GITHUB_REPO + '/blob/' + filename;
+            }
             parent.appendChild(detail);
         }
 
         // ===== 下载 URL =====
         function getDownloadUrl(filename, sha) {
             return 'https://raw.githubusercontent.com/' + GITHUB_REPO + '/' + sha + '/' + PATH_PREFIX + filename;
+        }
+
+        // ===== 下载文件（fetch + Blob 方式，避免跨域问题） =====
+        async function downloadFile(filename, sha, versionLabel) {
+            var url = getDownloadUrl(filename, sha);
+            try {
+                var resp = await fetch(url);
+                if (!resp.ok) {
+                    throw new Error('下载失败: ' + resp.status);
+                }
+                var blob = await resp.blob();
+                var blobUrl = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                var versionPrefix = versionLabel === '最新' ? 'latest' : versionLabel.replace('#', 'v');
+                a.href = blobUrl;
+                a.download = versionPrefix + '_' + filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            } catch (err) {
+                alert('下载失败: ' + err.message);
+            }
         }
 
         // ===== 预览 URL（GitHub blob 页面） =====
@@ -786,7 +863,7 @@
                 html += '<td><span class="commit-msg" title="' + v.message.replace(/"/g, '&quot;') + '">' + v.message + '</span></td>';
                 html += '<td style="font-size:12px;color:#94a3b8;">' + v.author + '</td>';
                 html += '<td><div class="file-actions">';
-                html += '<a href="' + downloadUrl + '" download="' + filename + '" class="btn-file-action btn-download" title="下载该版本">';
+                html += '<a href="javascript:void(0)" onclick="downloadFile(\'' + filename + '\',\'' + v.sha + '\',\'' + v.version.replace(/'/g, "\\'") + '\')" class="btn-file-action btn-download" title="下载该版本">';
                 html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
                 html += '下载</a>';
                 html += '<a href="' + previewUrl + '" target="_blank" class="btn-file-action btn-preview" title="在 GitHub 预览">';
@@ -827,82 +904,118 @@
         }
 
         // ===== 渲染项目列表 =====
+        var projectsRendered = false; // 标记是否已创建 DOM
+
         function renderProjects(filter) {
             var container = document.getElementById('projectList');
-            var html = '';
-            var filteredProjects = projects;
 
-            if (filter && filter.trim()) {
-                var keyword = filter.trim().toLowerCase();
-                filteredProjects = projects.filter(function(p) {
-                    // 搜索项目名、文件名、描述
-                    var baseMatch = p.name.toLowerCase().indexOf(keyword) !== -1 ||
-                                    p.file.toLowerCase().indexOf(keyword) !== -1 ||
-                                    p.desc.toLowerCase().indexOf(keyword) !== -1;
-                    // 搜索已加载的提交信息
-                    if (!baseMatch && versionsCache[p.file]) {
-                        return versionsCache[p.file].some(function(v) {
-                            return v.message.toLowerCase().indexOf(keyword) !== -1;
-                        });
+            if (!projectsRendered) {
+                // 首次渲染：创建所有卡片 DOM
+                var html = '';
+
+                projects.forEach(function(project) {
+                    if (!project) return; // Bug 9-3: 防御性检查
+                    var statusClass = project.status === 'archived' ? 'status-archived' : 'status-active';
+                    var statusText = project.status === 'archived' ? '已封存' : '正常';
+                    var versions = versionsCache[project.file] || [];
+                    var versionCount = versions.length;
+                    var lastDate = versions.length > 0 ? formatDate(versions[0].date).substring(0, 10) : '--';
+
+                    html += '<div class="archive-card" id="card-' + project.file.replace(/\./g, '-') + '" data-name="' + project.name + '" data-file="' + project.file + '">';
+                    html += '  <div class="archive-card-header" onclick="toggleCard(\'' + project.file.replace(/\./g, '-') + '\',\'' + project.file + '\')">';
+                    html += '    <div class="archive-card-info">';
+                    html += '      <div class="archive-card-title">';
+                    html += '        <span class="card-icon">' + project.icon + '</span>';
+                    html += '        <h2>' + project.name + '</h2>';
+                    html += '        <span class="version-tag" id="version-count-' + project.file + '">' + (versionCount > 0 ? versionCount + ' 个版本' : '加载中...') + '</span>';
+                    html += '        <span class="status-tag ' + statusClass + '">' + statusText + '</span>';
+                    html += '      </div>';
+                    html += '      <div class="archive-card-desc">' + project.desc + ' - ' + project.file + '</div>';
+                    html += '      <div class="archive-card-meta">';
+                    html += '        <span>';
+                    html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+                    html += '          ' + project.file;
+                    html += '        </span>';
+                    if (lastDate !== '--') {
+                        html += '        <span>';
+                        html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+                        html += '          更新于 ' + lastDate;
+                        html += '        </span>';
                     }
-                    return baseMatch;
+                    html += '      </div>';
+                    html += '    </div>';
+                    html += '    <div class="archive-card-toggle">';
+                    html += '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+                    html += '    </div>';
+                    html += '  </div>';
+                    html += '  <div class="archive-card-body">';
+                    html += '    <div id="card-body-' + project.file + '">';
+                    html += '    </div>';
+                    html += '  </div>';
+                    html += '</div>';
                 });
+
+                container.innerHTML = html;
+                projectsRendered = true;
             }
 
-            filteredProjects.forEach(function(project) {
-                var statusClass = project.status === 'archived' ? 'status-archived' : 'status-active';
-                var statusText = project.status === 'archived' ? '已封存' : '正常';
-                var versions = versionsCache[project.file] || [];
-                var versionCount = versions.length;
-                var lastDate = versions.length > 0 ? formatDate(versions[0].date).substring(0, 10) : '--';
+            // 搜索过滤：遍历现有卡片，设置 display
+            var cards = container.querySelectorAll('.archive-card');
+            var visibleCount = 0;
+            var noResultsEl = container.querySelector('.no-results');
 
-                html += '<div class="archive-card" id="card-' + project.file.replace(/\./g, '-') + '" data-name="' + project.name + '" data-file="' + project.file + '">';
-                html += '  <div class="archive-card-header" onclick="toggleCard(\'' + project.file.replace(/\./g, '-') + '\',\'' + project.file + '\')">';
-                html += '    <div class="archive-card-info">';
-                html += '      <div class="archive-card-title">';
-                html += '        <span class="card-icon">' + project.icon + '</span>';
-                html += '        <h2>' + project.name + '</h2>';
-                html += '        <span class="version-tag" id="version-count-' + project.file + '">' + (versionCount > 0 ? versionCount + ' 个版本' : '加载中...') + '</span>';
-                html += '        <span class="status-tag ' + statusClass + '">' + statusText + '</span>';
-                html += '      </div>';
-                html += '      <div class="archive-card-desc">' + project.desc + ' - ' + project.file + '</div>';
-                html += '      <div class="archive-card-meta">';
-                html += '        <span>';
-                html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-                html += '          ' + project.file;
-                html += '        </span>';
-                if (lastDate !== '--') {
-                    html += '        <span>';
-                    html += '          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-                    html += '          更新于 ' + lastDate;
-                    html += '        </span>';
+            // 移除旧的无结果提示
+            if (noResultsEl) {
+                noResultsEl.remove();
+            }
+
+            var keyword = (filter && filter.trim()) ? filter.trim().toLowerCase() : '';
+
+            cards.forEach(function(card) {
+                var dataFile = card.getAttribute('data-file');
+                var dataName = card.getAttribute('data-name');
+                var project = projects.find(function(p) { return p.file === dataFile; });
+                if (!project) {
+                    card.style.display = 'none';
+                    return;
                 }
-                html += '      </div>';
-                html += '    </div>';
-                html += '    <div class="archive-card-toggle">';
-                html += '      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-                html += '    </div>';
-                html += '  </div>';
-                html += '  <div class="archive-card-body">';
-                html += '    <div id="card-body-' + project.file + '">';
-                // 初始内容，展开时加载
-                html += '    </div>';
-                html += '  </div>';
-                html += '</div>';
+
+                if (!keyword) {
+                    card.style.display = '';
+                    visibleCount++;
+                    return;
+                }
+
+                // 搜索项目名、文件名、描述
+                var baseMatch = project.name.toLowerCase().indexOf(keyword) !== -1 ||
+                                project.file.toLowerCase().indexOf(keyword) !== -1 ||
+                                project.desc.toLowerCase().indexOf(keyword) !== -1;
+                // 搜索已加载的提交信息
+                var commitMatch = false;
+                if (!baseMatch && versionsCache[project.file]) {
+                    commitMatch = versionsCache[project.file].some(function(v) {
+                        return v.message.toLowerCase().indexOf(keyword) !== -1;
+                    });
+                }
+
+                if (baseMatch || commitMatch) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
             });
 
-            if (filteredProjects.length === 0) {
-                html = '<div class="no-results">';
-                html += '  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-                html += '  <p>未找到匹配的项目</p>';
-                html += '</div>';
+            // 无结果提示
+            if (visibleCount === 0 && keyword) {
+                var noResultsDiv = document.createElement('div');
+                noResultsDiv.className = 'no-results';
+                noResultsDiv.innerHTML = '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><p>未找到匹配的项目</p>';
+                container.appendChild(noResultsDiv);
             }
 
-            container.innerHTML = html;
-
-            // 更新统计
-            document.getElementById('statProjects').textContent = filteredProjects.length;
-            document.getElementById('footerProjects').textContent = filteredProjects.length;
+            // Bug 8-1: 搜索时保持总项目数不变，只更新显示数量
+            // 总项目数始终为 projects.length，不随搜索改变
         }
 
         // ===== 展开/折叠卡片 =====
@@ -910,15 +1023,36 @@
             var card = document.getElementById(cardId);
             if (!card) return;
 
+            var bodyEl = card.querySelector('.archive-card-body');
             var wasExpanded = card.classList.contains('expanded');
-            card.classList.toggle('expanded');
 
-            // 首次展开时加载版本数据
-            if (!wasExpanded && filename) {
-                if (!versionsCache[filename] && loadState[filename] !== 'loading') {
-                    fetchVersions(filename);
-                } else if (versionsCache[filename]) {
-                    updateCardBody(filename);
+            if (wasExpanded) {
+                // 折叠：先设为当前 scrollHeight 以触发过渡，然后设为 0
+                bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+                // 强制重排
+                bodyEl.offsetHeight;
+                bodyEl.style.maxHeight = '0';
+                card.classList.remove('expanded');
+            } else {
+                // 展开
+                card.classList.add('expanded');
+                bodyEl.style.maxHeight = bodyEl.scrollHeight + 'px';
+                // 过渡结束后设为 none 以适应内容变化
+                var onTransitionEnd = function() {
+                    if (card.classList.contains('expanded')) {
+                        bodyEl.style.maxHeight = 'none';
+                    }
+                    bodyEl.removeEventListener('transitionend', onTransitionEnd);
+                };
+                bodyEl.addEventListener('transitionend', onTransitionEnd);
+
+                // 首次展开时加载版本数据
+                if (filename) {
+                    if (!versionsCache[filename] && loadState[filename] !== 'loading') {
+                        fetchVersions(filename);
+                    } else if (versionsCache[filename]) {
+                        updateCardBody(filename);
+                    }
                 }
             }
         }
