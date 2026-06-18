@@ -938,33 +938,38 @@
 
             var activationCode = localStorage.getItem('qn_os_activation_code') || '';
             var userEmail = localStorage.getItem('qn_user_email') || '';
+            var isAdmin = localStorage.getItem('qn_is_admin') === 'true';
+            var isLoggedIn = localStorage.getItem('qn_logged_in') === 'true';
 
             // 延迟模拟权限验证（等待 auth2.js 初始化）
             setTimeout(function() {
                 loadingEl.classList.add('hidden');
 
-                // 未登录（无激活码）
-                if (!activationCode) {
-                    deniedEl.classList.add('show');
-                    return;
-                }
-
-                // 权限判断
-                var code = activationCode.toLowerCase();
+                // 判断是否有权限
                 var hasPermission = false;
 
-                if (code === 'xt0000' || code === 'xt0001') {
-                    // 系统权限 / 站长
-                    hasPermission = true;
-                } else if (code.startsWith('xt')) {
-                    // 提取数字部分
-                    var numPart = code.substring(2);
-                    var num = parseInt(numPart, 10);
-                    if (!isNaN(num) && num >= 2 && num <= 1999) {
-                        // 管理员 xt0002~xt1999
+                // 方式1：通过激活码判断
+                if (activationCode) {
+                    var code = activationCode.toLowerCase();
+                    if (code === 'xt0000' || code === 'xt0001') {
                         hasPermission = true;
+                    } else if (code.startsWith('xt')) {
+                        var numPart = code.substring(2);
+                        var num = parseInt(numPart, 10);
+                        if (!isNaN(num) && num >= 2 && num <= 1999) {
+                            hasPermission = true;
+                        }
                     }
-                    // xt2000+ 普通用户，拒绝
+                }
+
+                // 方式2：通过管理员标记判断（兼容普通登录用户）
+                if (!hasPermission && isLoggedIn && isAdmin) {
+                    hasPermission = true;
+                }
+
+                // 方式3：通过邮箱判断（站长邮箱）
+                if (!hasPermission && userEmail === '3862242786@qq.com') {
+                    hasPermission = true;
                 }
 
                 if (!hasPermission) {
@@ -974,7 +979,7 @@
 
                 // 权限通过
                 if (navEmailEl) {
-                    navEmailEl.textContent = userEmail || activationCode;
+                    navEmailEl.textContent = userEmail || activationCode || '管理员';
                 }
                 contentEl.classList.add('show');
                 renderProjects('');
