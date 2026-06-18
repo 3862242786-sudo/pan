@@ -97,7 +97,7 @@
                 <li><a href="admin.html" class="nav-admin-btn" id="navAdminBtn" style="display:none">管理后台</a></li>
                 <li><a href="javascript:void(0)" id="navLogoutBtn" style="display:none" onclick="handleLogout()">退出</a></li>
                 <li class="nav-dropdown">
-                    <a href="javascript:void(0)" onclick="toggleAppMenu()">
+                    <a href="javascript:void(0)" id="moreMenuBtn">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
@@ -472,20 +472,36 @@
         // 页面加载时检测
         window.addEventListener('load', showAppDownloadModal);
 
-        // APP下载下拉菜单
-        function toggleAppMenu() {
-            const menu = document.getElementById('appDropdownMenu');
-            menu.classList.toggle('active');
-        }
-
-        // 点击外部关闭下拉菜单
-        document.addEventListener('click', function(e) {
-            const dropdown = document.querySelector('.nav-dropdown');
-            const menu = document.getElementById('appDropdownMenu');
-            if (dropdown && !dropdown.contains(e.target)) {
-                menu.classList.remove('active');
+        // APP下载下拉菜单 - 使用捕获阶段确保优先执行
+        (function() {
+            var moreBtn = document.getElementById('moreMenuBtn');
+            var dropdownMenu = document.getElementById('appDropdownMenu');
+            var navEl = document.querySelector('.nav-links');
+            
+            if (moreBtn && dropdownMenu) {
+                // 使用捕获阶段，优先于 script.js 中的冒泡阶段监听器
+                moreBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    dropdownMenu.classList.toggle('active');
+                    
+                    // 移动端：确保导航菜单保持打开
+                    if (navEl) {
+                        navEl.classList.add('active');
+                    }
+                }, true); // true = 捕获阶段
             }
-        });
+            
+            // 点击外部关闭下拉菜单
+            document.addEventListener('click', function(e) {
+                var dropdown = document.querySelector('.nav-dropdown');
+                if (dropdown && !dropdown.contains(e.target)) {
+                    dropdownMenu.classList.remove('active');
+                }
+            });
+        })();
 
         function formatSize(bytes) {
             if (!bytes) return '';

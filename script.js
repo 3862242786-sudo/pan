@@ -8,9 +8,14 @@ if (mobileMenuBtn) {
     });
 }
 
-// 点击导航链接后关闭菜单
+// 点击导航链接后关闭菜单（排除下拉菜单触发按钮和下拉菜单内的链接）
 document.querySelectorAll('.nav-links a').forEach(link => {
-    link.addEventListener('click', () => {
+    link.addEventListener('click', (e) => {
+        // 如果点击的是"更多"按钮本身，不关闭导航菜单
+        if (link.closest('.nav-dropdown') && !link.closest('.dropdown-menu')) {
+            e.stopPropagation();
+            return;
+        }
         navLinks.classList.remove('active');
     });
 });

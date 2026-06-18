@@ -1032,6 +1032,28 @@ body {
         font-size: 0.9rem;
     }
 
+    .nav-links .dropdown-menu {
+        position: static;
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+        box-shadow: none;
+        background: transparent;
+        min-width: auto;
+        padding: 4px 0 4px 16px;
+        display: none;
+        margin-top: 0;
+    }
+
+    .nav-links .dropdown-menu.active {
+        display: block;
+    }
+
+    .nav-links .dropdown-item {
+        padding: 8px 0;
+        background: transparent;
+    }
+
     .mobile-menu-btn {
         display: flex;
     }
