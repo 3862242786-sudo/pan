@@ -52,23 +52,12 @@
 }
 
 /* ============ 基础重置 ============ */
-*, *::before, *::after {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* 注意：不设置 body 背景色和颜色，由各页面自己的 styles.css 控制 */
+/* 避免覆盖页面原有主题 */
 
 html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
-}
-
-body {
-    font-family: var(--qna-font);
-    line-height: 1.6;
-    color: var(--qna-text);
-    background-color: var(--qna-bg-dark);
-    min-height: 100vh;
 }
 
 /* ============ 通用组件 ============ */
