@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠架构 - Qingning Architecture</title>
+    <link rel="icon" type="image/jpeg" href="assets/qna-logo.jpg">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="qna/ui/qna-ui.css">
+    <script src="qna/qna-loader.js"></script>
+    <script src="site-check.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        .page-navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .page-navbar a {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .page-navbar a img { width: 28px; height: 28px; border-radius: 6px; }
+        .page-navbar a span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+
+        /* Hero 区域 */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 24px 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 30%, rgba(34, 197, 94, 0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        /* Logo */
+        .hero-logo {
+            width: 120px; height: 120px;
+            border-radius: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 20px 60px rgba(34, 197, 94, 0.3);
+            animation: float 3s ease-in-out infinite;
+            position: relative; z-index: 1;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* 大标题 */
+        .hero-title {
+            display: flex; align-items: center; justify-content: center;
+            gap: 20px; flex-wrap: wrap;
+            position: relative; z-index: 1;
+        }
+        .hero-title img {
+            width: 64px; height: 64px; border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(34, 197, 94, 0.25);
+        }
+        .hero-title-text {
+            font-size: 56px; font-weight: 900;
+            background: linear-gradient(135deg, #22c55e, #4ade80, #22c55e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -2px;
+        }
+        .hero-version {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 20px;
+            font-size: 16px; font-weight: 700; color: #22c55e;
+            margin-top: 8px;
+            vertical-align: middle;
+        }
+
+        /* 代号 */
+        .hero-codename {
+            font-size: 20px; font-weight: 500;
+            color: #64748b;
+            margin-top: 16px;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            position: relative; z-index: 1;
+        }
+        .hero-codename span {
+            color: #22c55e;
+            font-weight: 700;
+            letter-spacing: 4px;
+        }
+
+        .hero-desc {
+            font-size: 18px; color: #94a3b8;
+            max-width: 600px; margin: 24px auto 0;
+            line-height: 1.8;
+            position: relative; z-index: 1;
+        }
+
+        /* 统计数据 */
+        .hero-stats {
+            display: flex; gap: 48px; justify-content: center;
+            margin-top: 48px; flex-wrap: wrap;
+            position: relative; z-index: 1;
+        }
+        .hero-stat {
+            text-align: center;
+        }
+        .hero-stat-num {
+            font-size: 36px; font-weight: 800;
+            background: linear-gradient(135deg, #22c55e, #3b82f6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-stat-label {
+            font-size: 13px; color: #64748b; margin-top: 4px;
+        }
+
+        /* 向下滚动提示 */
+        .scroll-hint {
+            position: absolute; bottom: 32px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+            gap: 8px; color: #64748b; font-size: 13px;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* 特性区域 */
+        .features {
+            max-width: 1200px; margin: 0 auto;
+            padding: 80px 24px;
+        }
+        .section-title {
+            font-size: 32px; font-weight: 700; color: #f1f5f9;
+            text-align: center; margin-bottom: 48px;
+        }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px; padding: 32px;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; margin-bottom: 16px;
+            background: rgba(34, 197, 94, 0.15);
+        }
+        .feature-title {
+            font-size: 18px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 8px;
+        }
+        .feature-desc {
+            font-size: 14px; color: #94a3b8; line-height: 1.7;
+        }
+
+        /* 架构图 */
+        .architecture {
+            max-width: 900px; margin: 0 auto;
+            padding: 80px 24px;
+        }
+        .arch-diagram {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 20px; padding: 40px;
+        }
+        .arch-layer {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 12px; padding: 20px 24px;
+            margin-bottom: 16px;
+            display: flex; align-items: center; gap: 16px;
+        }
+        .arch-layer:last-child { margin-bottom: 0; }
+        .arch-layer-icon { font-size: 24px; width: 40px; text-align: center; }
+        .arch-layer-title { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+        .arch-layer-desc { font-size: 13px; color: #64748b; margin-top: 2px; }
+        .arch-arrow {
+            text-align: center; color: #22c55e; font-size: 20px;
+            margin: 8px 0;
+        }
+
+        /* 接入状态 */
+        .integration {
+            max-width: 1200px; margin: 0 auto;
+            padding: 80px 24px;
+        }
+        .integration-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .integration-item {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 20px;
+            display: flex; align-items: center; gap: 12px;
+            transition: all 0.2s;
+        }
+        .integration-item:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        .integration-item.connected {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.05);
+        }
+        .integration-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+        .integration-name { font-size: 14px; font-weight: 600; color: #f1f5f9; }
+        .integration-status { font-size: 12px; color: #22c55e; }
+
+        /* 页脚 */
+        .footer {
+            text-align: center; padding: 40px 24px;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            color: #475569; font-size: 13px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .hero-title-text { font-size: 36px; }
+            .hero-codename { font-size: 16px; letter-spacing: 4px; }
+            .hero-stats { gap: 24px; }
+            .hero-stat-num { font-size: 28px; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="page-navbar">
+        <a href="index.html">
+            <img src="assets/qna-logo.jpg" alt="青柠架构">
+            <span>青柠架构</span>
+        </a>
+        <a href="index.html" class="btn-back">← 返回首页</a>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <img src="assets/qna-logo.jpg" alt="青柠架构" class="hero-logo">
+        <div class="hero-title">
+            <img src="assets/qna-logo.jpg" alt="">
+            <div>
+                <div class="hero-title-text">青柠架构</div>
+                <div class="hero-version">v1.0.0</div>
+            </div>
+        </div>
+        <div class="hero-codename">代号：<span>轻装上阵</span></div>
+        <p class="hero-desc">
+            青柠系网站的统一底层框架。按需加载、缓存优化、统一认证、站点控制——<br>
+            让每一行代码都服务于性能与体验。
+        </p>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <div class="hero-stat-num">4</div>
+                <div class="hero-stat-label">核心模块</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">32+</div>
+                <div class="hero-stat-label">接入页面</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">60s</div>
+                <div class="hero-stat-label">缓存周期</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-num">0</div>
+                <div class="hero-stat-label">重复代码</div>
+            </div>
+        </div>
+        <div class="scroll-hint" onclick="document.querySelector('.features').scrollIntoView({behavior:'smooth'})">
+            <span>向下探索</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+    </section>
+
+    <!-- 特性 -->
+    <section class="features">
+        <h2 class="section-title">核心特性</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <div class="feature-title">按需加载</div>
+                <div class="feature-desc">页面只加载需要的模块，不加载多余代码。核心 15KB，模块按需拉取。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💾</div>
+                <div class="feature-title">智能缓存</div>
+                <div class="feature-desc">LRU 缓存 + TTL 过期策略，站点设置等数据缓存 60 秒，减少重复请求。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔐</div>
+                <div class="feature-title">统一认证</div>
+                <div class="feature-desc">登录、注册、权限检查一套代码全站共享，导航栏自动更新，状态同步无延迟。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">站点控制</div>
+                <div class="feature-desc">站长一键关闭网站，自定义维护页面文字，激活码解锁，权限分层管理。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📡</div>
+                <div class="feature-title">事件总线</div>
+                <div class="feature-desc">组件间通信不用层层传参，直接 emit/on。登录登出事件自动触发页面刷新。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <div class="feature-title">统一视觉</div>
+                <div class="feature-desc">CSS 变量 + 组件类名，所有页面风格一致。暗色主题、玻璃效果、动画标准化。</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 架构图 -->
+    <section class="architecture">
+        <h2 class="section-title">架构分层</h2>
+        <div class="arch-diagram">
+            <div class="arch-layer">
+                <div class="arch-layer-icon">🌐</div>
+                <div>
+                    <div class="arch-layer-title">应用层</div>
+                    <div class="arch-layer-desc">青柠网盘、青柠社区、青柠杀毒、青柠OS...</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-layer">
+                <div class="arch-layer-icon">🔌</div>
+                <div>
+                    <div class="arch-layer-title">模块层</div>
+                    <div class="arch-layer-desc">Auth 认证、Site 站点控制、Cache 缓存、EventBus 事件总线</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-layer">
+                <div class="arch-layer-icon">⚙️</div>
+                <div>
+                    <div class="arch-layer-title">核心层</div>
+                    <div class="arch-layer-desc">Utils 工具函数、Module 模块系统、Storage 存储封装、Config 全局配置</div>
+                </div>
+            </div>
+            <div class="arch-arrow">↓</div>
+            <div class="arch-layer">
+                <div class="arch-layer-icon">🎨</div>
+                <div>
+                    <div class="arch-layer-title">UI 层</div>
+                    <div class="arch-layer-desc">CSS 变量、组件类名、动画系统、响应式工具</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 接入状态 -->
+    <section class="integration">
+        <h2 class="section-title">已接入产品</h2>
+        <div class="integration-grid">
+            <div class="integration-item connected">
+                <div class="integration-dot"></div>
+                <div>
+                    <div class="integration-name">青柠网盘</div>
+                    <div class="integration-status">已接入</div>
+                </div>
+            </div>
+            <div class="integration-item connected">
+                <div class="integration-dot"></div>
+                <div>
+                    <div class="integration-name">青柠社区</div>
+                    <div class="integration-status">已接入</div>
+                </div>
+            </div>
+            <div class="integration-item connected">
+                <div class="integration-dot"></div>
+                <div>
+                    <div class="integration-name">青柠杀毒</div>
+                    <div class="integration-status">已接入</div>
+                </div>
+            </div>
+            <div class="integration-item">
+                <div class="integration-dot" style="background:#64748b;box-shadow:none"></div>
+                <div>
+                    <div class="integration-name">青柠OS</div>
+                    <div class="integration-status" style="color:#64748b">待接入</div>
+                </div>
+            </div>
+            <div class="integration-item">
+                <div class="integration-dot" style="background:#64748b;box-shadow:none"></div>
+                <div>
+                    <div class="integration-name">青柠桌面</div>
+                    <div class="integration-status" style="color:#64748b">待接入</div>
+                </div>
+            </div>
+            <div class="integration-item">
+                <div class="integration-dot" style="background:#64748b;box-shadow:none"></div>
+                <div>
+                    <div class="integration-name">青柠应用商店</div>
+                    <div class="integration-status" style="color:#64748b">待接入</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <p>青柠架构 v1.0.0 · 代号「轻装上阵」</p>
+        <p style="margin-top:4px">&copy; 2024-2026 青柠网盘 · 王梓豪制作</p>
+    </footer>
+
+    <script>
+        QNA.init().then(function() {
+            console.log('[QNA] 架构介绍页已接入 v' + QNA.version);
+        }).catch(function(err) {
+            console.warn('[QNA] 架构加载失败:', err);
+        });
+    </script>
+</body>
+</html>
