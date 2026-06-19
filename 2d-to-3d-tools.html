@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D转3D工具箱 - 开源项目对比</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #e2e8f0;
+            background-color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        .page-navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .page-navbar a {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .page-navbar a svg { width: 28px; height: 28px; color: #22c55e; }
+        .page-navbar a span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+
+        /* 主内容 */
+        .page-main { max-width: 1200px; margin: 0 auto; padding: 88px 24px 60px; }
+
+        /* 页面标题 */
+        .page-header { text-align: center; margin-bottom: 48px; }
+        .page-header h1 {
+            font-size: 32px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 12px; display: flex; align-items: center;
+            justify-content: center; gap: 12px;
+        }
+        .page-header h1 svg { width: 32px; height: 32px; color: #22c55e; }
+        .page-header p { font-size: 15px; color: #64748b; max-width: 600px; margin: 0 auto; }
+
+        /* 对比表格 */
+        .compare-table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 48px;
+            border-radius: 12px;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .compare-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            min-width: 800px;
+        }
+        .compare-table thead th {
+            background: rgba(30, 41, 59, 0.9);
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #f1f5f9;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+            white-space: nowrap;
+        }
+        .compare-table tbody td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+            color: #94a3b8;
+            vertical-align: top;
+        }
+        .compare-table tbody tr:hover td {
+            background: rgba(34, 197, 94, 0.03);
+        }
+        .compare-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        .tool-name {
+            font-weight: 700;
+            color: #f1f5f9;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tool-icon {
+            width: 32px; height: 32px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; flex-shrink: 0;
+        }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;
+        }
+        .tag-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .tag-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+        .tag-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+        .gpu-low { color: #4ade80; }
+        .gpu-mid { color: #fbbf24; }
+        .gpu-high { color: #f87171; }
+
+        .link-btn {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .link-github { background: rgba(34, 197, 94, 0.12); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.25); }
+        .link-github:hover { background: rgba(34, 197, 94, 0.22); }
+        .link-paper { background: rgba(59, 130, 246, 0.12); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.25); }
+        .link-paper:hover { background: rgba(59, 130, 246, 0.22); }
+        .link-demo { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; border: 1px solid rgba(139, 92, 246, 0.25); }
+        .link-demo:hover { background: rgba(139, 92, 246, 0.22); }
+
+        /* 推荐卡片 */
+        .recommend-section { margin-bottom: 48px; }
+        .recommend-title {
+            font-size: 20px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .recommend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        .recommend-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .recommend-card:hover {
+            border-color: rgba(148, 163, 184, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .recommend-card-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+        }
+        .recommend-card-icon {
+            width: 44px; height: 44px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+        }
+        .recommend-card-title { font-size: 17px; font-weight: 700; color: #f1f5f9; }
+        .recommend-card-desc {
+            font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 16px;
+        }
+        .recommend-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+        .recommend-card-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* 性能建议 */
+        .tips-section {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(59, 130, 246, 0.08));
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 16px; padding: 32px;
+        }
+        .tips-title {
+            font-size: 20px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        .tips-list {
+            list-style: none; display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 12px;
+        }
+        .tips-list li {
+            display: flex; align-items: flex-start; gap: 10px;
+            font-size: 14px; color: #94a3b8; line-height: 1.6;
+        }
+        .tips-list li::before {
+            content: '✓'; color: #22c55e; font-weight: 700; flex-shrink: 0;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .page-main { padding: 80px 16px 40px; }
+            .page-header h1 { font-size: 24px; }
+            .compare-table-wrapper { border-radius: 8px; }
+            .tips-section { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="page-navbar">
+        <a href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            <span>青柠网盘</span>
+        </a>
+        <a href="index.html" class="btn-back">← 返回首页</a>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="page-main">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+                2D转3D开源工具箱
+            </h1>
+            <p>对比主流开源项目，找到适合你硬件的 2D 图片转 3D 方案</p>
+        </div>
+
+        <!-- 对比表格 -->
+        <div class="compare-table-wrapper">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th>项目</th>
+                        <th>输入要求</th>
+                        <th>输出格式</th>
+                        <th>GPU要求</th>
+                        <th>速度</th>
+                        <th>开源协议</th>
+                        <th>链接</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(34,197,94,.15)">🍎</span>
+                                Apple SHARP
+                            </div>
+                            <span class="tag tag-green">单图最佳</span>
+                        </td>
+                        <td>1张照片</td>
+                        <td>3D高斯点云 (.ply)</td>
+                        <td class="gpu-mid">中端GPU / CPU可跑</td>
+                        <td>&lt; 1秒</td>
+                        <td>Apple开源许可</td>
+                        <td>
+                            <a href="https://github.com/apple/ml-sharp" class="link-btn link-github" target="_blank">GitHub</a>
+                            <a href="https://arxiv.org/abs/2512.10685" class="link-btn link-paper" target="_blank">论文</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(59,130,246,.15)">📐</span>
+                                DUSt3R
+                            </div>
+                            <span class="tag tag-blue">无需相机参数</span>
+                        </td>
+                        <td>2张+照片</td>
+                        <td>3D点云 / 深度图</td>
+                        <td class="gpu-low">CPU可跑 / 4G+显存</td>
+                        <td>3-5秒</td>
+                        <td>CC BY-NC-SA 4.0</td>
+                        <td>
+                            <a href="https://github.com/naver/dust3r" class="link-btn link-github" target="_blank">GitHub</a>
+                            <a href="https://arxiv.org/pdf/2312.14132.pdf" class="link-btn link-paper" target="_blank">论文</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(139,92,246,.15)">🎯</span>
+                                MASt3R
+                            </div>
+                            <span class="tag tag-purple">DUSt3R升级版</span>
+                        </td>
+                        <td>2张+照片</td>
+                        <td>3D点云 / 匹配特征</td>
+                        <td class="gpu-low">CPU可跑 / 4G+显存</td>
+                        <td>3-5秒</td>
+                        <td>CC BY-NC-SA 4.0</td>
+                        <td>
+                            <a href="https://github.com/naver/mast3r" class="link-btn link-github" target="_blank">GitHub</a>
+                            <a href="https://arxiv.org/pdf/2406.09756" class="link-btn link-paper" target="_blank">论文</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(245,158,11,.15)">📏</span>
+                                Depth Pro
+                            </div>
+                            <span class="tag tag-amber">仅深度图</span>
+                        </td>
+                        <td>1张照片</td>
+                        <td>深度图</td>
+                        <td class="gpu-low">CPU可跑 / 低显存</td>
+                        <td>0.3秒</td>
+                        <td>Apple开源许可</td>
+                        <td>
+                            <a href="https://github.com/apple/ml-depth-pro" class="link-btn link-github" target="_blank">GitHub</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(239,68,68,.15)">🎬</span>
+                                MonST3R
+                            </div>
+                            <span class="tag tag-red">视频专用</span>
+                        </td>
+                        <td>视频</td>
+                        <td>动态3D场景</td>
+                        <td class="gpu-high">需要CUDA GPU</td>
+                        <td>实时</td>
+                        <td>开源</td>
+                        <td>
+                            <a href="https://github.com/Junyi42/monst3r" class="link-btn link-github" target="_blank">GitHub</a>
+                            <a href="https://arxiv.org/pdf/2410.03825" class="link-btn link-paper" target="_blank">论文</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="tool-name">
+                                <span class="tool-icon" style="background:rgba(34,197,94,.15)">🔮</span>
+                                MVGD
+                            </div>
+                            <span class="tag tag-green">扩散模型</span>
+                        </td>
+                        <td>多张 posed 照片</td>
+                        <td>新视角图片+深度</td>
+                        <td class="gpu-high">需要高端GPU</td>
+                        <td>较慢</td>
+                        <td>开源</td>
+                        <td>
+                            <a href="https://mvgd.github.io/" class="link-btn link-demo" target="_blank">官网</a>
+                            <a href="https://arxiv.org/pdf/2501.18804" class="link-btn link-paper" target="_blank">论文</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- HD2500 推荐 -->
+        <div class="recommend-section">
+            <div class="recommend-title">
+                <span>💡</span> HD2500 核显卡推荐方案
+            </div>
+            <div class="recommend-grid">
+                <div class="recommend-card">
+                    <div class="recommend-card-header">
+                        <span class="recommend-card-icon" style="background:rgba(34,197,94,.15)">🥇</span>
+                        <div class="recommend-card-title">首选：Depth Pro</div>
+                    </div>
+                    <div class="recommend-card-desc">
+                        苹果开源的单目深度估计模型，对硬件要求最低。只需1张照片，0.3秒生成深度图。虽然没有完整3D场景，但深度图可以导入 Blender 等软件进一步处理。
+                    </div>
+                    <div class="recommend-card-tags">
+                        <span class="tag tag-green">CPU可跑</span>
+                        <span class="tag tag-amber">低显存</span>
+                        <span class="tag tag-blue">速度快</span>
+                    </div>
+                    <div class="recommend-card-links">
+                        <a href="https://github.com/apple/ml-depth-pro" class="link-btn link-github" target="_blank">GitHub</a>
+                    </div>
+                </div>
+
+                <div class="recommend-card">
+                    <div class="recommend-card-header">
+                        <span class="recommend-card-icon" style="background:rgba(59,130,246,.15)">🥈</span>
+                        <div class="recommend-card-title">次选：DUSt3R (CPU模式)</div>
+                    </div>
+                    <div class="recommend-card-desc">
+                        支持纯CPU运行，只需2张照片即可生成完整3D点云。处理时间约3-5秒（CPU），内存占用4-8GB。不需要相机参数，上手最简单。
+                    </div>
+                    <div class="recommend-card-tags">
+                        <span class="tag tag-blue">CPU可跑</span>
+                        <span class="tag tag-green">完整3D</span>
+                        <span class="tag tag-purple">无需标定</span>
+                    </div>
+                    <div class="recommend-card-links">
+                        <a href="https://github.com/naver/dust3r" class="link-btn link-github" target="_blank">GitHub</a>
+                        <a href="https://dust3r.europe.naverlabs.com/" class="link-btn link-demo" target="_blank">Demo</a>
+                    </div>
+                </div>
+
+                <div class="recommend-card">
+                    <div class="recommend-card-header">
+                        <span class="recommend-card-icon" style="background:rgba(245,158,11,.15)">🥉</span>
+                        <div class="recommend-card-title">备选：SHARP (CPU模式)</div>
+                    </div>
+                    <div class="recommend-card-desc">
+                        苹果最新的单图3D重建模型，CPU模式可运行但速度较慢（可能几分钟一张）。质量最好，但HD2500上可能需要降低输入图片分辨率来减少内存占用。
+                    </div>
+                    <div class="recommend-card-tags">
+                        <span class="tag tag-green">单图输入</span>
+                        <span class="tag tag-amber">CPU较慢</span>
+                        <span class="tag tag-red">内存占用大</span>
+                    </div>
+                    <div class="recommend-card-links">
+                        <a href="https://github.com/apple/ml-sharp" class="link-btn link-github" target="_blank">GitHub</a>
+                        <a href="https://apple.github.io/ml-sharp/" class="link-btn link-demo" target="_blank">示例</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 性能优化建议 -->
+        <div class="tips-section">
+            <div class="tips-title">
+                <span>⚡</span> 低配电脑优化建议
+            </div>
+            <ul class="tips-list">
+                <li>降低输入图片分辨率至 512x512 或更低，可大幅减少内存和计算量</li>
+                <li>使用 DUSt3R 的 224px 模型替代 512px 模型，速度提升约4倍</li>
+                <li>关闭不必要的后台程序，为模型推理留出更多内存</li>
+                <li>SHARP 可尝试 FP16 半精度模式，显存占用减半</li>
+                <li>批量处理时建议一张一张来，避免同时加载多张图片</li>
+                <li>如果内存不足（&lt;8GB），优先选择 Depth Pro 或在线服务</li>
+                <li>Linux 系统通常比 Windows 内存管理更高效，可考虑双系统</li>
+                <li>使用在线服务（Luma AI、Meshy）作为替代方案，零硬件要求</li>
+            </ul>
+        </div>
+    </main>
+</body>
+</html>
