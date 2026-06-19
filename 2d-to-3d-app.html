@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠3D工坊 - 2D图片转3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #e2e8f0;
+            background-color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        .page-navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .page-navbar a {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .page-navbar a svg { width: 28px; height: 28px; color: #22c55e; }
+        .page-navbar a span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+
+        /* 主内容 */
+        .page-main { max-width: 900px; margin: 0 auto; padding: 88px 24px 60px; }
+
+        /* 页面标题 */
+        .page-header { text-align: center; margin-bottom: 40px; }
+        .page-header h1 {
+            font-size: 32px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 12px; display: flex; align-items: center;
+            justify-content: center; gap: 12px;
+        }
+        .page-header p { font-size: 15px; color: #64748b; max-width: 500px; margin: 0 auto; }
+
+        /* 步骤指示器 */
+        .steps-bar {
+            display: flex; align-items: center; justify-content: center;
+            gap: 8px; margin-bottom: 40px;
+        }
+        .step-dot {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700; color: #64748b;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        .step-dot.active {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border-color: #22c55e; color: #fff;
+        }
+        .step-dot.done {
+            background: rgba(34, 197, 94, 0.2);
+            border-color: #22c55e; color: #22c55e;
+        }
+        .step-line {
+            width: 40px; height: 2px;
+            background: rgba(148, 163, 184, 0.2);
+            transition: all 0.3s ease;
+        }
+        .step-line.active { background: linear-gradient(to right, #22c55e, #22c55e); }
+
+        /* 步骤面板 */
+        .step-panel { display: none; animation: fadeIn 0.4s ease; }
+        .step-panel.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 模式选择网格 */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+        }
+        .mode-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px; padding: 24px; cursor: pointer;
+            transition: all 0.3s ease; position: relative;
+        }
+        .mode-card:hover {
+            border-color: rgba(34, 197, 94, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+        }
+        .mode-card.selected {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.08);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+        .mode-card-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+        }
+        .mode-card-icon {
+            width: 48px; height: 48px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; flex-shrink: 0;
+        }
+        .mode-card-title { font-size: 17px; font-weight: 700; color: #f1f5f9; }
+        .mode-card-desc {
+            font-size: 13px; color: #94a3b8; line-height: 1.7; margin-bottom: 12px;
+        }
+        .mode-card-meta {
+            display: flex; flex-wrap: wrap; gap: 6px;
+        }
+        .mode-tag {
+            padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+        }
+        .mode-tag-input { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .mode-tag-gpu { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .mode-tag-speed { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .mode-tag-output { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+
+        .check-indicator {
+            position: absolute; top: 12px; right: 12px;
+            width: 24px; height: 24px; border-radius: 50%;
+            background: #22c55e; color: #fff;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; opacity: 0; transform: scale(0.5);
+            transition: all 0.2s ease;
+        }
+        .mode-card.selected .check-indicator { opacity: 1; transform: scale(1); }
+
+        /* 按钮 */
+        .btn-primary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 14px 32px; background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff; border: none; border-radius: 10px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: all 0.2s ease; margin-top: 24px; width: 100%;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(34, 197, 94, 0.3);
+        }
+        .btn-primary:disabled {
+            background: rgba(148, 163, 184, 0.2);
+            color: #64748b; cursor: not-allowed;
+            transform: none; box-shadow: none;
+        }
+        .btn-secondary {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 12px 24px; background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.2); color: #94a3b8;
+            border-radius: 10px; font-size: 14px; font-weight: 500;
+            cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+            border-color: rgba(148, 163, 184, 0.4); color: #e2e8f0;
+        }
+
+        /* 上传区域 */
+        .upload-zone {
+            border: 2px dashed rgba(148, 163, 184, 0.25);
+            border-radius: 16px; padding: 48px 24px;
+            text-align: center; cursor: pointer;
+            transition: all 0.3s ease; background: rgba(30, 41, 59, 0.5);
+        }
+        .upload-zone:hover, .upload-zone.dragover {
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.05);
+        }
+        .upload-zone svg {
+            width: 48px; height: 48px; color: #64748b; margin-bottom: 16px;
+        }
+        .upload-zone h3 { font-size: 18px; color: #f1f5f9; margin-bottom: 8px; }
+        .upload-zone p { font-size: 13px; color: #64748b; }
+        .upload-zone input { display: none; }
+
+        .file-list {
+            margin-top: 16px; display: flex; flex-direction: column; gap: 8px;
+        }
+        .file-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 16px; background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 10px;
+        }
+        .file-item img {
+            width: 48px; height: 48px; border-radius: 6px; object-fit: cover;
+            background: rgba(15, 23, 42, 0.5);
+        }
+        .file-item-info { flex: 1; min-width: 0; }
+        .file-item-name { font-size: 14px; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-item-size { font-size: 12px; color: #64748b; }
+        .file-item-remove {
+            width: 28px; height: 28px; border-radius: 6px;
+            background: rgba(239, 68, 68, 0.1); color: #f87171;
+            border: none; cursor: pointer; display: flex;
+            align-items: center; justify-content: center;
+            font-size: 16px; transition: all 0.2s;
+        }
+        .file-item-remove:hover { background: rgba(239, 68, 68, 0.2); }
+
+        /* 参数配置 */
+        .config-section {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 24px; margin-bottom: 16px;
+        }
+        .config-section-title {
+            font-size: 15px; font-weight: 600; color: #f1f5f9;
+            margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+        }
+        .config-row {
+            display: flex; align-items: center; gap: 16px; margin-bottom: 12px;
+        }
+        .config-row:last-child { margin-bottom: 0; }
+        .config-label {
+            width: 100px; font-size: 13px; color: #94a3b8; flex-shrink: 0;
+        }
+        .config-input {
+            flex: 1; padding: 10px 14px; background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 8px;
+            color: #e2e8f0; font-size: 14px; outline: none;
+            transition: all 0.2s;
+        }
+        .config-input:focus { border-color: #22c55e; }
+        .config-select {
+            flex: 1; padding: 10px 14px; background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.15); border-radius: 8px;
+            color: #e2e8f0; font-size: 14px; outline: none;
+            cursor: pointer;
+        }
+        .config-hint {
+            font-size: 12px; color: #64748b; margin-top: 4px;
+        }
+
+        /* 生成结果 */
+        .result-area {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 24px;
+        }
+        .result-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+        }
+        .result-status {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: #22c55e; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .result-title { font-size: 16px; font-weight: 600; color: #f1f5f9; }
+        .result-subtitle { font-size: 13px; color: #64748b; margin-left: auto; }
+
+        .command-block {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 10px; padding: 16px;
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 13px; color: #a5b4fc; line-height: 1.8;
+            overflow-x: auto; white-space: pre-wrap; word-break: break-all;
+            margin-bottom: 16px; position: relative;
+        }
+        .copy-btn {
+            position: absolute; top: 8px; right: 8px;
+            padding: 4px 10px; background: rgba(34, 197, 94, 0.15);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 6px; font-size: 11px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .copy-btn:hover { background: rgba(34, 197, 94, 0.25); }
+        .copy-btn.copied { background: rgba(34, 197, 94, 0.3); color: #4ade80; }
+
+        .result-preview {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px; margin-top: 16px;
+        }
+        .preview-box {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 10px; padding: 16px; text-align: center;
+        }
+        .preview-box img {
+            width: 100%; max-height: 200px; object-fit: contain;
+            border-radius: 8px; margin-bottom: 8px;
+        }
+        .preview-box-label { font-size: 12px; color: #64748b; }
+
+        /* 步骤按钮组 */
+        .step-actions {
+            display: flex; gap: 12px; margin-top: 24px;
+        }
+        .step-actions .btn-primary { margin-top: 0; width: auto; flex: 1; }
+        .step-actions .btn-secondary { flex: 0 0 auto; }
+
+        /* 提示信息 */
+        .info-box {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 10px; padding: 16px;
+            display: flex; align-items: flex-start; gap: 12px;
+            margin-bottom: 20px;
+        }
+        .info-box svg {
+            width: 20px; height: 20px; color: #3b82f6; flex-shrink: 0; margin-top: 2px;
+        }
+        .info-box-content { font-size: 13px; color: #94a3b8; line-height: 1.7; }
+        .info-box-content strong { color: #60a5fa; }
+
+        /* 隐藏 */
+        .hidden { display: none !important; }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .page-main { padding: 80px 16px 40px; }
+            .page-header h1 { font-size: 24px; }
+            .mode-grid { grid-template-columns: 1fr; }
+            .config-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .config-label { width: auto; }
+            .step-actions { flex-direction: column; }
+            .step-actions .btn-secondary { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="page-navbar">
+        <a href="index.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+            <span>青柠网盘</span>
+        </a>
+        <a href="index.html" class="btn-back">← 返回首页</a>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="page-main">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>🎨 青柠3D工坊</h1>
+            <p>选择模式，上传图片，一键生成3D场景</p>
+        </div>
+
+        <!-- 步骤指示器 -->
+        <div class="steps-bar">
+            <div class="step-dot active" id="stepDot1">1</div>
+            <div class="step-line" id="stepLine1"></div>
+            <div class="step-dot" id="stepDot2">2</div>
+            <div class="step-line" id="stepLine2"></div>
+            <div class="step-dot" id="stepDot3">3</div>
+            <div class="step-line" id="stepLine3"></div>
+            <div class="step-dot" id="stepDot4">4</div>
+        </div>
+
+        <!-- 步骤1：选择模式 -->
+        <div class="step-panel active" id="step1">
+            <div class="info-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <div class="info-box-content">
+                    <strong>请选择生成模式。</strong>不同模式对输入图片数量和硬件要求不同。如果你只有<strong>HD2500核显</strong>，建议选择"深度图生成"或"DUSt3R CPU模式"。
+                </div>
+            </div>
+
+            <div class="mode-grid">
+                <!-- SHARP -->
+                <div class="mode-card" data-mode="sharp" data-input="1" data-gpu="mid">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(34,197,94,.15)">🍎</span>
+                        <div class="mode-card-title">SHARP 单图3D</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        苹果最新开源模型，1张照片即可生成高质量3D高斯点云，支持真实物理比例。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">1张照片</span>
+                        <span class="mode-tag mode-tag-gpu">中端GPU</span>
+                        <span class="mode-tag mode-tag-speed">&lt;1秒</span>
+                        <span class="mode-tag mode-tag-output">3D点云</span>
+                    </div>
+                </div>
+
+                <!-- DUSt3R -->
+                <div class="mode-card" data-mode="dust3r" data-input="2" data-gpu="low">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(59,130,246,.15)">📐</span>
+                        <div class="mode-card-title">DUSt3R 多视图3D</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        无需相机参数，2张以上照片即可生成完整3D点云。支持CPU运行，低配友好。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">2张+照片</span>
+                        <span class="mode-tag mode-tag-gpu">CPU可跑</span>
+                        <span class="mode-tag mode-tag-speed">3-5秒</span>
+                        <span class="mode-tag mode-tag-output">3D点云</span>
+                    </div>
+                </div>
+
+                <!-- MASt3R -->
+                <div class="mode-card" data-mode="mast3r" data-input="2" data-gpu="low">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(139,92,246,.15)">🎯</span>
+                        <div class="mode-card-title">MASt3R 精准匹配</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        DUSt3R升级版，匹配能力更强，适合大视角变化和遮挡场景。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">2张+照片</span>
+                        <span class="mode-tag mode-tag-gpu">CPU可跑</span>
+                        <span class="mode-tag mode-tag-speed">3-5秒</span>
+                        <span class="mode-tag mode-tag-output">3D点云</span>
+                    </div>
+                </div>
+
+                <!-- Depth Pro -->
+                <div class="mode-card" data-mode="depthpro" data-input="1" data-gpu="low">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(245,158,11,.15)">📏</span>
+                        <div class="mode-card-title">Depth Pro 深度图</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        硬件要求最低，1张照片0.3秒生成深度图。可导入Blender等软件进一步处理。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">1张照片</span>
+                        <span class="mode-tag mode-tag-gpu">CPU可跑</span>
+                        <span class="mode-tag mode-tag-speed">0.3秒</span>
+                        <span class="mode-tag mode-tag-output">深度图</span>
+                    </div>
+                </div>
+
+                <!-- MonST3R -->
+                <div class="mode-card" data-mode="monst3r" data-input="video" data-gpu="high">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(239,68,68,.15)">🎬</span>
+                        <div class="mode-card-title">MonST3R 视频3D</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        上传视频生成动态3D场景，支持移动物体和形变。需要CUDA显卡。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">视频文件</span>
+                        <span class="mode-tag mode-tag-gpu">需要CUDA</span>
+                        <span class="mode-tag mode-tag-speed">实时</span>
+                        <span class="mode-tag mode-tag-output">动态3D</span>
+                    </div>
+                </div>
+
+                <!-- MVGD -->
+                <div class="mode-card" data-mode="mvgd" data-input="multi" data-gpu="high">
+                    <div class="check-indicator">✓</div>
+                    <div class="mode-card-header">
+                        <span class="mode-card-icon" style="background:rgba(34,197,94,.15)">🔮</span>
+                        <div class="mode-card-title">MVGD 扩散生成</div>
+                    </div>
+                    <div class="mode-card-desc">
+                        基于扩散模型，从多张 posed 照片生成新视角图片和深度图。质量最高但硬件要求也最高。
+                    </div>
+                    <div class="mode-card-meta">
+                        <span class="mode-tag mode-tag-input">多张posed</span>
+                        <span class="mode-tag mode-tag-gpu">高端GPU</span>
+                        <span class="mode-tag mode-tag-speed">较慢</span>
+                        <span class="mode-tag mode-tag-output">新视角</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" id="btnStep1Next" disabled>
+                下一步：上传素材 →
+            </button>
+        </div>
+
+        <!-- 步骤2：上传素材 -->
+        <div class="step-panel" id="step2">
+            <div class="info-box" id="uploadInfo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <div class="info-box-content" id="uploadInfoText">
+                    <strong>请上传图片。</strong>支持 JPG、PNG 格式，建议分辨率 512x512 以上。
+                </div>
+            </div>
+
+            <div class="upload-zone" id="uploadZone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <h3>点击或拖拽上传</h3>
+                <p id="uploadHint">支持 JPG、PNG 格式</p>
+                <input type="file" id="fileInput" accept="image/*" multiple>
+            </div>
+
+            <div class="file-list" id="fileList"></div>
+
+            <div class="step-actions">
+                <button class="btn-secondary" onclick="goToStep(1)">← 上一步</button>
+                <button class="btn-primary" id="btnStep2Next" disabled>
+                    下一步：配置参数 →
+                </button>
+            </div>
+        </div>
+
+        <!-- 步骤3：配置参数 -->
+        <div class="step-panel" id="step3">
+            <div class="config-section">
+                <div class="config-section-title">⚙️ 生成参数</div>
+
+                <div id="configFields">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-section-title">💻 运行环境</div>
+                <div class="config-row">
+                    <span class="config-label">运行设备</span>
+                    <select class="config-select" id="deviceSelect">
+                        <option value="cpu">CPU（兼容性好，速度慢）</option>
+                        <option value="cuda">CUDA GPU（NVIDIA显卡）</option>
+                        <option value="mps">MPS（Apple Silicon）</option>
+                    </select>
+                </div>
+                <div class="config-row">
+                    <span class="config-label">输出格式</span>
+                    <select class="config-select" id="outputFormat">
+                        <option value="ply">PLY 点云文件</option>
+                        <option value="obj">OBJ 模型文件</option>
+                        <option value="glb">GLB 二进制模型</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="step-actions">
+                <button class="btn-secondary" onclick="goToStep(2)">← 上一步</button>
+                <button class="btn-primary" id="btnStep3Next">
+                    🚀 开始生成
+                </button>
+            </div>
+        </div>
+
+        <!-- 步骤4：生成结果 -->
+        <div class="step-panel" id="step4">
+            <div class="result-area">
+                <div class="result-header">
+                    <div class="result-status"></div>
+                    <div class="result-title">生成命令已准备就绪</div>
+                    <div class="result-subtitle" id="resultMode">SHARP 模式</div>
+                </div>
+
+                <p style="font-size:13px;color:#94a3b8;margin-bottom:12px">
+                    由于 GitHub Pages 是静态托管，无法直接运行 AI 模型。请复制以下命令到你的本地环境中执行：
+                </p>
+
+                <div class="command-block" id="commandBlock">
+                    <button class="copy-btn" onclick="copyCommand()">复制</button>
+                    <code id="commandCode"># 请先安装对应模型，然后运行以下命令...</code>
+                </div>
+
+                <div class="info-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <div class="info-box-content" id="installGuide">
+                        <strong>安装指南：</strong>请参考各项目的 GitHub 页面安装依赖。
+                    </div>
+                </div>
+
+                <div class="result-preview" id="resultPreview">
+                    <!-- 预览区域 -->
+                </div>
+            </div>
+
+            <div class="step-actions">
+                <button class="btn-secondary" onclick="goToStep(3)">← 修改参数</button>
+                <button class="btn-secondary" onclick="resetAll()">🔄 重新开始</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 全局状态
+        var state = {
+            mode: null,
+            files: [],
+            config: {}
+        };
+
+        // 模式配置
+        var modeConfigs = {
+            sharp: {
+                name: 'SHARP 单图3D',
+                install: 'pip install -r requirements.txt\nwget https://ml-site.cdn-apple.com/models/sharp/sharp_2572gikvuh.pt',
+                command: 'sharp predict -i "{input}" -o ./output --device {device}',
+                fields: [
+                    { id: 'resolution', label: '输入分辨率', type: 'select', options: ['512', '1024', '2048'], default: '512', hint: '分辨率越高质量越好，但内存占用越大' }
+                ]
+            },
+            dust3r: {
+                name: 'DUSt3R 多视图3D',
+                install: 'git clone https://github.com/naver/dust3r\ncd dust3r && pip install -r requirements.txt',
+                command: 'python demo.py --model_name DUSt3R_ViTLarge_BaseDecoder_{resolution}_dpt --image_paths {input} --device {device}',
+                fields: [
+                    { id: 'resolution', label: '模型分辨率', type: 'select', options: ['224', '512'], default: '512', hint: '224px 速度更快，512px 质量更好' }
+                ]
+            },
+            mast3r: {
+                name: 'MASt3R 精准匹配',
+                install: 'git clone https://github.com/naver/mast3r\ncd mast3r && pip install -r requirements.txt',
+                command: 'python demo.py --model_name MASt3R_ViTLarge_BaseDecoder_{resolution}_dpt --image_paths {input} --device {device}',
+                fields: [
+                    { id: 'resolution', label: '模型分辨率', type: 'select', options: ['224', '512'], default: '512', hint: '224px 速度更快，512px 质量更好' }
+                ]
+            },
+            depthpro: {
+                name: 'Depth Pro 深度图',
+                install: 'pip install ml-depth-pro',
+                command: 'depthpro -i "{input}" -o ./output --device {device}',
+                fields: [
+                    { id: 'colormap', label: '深度配色', type: 'select', options: ['turbo', 'plasma', 'viridis', 'jet'], default: 'turbo', hint: '深度图可视化配色方案' }
+                ]
+            },
+            monst3r: {
+                name: 'MonST3R 视频3D',
+                install: 'git clone https://github.com/Junyi42/monst3r\ncd monst3r && pip install -r requirements.txt',
+                command: 'python demo.py --video "{input}" --output ./output --device cuda',
+                fields: [
+                    { id: 'fps', label: '采样帧率', type: 'select', options: ['1', '5', '10', '30'], default: '5', hint: '每秒处理的帧数，越低越快' }
+                ]
+            },
+            mvgd: {
+                name: 'MVGD 扩散生成',
+                install: 'git clone https://github.com/mvgd/mvgd\ncd mvgd && pip install -r requirements.txt',
+                command: 'python generate.py --input "{input}" --output ./output --device {device}',
+                fields: [
+                    { id: 'steps', label: '扩散步数', type: 'select', options: ['20', '50', '100'], default: '50', hint: '步数越多质量越好，但速度越慢' }
+                ]
+            }
+        };
+
+        // 步骤切换
+        function goToStep(step) {
+            for (var i = 1; i <= 4; i++) {
+                document.getElementById('step' + i).classList.remove('active');
+                var dot = document.getElementById('stepDot' + i);
+                var line = document.getElementById('stepLine' + i);
+                if (dot) {
+                    dot.classList.remove('active', 'done');
+                    if (i < step) dot.classList.add('done');
+                    else if (i === step) dot.classList.add('active');
+                }
+                if (line) {
+                    line.classList.remove('active');
+                    if (i < step) line.classList.add('active');
+                }
+            }
+            document.getElementById('step' + step).classList.add('active');
+        }
+
+        // 模式选择
+        document.querySelectorAll('.mode-card').forEach(function(card) {
+            card.addEventListener('click', function() {
+                document.querySelectorAll('.mode-card').forEach(function(c) { c.classList.remove('selected'); });
+                card.classList.add('selected');
+                state.mode = card.dataset.mode;
+                document.getElementById('btnStep1Next').disabled = false;
+            });
+        });
+
+        document.getElementById('btnStep1Next').addEventListener('click', function() {
+            if (!state.mode) return;
+            updateUploadInfo();
+            goToStep(2);
+        });
+
+        // 更新上传提示
+        function updateUploadInfo() {
+            var mode = modeConfigs[state.mode];
+            var inputType = state.mode === 'monst3r' ? '视频' : '图片';
+            var count = state.mode === 'dust3r' || state.mode === 'mast3r' ? '2张或以上' : '1张';
+            document.getElementById('uploadInfoText').innerHTML = '<strong>请上传' + inputType + '。</strong>' + mode.name + ' 需要 ' + count + ' ' + inputType + '。支持 JPG、PNG' + (state.mode === 'monst3r' ? '、MP4' : '') + ' 格式。';
+            document.getElementById('uploadHint').textContent = '需要 ' + count + ' ' + inputType + '，支持拖拽上传';
+            document.getElementById('fileInput').accept = state.mode === 'monst3r' ? 'video/*,image/*' : 'image/*';
+            document.getElementById('fileInput').multiple = (state.mode === 'dust3r' || state.mode === 'mast3r');
+        }
+
+        // 文件上传
+        var uploadZone = document.getElementById('uploadZone');
+        var fileInput = document.getElementById('fileInput');
+
+        uploadZone.addEventListener('click', function() { fileInput.click(); });
+        uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('dragover'); });
+        uploadZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            handleFiles(e.dataTransfer.files);
+        });
+        fileInput.addEventListener('change', function() { handleFiles(fileInput.files); });
+
+        function handleFiles(files) {
+            for (var i = 0; i < files.length; i++) {
+                var file = files[i];
+                if (!file.type.match(/image.*/) && !file.type.match(/video.*/)) continue;
+                state.files.push(file);
+                addFileItem(file);
+            }
+            checkUploadComplete();
+        }
+
+        function addFileItem(file) {
+            var item = document.createElement('div');
+            item.className = 'file-item';
+            var isImg = file.type.match(/image.*/);
+            var icon = isImg ? '<img src="' + URL.createObjectURL(file) + '" alt="">' : '<div style="width:48px;height:48px;border-radius:6px;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;font-size:20px">🎬</div>';
+            item.innerHTML = icon +
+                '<div class="file-item-info"><div class="file-item-name">' + file.name + '</div><div class="file-item-size">' + formatSize(file.size) + '</div></div>' +
+                '<button class="file-item-remove" onclick="removeFile(this)">×</button>';
+            document.getElementById('fileList').appendChild(item);
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function removeFile(btn) {
+            var item = btn.closest('.file-item');
+            var idx = Array.from(item.parentNode.children).indexOf(item);
+            state.files.splice(idx, 1);
+            item.remove();
+            checkUploadComplete();
+        }
+
+        function checkUploadComplete() {
+            var minFiles = (state.mode === 'dust3r' || state.mode === 'mast3r') ? 2 : 1;
+            document.getElementById('btnStep2Next').disabled = state.files.length < minFiles;
+        }
+
+        document.getElementById('btnStep2Next').addEventListener('click', function() {
+            generateConfigFields();
+            goToStep(3);
+        });
+
+        // 生成配置字段
+        function generateConfigFields() {
+            var container = document.getElementById('configFields');
+            container.innerHTML = '';
+            var config = modeConfigs[state.mode];
+            config.fields.forEach(function(field) {
+                var row = document.createElement('div');
+                row.className = 'config-row';
+                var select = '<select class="config-select" id="config_' + field.id + '">';
+                field.options.forEach(function(opt) {
+                    select += '<option value="' + opt + '"' + (opt === field.default ? ' selected' : '') + '>' + opt + '</option>';
+                });
+                select += '</select>';
+                row.innerHTML = '<span class="config-label">' + field.label + '</span>' + select;
+                container.appendChild(row);
+                if (field.hint) {
+                    var hint = document.createElement('div');
+                    hint.className = 'config-hint';
+                    hint.style.marginLeft = '116px';
+                    hint.textContent = field.hint;
+                    container.appendChild(hint);
+                }
+            });
+        }
+
+        // 开始生成
+        document.getElementById('btnStep3Next').addEventListener('click', function() {
+            generateCommand();
+            goToStep(4);
+        });
+
+        function generateCommand() {
+            var config = modeConfigs[state.mode];
+            var device = document.getElementById('deviceSelect').value;
+            var inputPaths = state.files.map(function(f) { return '"' + f.name + '"'; }).join(' ');
+
+            var cmd = config.command;
+            cmd = cmd.replace('{device}', device);
+            cmd = cmd.replace('{input}', inputPaths);
+
+            // 替换配置参数
+            config.fields.forEach(function(field) {
+                var val = document.getElementById('config_' + field.id).value;
+                cmd = cmd.replace('{' + field.id + '}', val);
+                state.config[field.id] = val;
+            });
+
+            document.getElementById('commandCode').textContent = '# 安装\n' + config.install + '\n\n# 运行\n' + cmd;
+            document.getElementById('resultMode').textContent = config.name;
+            document.getElementById('installGuide').innerHTML = '<strong>安装指南：</strong>' + config.name + ' 需要先安装依赖。请确保已安装 Python 3.10+ 和 pip，然后按上方命令安装。';
+
+            // 预览
+            var preview = document.getElementById('resultPreview');
+            preview.innerHTML = '';
+            state.files.forEach(function(file) {
+                if (!file.type.match(/image.*/)) return;
+                var box = document.createElement('div');
+                box.className = 'preview-box';
+                box.innerHTML = '<img src="' + URL.createObjectURL(file) + '" alt=""><div class="preview-box-label">' + file.name + '</div>';
+                preview.appendChild(box);
+            });
+        }
+
+        // 复制命令
+        function copyCommand() {
+            var code = document.getElementById('commandCode').textContent;
+            navigator.clipboard.writeText(code).then(function() {
+                var btn = document.querySelector('.copy-btn');
+                btn.textContent = '已复制';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = '复制';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // 重置
+        function resetAll() {
+            state = { mode: null, files: [], config: {} };
+            document.querySelectorAll('.mode-card').forEach(function(c) { c.classList.remove('selected'); });
+            document.getElementById('btnStep1Next').disabled = true;
+            document.getElementById('fileList').innerHTML = '';
+            document.getElementById('btnStep2Next').disabled = true;
+            goToStep(1);
+        }
+    </script>
+</body>
+</html>
