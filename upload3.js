@@ -234,16 +234,35 @@ async function loadFiles() {
     fileList.innerHTML = '<div class="loading-text">加载中...</div>';
 
     try {
-        const { data, error } = await supabaseClient.storage
-            .from('files')
-            .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+        // 分页获取所有文件
+        let allFiles = [];
+        let page = 0;
+        const pageSize = 100;
+        let hasMore = true;
 
-        if (error) {
-            fileList.innerHTML = '<div class="empty-text">加载失败</div>';
-            return;
+        while (hasMore) {
+            const { data, error } = await supabaseClient.storage
+                .from('files')
+                .list('', { 
+                    limit: pageSize, 
+                    offset: page * pageSize,
+                    sortBy: { column: 'created_at', order: 'desc' } 
+                });
+
+            if (error) {
+                console.error('[文件列表] 加载失败:', error);
+                break;
+            }
+            if (!data || data.length === 0) {
+                hasMore = false;
+                break;
+            }
+            allFiles = allFiles.concat(data);
+            if (data.length < pageSize) hasMore = false;
+            page++;
         }
 
-        if (data.length === 0) {
+        if (allFiles.length === 0) {
             fileList.innerHTML = '<div class="empty-text">暂无文件，快去上传吧！</div>';
             return;
         }
@@ -253,7 +272,7 @@ async function loadFiles() {
         const verifyFiles = new Set();
         const originalFiles = [];
         
-        data.forEach(file => {
+        allFiles.forEach(file => {
             // 隐藏青柠杀毒系统文件
             if (file.name.startsWith('qingning-antivirus/')) return;
             if (file.name.endsWith('.qn-verify')) {

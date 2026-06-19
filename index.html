@@ -376,22 +376,50 @@
         (async function() {
             const fileList = document.getElementById('fileList');
             try {
-                const { data, error } = await supabaseClient.storage
-                    .from('files')
-                    .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
+                // 分页获取所有文件
+                let allFiles = [];
+                let page = 0;
+                const pageSize = 100;
+                let hasMore = true;
 
-                if (error || !data || data.length === 0) {
+                while (hasMore) {
+                    const { data, error } = await supabaseClient.storage
+                        .from('files')
+                        .list('', { 
+                            limit: pageSize, 
+                            offset: page * pageSize,
+                            sortBy: { column: 'created_at', order: 'desc' } 
+                        });
+
+                    if (error) {
+                        console.error('[文件列表] 加载失败:', error);
+                        break;
+                    }
+                    if (!data || data.length === 0) {
+                        hasMore = false;
+                        break;
+                    }
+                    allFiles = allFiles.concat(data);
+                    if (data.length < pageSize) hasMore = false;
+                    page++;
+                }
+
+                // 过滤掉系统文件
+                const userFiles = allFiles.filter(file => {
+                    if (file.name.startsWith('qingning-antivirus/')) return false;
+                    if (file.name.endsWith('.qn-verify')) return false;
+                    if (file.name === 'site_settings.json') return false;
+                    if (file.name.startsWith('os-version')) return false;
+                    return true;
+                });
+
+                if (userFiles.length === 0) {
                     fileList.innerHTML = '<div class="empty-text"><svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg> 暂无文件，快去上传吧！</div>';
                     return;
                 }
 
                 let html = '';
-                data.forEach(file => {
-                    // 隐藏青柠杀毒系统文件，不在文件列表中显示
-                    if (file.name.startsWith('qingning-antivirus/')) return;
-                    // 隐藏确认文件
-                    if (file.name.endsWith('.qn-verify')) return;
-
+                userFiles.forEach(file => {
                     const { data: urlData } = supabaseClient.storage.from('files').getPublicUrl(file.name);
                     const size = file.metadata?.size ? formatSize(file.metadata.size) : '';
                     const date = new Date(file.created_at).toLocaleString('zh-CN');
