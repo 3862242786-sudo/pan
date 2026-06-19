@@ -548,5 +548,24 @@
         已接入青柠架构 v1.0
     </a>
 </div>
+<script>
+    // 登录状态同步：检查并恢复 Supabase Session
+    (async function() {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_user_email', session.user.email);
+                localStorage.setItem('qn_user_name', session.user.user_metadata?.name || session.user.email.split('@')[0]);
+                if (session.user.email === '3862242786@qq.com') {
+                    localStorage.setItem('qn_is_admin', 'true');
+                }
+            } else {
+                localStorage.removeItem('qn_logged_in');
+                localStorage.removeItem('qn_is_admin');
+            }
+        } catch(e) {}
+    })();
+</script>
 </body>
 </html>
