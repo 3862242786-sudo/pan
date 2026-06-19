@@ -1,0 +1,300 @@
+/**
+ * 青柠架构 UI 基础样式 (QNA-UI)
+ * 所有青柠系网站共享的CSS变量和基础组件
+ * 减少重复CSS，统一视觉风格
+ */
+
+/* ============ CSS变量（主题系统） ============ */
+:root {
+    /* 颜色系统 */
+    --qna-primary: #22c55e;
+    --qna-primary-dark: #16a34a;
+    --qna-primary-light: #4ade80;
+    --qna-secondary: #3b82f6;
+    --qna-accent: #f59e0b;
+    --qna-danger: #ef4444;
+
+    /* 背景色 */
+    --qna-bg-dark: #0f172a;
+    --qna-bg-card: #1e293b;
+    --qna-bg-hover: rgba(34, 197, 94, 0.08);
+
+    /* 文字色 */
+    --qna-text: #e2e8f0;
+    --qna-text-light: #f1f5f9;
+    --qna-text-muted: #94a3b8;
+    --qna-text-dim: #64748b;
+
+    /* 边框 */
+    --qna-border: rgba(148, 163, 184, 0.1);
+    --qna-border-hover: rgba(148, 163, 184, 0.25);
+
+    /* 阴影 */
+    --qna-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --qna-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    /* 圆角 */
+    --qna-radius: 12px;
+    --qna-radius-sm: 8px;
+    --qna-radius-lg: 16px;
+
+    /* 间距 */
+    --qna-gap: 16px;
+    --qna-gap-sm: 8px;
+    --qna-gap-lg: 24px;
+
+    /* 字体 */
+    --qna-font: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --qna-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* 过渡 */
+    --qna-transition: all 0.3s ease;
+}
+
+/* ============ 基础重置 ============ */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    font-family: var(--qna-font);
+    line-height: 1.6;
+    color: var(--qna-text);
+    background-color: var(--qna-bg-dark);
+    min-height: 100vh;
+}
+
+/* ============ 通用组件 ============ */
+
+/* 卡片 */
+.qna-card {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius);
+    padding: var(--qna-gap-lg);
+    transition: var(--qna-transition);
+}
+.qna-card:hover {
+    border-color: var(--qna-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--qna-shadow);
+}
+
+/* 按钮 */
+.qna-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--qna-radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--qna-transition);
+    text-decoration: none;
+}
+.qna-btn-primary {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-dark));
+    color: #fff;
+}
+.qna-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+.qna-btn-secondary {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    color: var(--qna-text-muted);
+}
+.qna-btn-secondary:hover {
+    border-color: var(--qna-border-hover);
+    color: var(--qna-text);
+}
+.qna-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* 输入框 */
+.qna-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius-sm);
+    color: var(--qna-text);
+    font-size: 14px;
+    outline: none;
+    transition: var(--qna-transition);
+}
+.qna-input:focus {
+    border-color: var(--qna-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+.qna-input::placeholder {
+    color: var(--qna-text-dim);
+}
+
+/* 标签 */
+.qna-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.qna-tag-green { background: rgba(34, 197, 94, 0.15); color: var(--qna-primary-light); }
+.qna-tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.qna-tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.qna-tag-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* 消息提示 */
+.qna-msg {
+    padding: 12px 16px;
+    border-radius: var(--qna-radius-sm);
+    font-size: 13px;
+    display: none;
+}
+.qna-msg.show { display: block; }
+.qna-msg-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--qna-primary-light);
+}
+.qna-msg-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* 加载动画 */
+.qna-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--qna-border);
+    border-top-color: var(--qna-primary);
+    border-radius: 50%;
+    animation: qna-spin 0.8s linear infinite;
+}
+@keyframes qna-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 骨架屏 */
+.qna-skeleton {
+    background: linear-gradient(90deg, var(--qna-bg-card) 25%, #334155 50%, var(--qna-bg-card) 75%);
+    background-size: 200% 100%;
+    animation: qna-shimmer 1.5s infinite;
+    border-radius: var(--qna-radius-sm);
+}
+@keyframes qna-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 渐变文字 */
+.qna-gradient-text {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 玻璃效果 */
+.qna-glass {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* ============ 布局工具 ============ */
+.qna-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--qna-gap);
+}
+.qna-flex {
+    display: flex;
+}
+.qna-flex-col {
+    flex-direction: column;
+}
+.qna-items-center {
+    align-items: center;
+}
+.qna-justify-between {
+    justify-content: space-between;
+}
+.qna-gap {
+    gap: var(--qna-gap);
+}
+.qna-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--qna-gap);
+}
+
+/* ============ 动画 ============ */
+@keyframes qna-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes qna-fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes qna-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.qna-anim-fadeIn { animation: qna-fadeIn 0.4s ease; }
+.qna-anim-fadeInUp { animation: qna-fadeInUp 0.5s ease; }
+.qna-anim-fadeInDown { animation: qna-fadeInDown 0.5s ease; }
+.qna-anim-scaleIn { animation: qna-scaleIn 0.3s ease; }
+
+/* 滚动显示动画 */
+.qna-scroll-anim {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.qna-scroll-anim.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+    :root {
+        --qna-gap: 12px;
+        --qna-gap-lg: 16px;
+    }
+    .qna-grid {
+        grid-template-columns: 1fr;
+    }
+    .qna-card {
+        padding: var(--qna-gap);
+    }
+}
