@@ -333,15 +333,43 @@ function saveSetting(key) {
         localStorage.setItem('qn_admin_contact', val);
         saveSettingsToCloud();
         alert('✅ 设置已保存！');
+    } else if (key === 'siteClosed') {
+        const val = document.getElementById('siteClosed').value;
+        localStorage.setItem('qn_site_closed_admin', val);
+        saveSettingsToCloud();
+        // 清除客户端缓存，立即生效
+        localStorage.removeItem('qn_site_closed');
+        localStorage.removeItem('qn_site_closed_time');
+        alert(val === 'true' ? '🔒 网站已关闭！所有访客将看到维护页面。' : '✅ 网站已开放！');
+    } else if (key === 'closedTitle') {
+        const val = document.getElementById('closedTitle').value;
+        localStorage.setItem('qn_closed_title', val);
+        saveSettingsToCloud();
+    } else if (key === 'closedDesc') {
+        const val = document.getElementById('closedDesc').value;
+        localStorage.setItem('qn_closed_desc', val);
+        saveSettingsToCloud();
+    } else if (key === 'unlockCodes') {
+        const val = document.getElementById('unlockCodes').value;
+        localStorage.setItem('qn_unlock_codes', val);
+        saveSettingsToCloud();
+        alert('✅ 解锁激活码已保存！');
     }
 }
 
 // 将设置同步到 Supabase（所有用户可读）
 async function saveSettingsToCloud() {
+    const unlockCodesStr = localStorage.getItem('qn_unlock_codes') || '';
+    const unlockCodesArr = unlockCodesStr ? unlockCodesStr.split(',').map(function(c) { return c.trim(); }).filter(function(c) { return c; }) : [];
+
     const settings = {
         allowRegister: localStorage.getItem('qn_allow_register') || 'true',
         contact: localStorage.getItem('qn_admin_contact') || '',
         announcement: localStorage.getItem('qn_announcement') || '',
+        siteClosed: localStorage.getItem('qn_site_closed_admin') === 'true',
+        closedTitle: localStorage.getItem('qn_closed_title') || '',
+        closedDesc: localStorage.getItem('qn_closed_desc') || '',
+        unlockCodes: unlockCodesArr,
         updatedAt: new Date().toISOString()
     };
     try {
@@ -365,6 +393,23 @@ function loadSettings() {
     const contact = localStorage.getItem('qn_admin_contact');
     if (contact) {
         document.getElementById('adminContact').value = contact;
+    }
+    // 网站关闭设置
+    const siteClosed = localStorage.getItem('qn_site_closed_admin');
+    if (siteClosed !== null) {
+        document.getElementById('siteClosed').value = siteClosed;
+    }
+    const closedTitle = localStorage.getItem('qn_closed_title');
+    if (closedTitle) {
+        document.getElementById('closedTitle').value = closedTitle;
+    }
+    const closedDesc = localStorage.getItem('qn_closed_desc');
+    if (closedDesc) {
+        document.getElementById('closedDesc').value = closedDesc;
+    }
+    const unlockCodes = localStorage.getItem('qn_unlock_codes');
+    if (unlockCodes) {
+        document.getElementById('unlockCodes').value = unlockCodes;
     }
 }
 

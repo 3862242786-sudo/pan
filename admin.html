@@ -186,6 +186,30 @@
                             <label>站长联系邮箱</label>
                             <input type="email" id="adminContact" placeholder="设置联系邮箱" onchange="saveSetting('contact')">
                         </div>
+                        <div class="setting-item" style="border-top:1px solid rgba(148,163,184,.1);padding-top:16px;margin-top:16px">
+                            <label style="font-weight:700;color:#f59e0b">🔒 网站关闭控制</label>
+                            <p style="font-size:12px;color:#64748b;margin:4px 0 12px">关闭后所有访客将看到维护页面，站长和持有激活码的用户可正常访问</p>
+                        </div>
+                        <div class="setting-item">
+                            <label>网站状态</label>
+                            <select id="siteClosed" onchange="saveSetting('siteClosed')">
+                                <option value="false">正常开放</option>
+                                <option value="true">关闭网站</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label>关闭页面标题</label>
+                            <input type="text" id="closedTitle" placeholder="如：网站维护中" onchange="saveSetting('closedTitle')">
+                        </div>
+                        <div class="setting-item">
+                            <label>关闭页面说明</label>
+                            <textarea id="closedDesc" placeholder="如：网站正在进行系统升级，预计1小时后恢复..." rows="3" style="width:100%;padding:10px;background:rgba(15,23,42,.6);border:1px solid rgba(148,163,184,.15);border-radius:8px;color:#e2e8f0;font-size:13px;resize:vertical;outline:none;font-family:inherit" onchange="saveSetting('closedDesc')"></textarea>
+                        </div>
+                        <div class="setting-item">
+                            <label>解锁激活码（逗号分隔）</label>
+                            <input type="text" id="unlockCodes" placeholder="如：CODE1,CODE2,CODE3" onchange="saveSetting('unlockCodes')">
+                            <p style="font-size:11px;color:#64748b;margin-top:4px">持有这些激活码的用户可以绕过关闭页面。站长账户和 xt 开头的激活码始终有效。</p>
+                        </div>
                     </div>
                 </div>
             </div>
