@@ -572,6 +572,8 @@
             .nav-post-btn { display: none; }
         }
     </style>
+    <link rel="stylesheet" href="qna/ui/qna-ui.css">
+    <script src="qna/qna-loader.js"></script>
     <script src="site-check.js"></script>
 </head>
 <body>
@@ -787,6 +789,29 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth2.js"></script>
     <script src="community.js"></script>
+    <script>
+        // 青柠架构初始化
+        QNA.init().then(function() {
+            console.log('[QNA] 青柠社区已接入架构 v' + QNA.version);
+
+            // 使用架构的认证模块更新导航栏
+            var auth = QNA.module.use('auth');
+            if (auth) auth.updateNav();
+
+            // 使用架构的事件总线监听登录状态
+            QNA.event.on('auth:login', function(data) {
+                console.log('[QNA] 用户登录:', data.email);
+                // 刷新社区页面显示
+                if (typeof loadPosts === 'function') loadPosts();
+            });
+            QNA.event.on('auth:logout', function() {
+                console.log('[QNA] 用户登出');
+                if (typeof loadPosts === 'function') loadPosts();
+            });
+        }).catch(function(err) {
+            console.warn('[QNA] 架构加载失败:', err);
+        });
+    </script>
 
     <!-- 页脚 -->
     <footer style="text-align:center;padding:40px 20px 80px;color:#64748b;font-size:13px;background:#0f172a;">
