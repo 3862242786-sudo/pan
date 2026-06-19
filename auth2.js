@@ -69,21 +69,6 @@ function showMessage(elementId, message, isError = false) {
 async function handleRegister(e) {
     e.preventDefault();
 
-    // 从云端检查是否开放注册
-    try {
-        const { data } = supabaseClient.storage.from('files').getPublicUrl('site_settings.json');
-        const resp = await fetch(data.publicUrl + '?t=' + Date.now());
-        if (resp.ok) {
-            const settings = await resp.json();
-            if (settings.allowRegister === false || settings.allowRegister === 'false') {
-                showMessage('registerMessage', '注册功能已关闭，请联系站长', true);
-                return;
-            }
-        }
-    } catch (err) {
-        // 读取失败时默认允许注册
-    }
-
     const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
