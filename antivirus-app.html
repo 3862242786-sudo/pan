@@ -59,6 +59,8 @@
             .av-cta-btns{flex-direction:column;align-items:center}
         }
     </style>
+    <link rel="stylesheet" href="qna/ui/qna-ui.css">
+    <script src="qna/qna-loader.js"></script>
     <script src="site-check.js"></script>
 </head>
 <body>
@@ -233,6 +235,15 @@
     <script>
         const obs=new IntersectionObserver(e=>{e.forEach(i=>{if(i.isIntersecting)i.target.classList.add('visible')})},{threshold:.1});
         document.querySelectorAll('.anim').forEach(el=>obs.observe(el));
+    </script>
+    <script>
+        QNA.init().then(function() {
+            console.log('[QNA] 青柠杀毒已接入架构 v' + QNA.version);
+            var auth = QNA.module.use('auth');
+            if (auth) auth.updateNav();
+        }).catch(function(err) {
+            console.warn('[QNA] 架构加载失败:', err);
+        });
     </script>
 </body>
 </html>

@@ -91,6 +91,8 @@
             .av-header h1{font-size:24px}
         }
     </style>
+    <link rel="stylesheet" href="qna/ui/qna-ui.css">
+    <script src="qna/qna-loader.js"></script>
     <script src="site-check.js"></script>
 </head>
 <body>
@@ -455,6 +457,15 @@
             a.click();
             URL.revokeObjectURL(url);
         }
+    </script>
+    <script>
+        QNA.init().then(function() {
+            console.log('[QNA] 青柠杀毒已接入架构 v' + QNA.version);
+            var auth = QNA.module.use('auth');
+            if (auth) auth.updateNav();
+        }).catch(function(err) {
+            console.warn('[QNA] 架构加载失败:', err);
+        });
     </script>
 </body>
 </html>

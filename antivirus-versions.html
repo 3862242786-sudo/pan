@@ -34,6 +34,8 @@
         .loading{text-align:center;padding:40px;color:#94a3b8}
         .error{text-align:center;padding:40px;color:#ef4444}
     </style>
+    <link rel="stylesheet" href="qna/ui/qna-ui.css">
+    <script src="qna/qna-loader.js"></script>
     <script src="site-check.js"></script>
 </head>
 <body>
@@ -128,6 +130,15 @@
             .catch(e=>{
                 document.getElementById('versionList').innerHTML=`<div class="error">加载失败: ${e.message}<br>请刷新页面重试</div>`;
             });
+    </script>
+    <script>
+        QNA.init().then(function() {
+            console.log('[QNA] 青柠杀毒已接入架构 v' + QNA.version);
+            var auth = QNA.module.use('auth');
+            if (auth) auth.updateNav();
+        }).catch(function(err) {
+            console.warn('[QNA] 架构加载失败:', err);
+        });
     </script>
 </body>
 </html>
