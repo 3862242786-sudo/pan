@@ -437,19 +437,185 @@ function getFileIcon(filename) {
     return icons[ext] || '📄';
 }
 
+// ===== 令牌管理 =====
+const DISABLED_TOKENS_FILE = 'disabled_tokens.json';
+
+async function loadDisabledTokensAdmin() {
+    const listEl = document.getElementById('disabledTokenList');
+    listEl.innerHTML = '<div class="loading-text">加载中...</div>';
+
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .download(DISABLED_TOKENS_FILE);
+
+        let tokens = [];
+        let records = [];
+
+        if (!error && data) {
+            const text = await data.text();
+            const obj = JSON.parse(text);
+            tokens = obj.tokens || [];
+            records = obj.records || [];
+        }
+
+        if (tokens.length === 0) {
+            listEl.innerHTML = '<div class="empty-text">暂无被禁用的令牌</div>';
+            return;
+        }
+
+        let html = '';
+        records.forEach(function(rec) {
+            html += `
+                <div class="user-row" data-token="${(rec.token || '').toLowerCase()}">
+                    <div class="user-info">
+                        <span class="user-email">${rec.token || '未知'}</span>
+                        <span class="user-meta">禁用时间：${rec.disabledAt ? new Date(rec.disabledAt).toLocaleString('zh-CN') : '未知'}</span>
+                        <span class="user-meta">原因：${rec.reason || '站长手动禁用'}</span>
+                    </div>
+                    <button class="admin-btn" onclick="enableToken('${rec.token}')">恢复</button>
+                </div>
+            `;
+        });
+
+        listEl.innerHTML = html;
+    } catch (err) {
+        listEl.innerHTML = '<div class="empty-text">加载失败，请刷新重试</div>';
+        console.error('加载禁用令牌失败:', err);
+    }
+}
+
+async function disableToken() {
+    const input = document.getElementById('disableTokenInput');
+    const token = input.value.trim();
+    const msgEl = document.getElementById('tokenMsg');
+
+    if (!token || token.length !== 10 || !/^\d{10}$/.test(token)) {
+        msgEl.textContent = '请输入有效的10位数字令牌！';
+        msgEl.style.color = '#ef4444';
+        setTimeout(() => { msgEl.textContent = ''; }, 3000);
+        return;
+    }
+
+    try {
+        // 先读取现有列表
+        let tokens = [];
+        let records = [];
+        try {
+            const { data, error } = await supabaseClient.storage
+                .from(BUCKET_NAME)
+                .download(DISABLED_TOKENS_FILE);
+            if (!error && data) {
+                const text = await data.text();
+                const obj = JSON.parse(text);
+                tokens = obj.tokens || [];
+                records = obj.records || [];
+            }
+        } catch (e) {}
+
+        // 检查是否已禁用
+        if (tokens.includes(token)) {
+            msgEl.textContent = '该令牌已被禁用！';
+            msgEl.style.color = '#f59e0b';
+            setTimeout(() => { msgEl.textContent = ''; }, 3000);
+            return;
+        }
+
+        // 添加新禁用记录
+        tokens.push(token);
+        records.push({
+            token: token,
+            disabledAt: new Date().toISOString(),
+            reason: '站长手动禁用'
+        });
+
+        // 保存到云端
+        await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .upload(DISABLED_TOKENS_FILE, JSON.stringify({ tokens: tokens, records: records }), {
+                cacheControl: '60',
+                upsert: true,
+                contentType: 'application/json'
+            });
+
+        msgEl.textContent = '令牌已禁用！使用该令牌的登录将显示"登录失败，此令牌已失效"';
+        msgEl.style.color = '#16a34a';
+        input.value = '';
+        setTimeout(() => { msgEl.textContent = ''; }, 5000);
+
+        loadDisabledTokensAdmin();
+    } catch (err) {
+        msgEl.textContent = '禁用失败：' + err.message;
+        msgEl.style.color = '#ef4444';
+        setTimeout(() => { msgEl.textContent = ''; }, 3000);
+    }
+}
+
+async function enableToken(token) {
+    if (!confirm('确定要恢复令牌 ' + token + ' 吗？恢复后该令牌可再次用于登录。')) return;
+
+    try {
+        let tokens = [];
+        let records = [];
+        try {
+            const { data, error } = await supabaseClient.storage
+                .from(BUCKET_NAME)
+                .download(DISABLED_TOKENS_FILE);
+            if (!error && data) {
+                const text = await data.text();
+                const obj = JSON.parse(text);
+                tokens = obj.tokens || [];
+                records = obj.records || [];
+            }
+        } catch (e) {}
+
+        tokens = tokens.filter(function(t) { return t !== token; });
+        records = records.filter(function(r) { return r.token !== token; });
+
+        await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .upload(DISABLED_TOKENS_FILE, JSON.stringify({ tokens: tokens, records: records }), {
+                cacheControl: '60',
+                upsert: true,
+                contentType: 'application/json'
+            });
+
+        const msgEl = document.getElementById('tokenMsg');
+        msgEl.textContent = '令牌已恢复！';
+        msgEl.style.color = '#16a34a';
+        setTimeout(() => { msgEl.textContent = ''; }, 3000);
+
+        loadDisabledTokensAdmin();
+    } catch (err) {
+        alert('恢复失败：' + err.message);
+    }
+}
+
+function searchDisabledTokens() {
+    const keyword = document.getElementById('tokenSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('#disabledTokenList .user-row');
+    rows.forEach(function(row) {
+        const token = row.getAttribute('data-token') || '';
+        row.style.display = token.includes(keyword) ? 'flex' : 'none';
+    });
+}
+
 // ===== 初始化 =====
 async function init() {
     if (!checkAdmin()) return;
-    
+
     // 加载文件列表
     loadAdminFiles();
-    
+
     // 加载用户列表（显示说明）
     loadUsers();
-    
+
     // 加载公告和设置
     loadAnnouncement();
     loadSettings();
+
+    // 加载禁用令牌列表
+    loadDisabledTokensAdmin();
 }
 
 // 通过 fetch+blob 强制下载

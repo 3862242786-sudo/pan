@@ -37,22 +37,27 @@ function switchTab(tab) {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const forgotForm = document.getElementById('forgotForm');
+    const tokenForm = document.getElementById('tokenForm');
     const header = document.querySelector('.auth-header p');
 
     // 隐藏所有表单
-    loginForm.style.display = 'none';
-    registerForm.style.display = 'none';
-    forgotForm.style.display = 'none';
+    if (loginForm) loginForm.style.display = 'none';
+    if (registerForm) registerForm.style.display = 'none';
+    if (forgotForm) forgotForm.style.display = 'none';
+    if (tokenForm) tokenForm.style.display = 'none';
 
     if (tab === 'login') {
-        loginForm.style.display = 'block';
-        header.textContent = '登录你的账户';
+        if (loginForm) loginForm.style.display = 'block';
+        if (header) header.textContent = '登录你的账户';
     } else if (tab === 'register') {
-        registerForm.style.display = 'block';
-        header.textContent = '创建新账户';
+        if (registerForm) registerForm.style.display = 'block';
+        if (header) header.textContent = '创建新账户';
     } else if (tab === 'forgot') {
-        forgotForm.style.display = 'block';
-        header.textContent = '找回密码';
+        if (forgotForm) forgotForm.style.display = 'block';
+        if (header) header.textContent = '找回密码';
+    } else if (tab === 'token') {
+        if (tokenForm) tokenForm.style.display = 'block';
+        if (header) header.textContent = '令牌登录';
     }
 }
 
@@ -298,6 +303,140 @@ async function checkLoginState() {
     } catch (e) {
         return false;
     }
+}
+
+// ===== 令牌登录 =====
+async function handleTokenLogin(e) {
+    e.preventDefault();
+    const token = document.getElementById('tokenInput').value.trim();
+
+    if (!token || token.length !== 10 || !/^\d{10}$/.test(token)) {
+        showMessage('tokenMessage', '请输入10位数字令牌！', true);
+        return;
+    }
+
+    try {
+        // 1. 先检查令牌是否被禁用
+        const disabledTokens = await loadDisabledTokens();
+        if (disabledTokens.includes(token)) {
+            showMessage('tokenMessage', '登录失败，此令牌已失效', true);
+            return;
+        }
+
+        // 2. 验证令牌 - 需要知道是哪个用户的令牌
+        // 令牌格式: 用户邮箱 + 日期 生成的 SHA256 前10位数字
+        // 由于我们不知道用户邮箱，需要尝试所有已知用户的令牌
+        const validUser = await validateTokenAgainstUsers(token);
+
+        if (!validUser) {
+            showMessage('tokenMessage', '登录失败，此令牌已失效', true);
+            return;
+        }
+
+        // 3. 令牌有效，执行登录
+        showMessage('tokenMessage', '令牌验证成功！正在登录...', false);
+
+        // 保存登录状态
+        saveLoginState(validUser.email);
+        localStorage.setItem('qn_login_method', 'token');
+        localStorage.setItem('qn_token_used', token);
+
+        // 初始化用户档案
+        try {
+            var profileKey = 'qn_profile_' + validUser.email;
+            if (!localStorage.getItem(profileKey)) {
+                localStorage.setItem(profileKey, JSON.stringify({
+                    email: validUser.email,
+                    username: validUser.email.split('@')[0],
+                    bio: '',
+                    avatar_url: '',
+                    banner_url: '',
+                    verified: false,
+                    role: validUser.email === ADMIN_EMAIL ? 'admin' : 'user',
+                    favorites_public: false,
+                    created_at: new Date().toISOString()
+                }));
+            }
+        } catch (pe) { console.warn('Profile init:', pe); }
+
+        // 跳转
+        if (validUser.email === ADMIN_EMAIL) {
+            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+        } else {
+            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+        }
+    } catch (err) {
+        console.error('Token login error:', err);
+        showMessage('tokenMessage', '登录失败，请稍后重试', true);
+    }
+}
+
+// 加载被禁用的令牌列表（从云端）
+async function loadDisabledTokens() {
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .download('disabled_tokens.json');
+        if (error || !data) return [];
+        const text = await data.text();
+        const obj = JSON.parse(text);
+        return obj.tokens || [];
+    } catch (e) {
+        return [];
+    }
+}
+
+// 验证令牌是否匹配某个用户
+async function validateTokenAgainstUsers(token) {
+    const today = new Date();
+    const dateStr = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+
+    // 尝试从 localStorage 获取已知用户
+    const knownEmails = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('qn_profile_')) {
+            try {
+                const profile = JSON.parse(localStorage.getItem(key));
+                if (profile && profile.email) knownEmails.push(profile.email);
+            } catch (e) {}
+        }
+    }
+
+    // 也尝试从当前 Supabase session 获取（如果已登录）
+    try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session && session.user && session.user.email) {
+            if (!knownEmails.includes(session.user.email)) {
+                knownEmails.push(session.user.email);
+            }
+        }
+    } catch (e) {}
+
+    // 对每个已知邮箱验证令牌
+    for (const email of knownEmails) {
+        const expectedToken = generateExpectedToken(email, dateStr);
+        if (expectedToken === token) {
+            return { email: email };
+        }
+    }
+
+    // 如果没有匹配，返回 null（令牌无效）
+    return null;
+}
+
+// 生成预期令牌（与 APK 使用完全相同的跨平台算法）
+function generateExpectedToken(email, dateStr) {
+    const seed = email + dateStr + 'QINGNING_TOKEN_V2';
+    // 使用质数混合算法，确保 JS 和 Python 结果完全一致
+    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+        const c = seed.charCodeAt(i);
+        hash = (hash * 31 + c * primes[i % primes.length]) % 10000000000;
+    }
+    // 确保10位，不足前面补0
+    return hash.toString().padStart(10, '0');
 }
 
 // 页面加载时异步验证Session

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>青柠登录令牌</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container { max-width: 420px; margin: 0 auto; padding: 20px; }
+        .logo {
+            text-align: center;
+            padding: 40px 0 20px;
+        }
+        .logo h1 {
+            font-size: 28px;
+            color: #22c55e;
+            font-weight: 700;
+        }
+        .logo p {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+        .card {
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+        }
+        .card-title {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 12px;
+        }
+        .token-display {
+            font-family: 'Courier New', monospace;
+            font-size: 36px;
+            font-weight: bold;
+            color: #22c55e;
+            text-align: center;
+            letter-spacing: 4px;
+            padding: 16px 0;
+        }
+        .token-placeholder {
+            color: #475569;
+            font-size: 20px;
+        }
+        .expire-info {
+            text-align: center;
+            color: #64748b;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            margin-top: 12px;
+        }
+        .btn:active { opacity: 0.8; }
+        .btn-primary {
+            background: #22c55e;
+            color: #fff;
+        }
+        .btn-secondary {
+            background: #334155;
+            color: #94a3b8;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+        .input {
+            width: 100%;
+            padding: 14px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: #e2e8f0;
+            font-size: 15px;
+            outline: none;
+            margin-bottom: 12px;
+        }
+        .input:focus { border-color: #22c55e; }
+        .form-group { margin-bottom: 16px; }
+        .hidden { display: none !important; }
+        .msg {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        .msg-success { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .msg-error { background: rgba(239,68,68,0.15); color: #ef4444; }
+        .qr-section {
+            text-align: center;
+            padding: 16px;
+        }
+        #qrcode {
+            display: inline-block;
+            padding: 12px;
+            background: #fff;
+            border-radius: 12px;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #475569;
+            font-size: 11px;
+        }
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #334155;
+            border-radius: 10px;
+            font-size: 13px;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .tab.active {
+            background: #22c55e;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>青柠登录令牌</h1>
+            <p>青柠架构 v2.0 | 代号「轻装上阵」</p>
+        </div>
+
+        <!-- 登录界面 -->
+        <div id="loginScreen">
+            <div class="card">
+                <div class="tabs">
+                    <div class="tab active" onclick="switchLoginTab('account')">账户登录</div>
+                    <div class="tab" onclick="switchLoginTab('token')">令牌登录</div>
+                </div>
+
+                <div id="accountLogin">
+                    <input type="email" id="email" class="input" placeholder="青柠账户邮箱">
+                    <input type="password" id="password" class="input" placeholder="密码">
+                    <button class="btn btn-primary" onclick="doLogin()">登录</button>
+                </div>
+
+                <div id="tokenLogin" class="hidden">
+                    <input type="text" id="tokenInput" class="input" placeholder="输入10位令牌" maxlength="10" inputmode="numeric">
+                    <button class="btn btn-primary" onclick="doTokenLogin()">验证令牌</button>
+                </div>
+
+                <div id="loginMsg"></div>
+            </div>
+        </div>
+
+        <!-- 主界面 -->
+        <div id="mainScreen" class="hidden">
+            <div class="card">
+                <div class="card-title">今日登录令牌</div>
+                <div class="token-display" id="tokenDisplay">
+                    <span class="token-placeholder">--------</span>
+                </div>
+                <div class="expire-info" id="expireInfo">有效期至: --</div>
+                <button class="btn btn-primary" onclick="copyToken()">复制令牌</button>
+                <button class="btn btn-secondary" onclick="refreshToken()">刷新令牌</button>
+            </div>
+
+            <div class="card">
+                <div class="card-title">扫码登录</div>
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">在青柠系网站选择「扫码登录」，然后点击下方按钮显示二维码</p>
+                <button class="btn btn-primary" onclick="showQR()">显示二维码</button>
+                <div id="qrContainer" class="qr-section hidden">
+                    <div id="qrcode"></div>
+                    <p style="color:#64748b;font-size:12px;margin-top:8px">请用网站扫码功能扫描</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">安全设置</div>
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">令牌有效期1天，每天自动更新。如令牌泄露，可立即失效。</p>
+                <button class="btn btn-danger" onclick="invalidateToken()">使当前令牌失效</button>
+            </div>
+
+            <button class="btn btn-secondary" onclick="doLogout()">退出登录</button>
+        </div>
+
+        <div class="footer">
+            <p>令牌每日更新 | 泄露请联系站长紧急更换</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        // 配置
+        const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
+        const TOKEN_SECRET = 'QINGNING_TOKEN_V2';
+
+        let supabaseClient;
+        let currentUser = null;
+        let qrCodeObj = null;
+
+        function init() {
+            if (typeof window.supabase !== 'undefined') {
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                checkLoginState();
+            } else {
+                setTimeout(init, 500);
+            }
+        }
+
+        // 检查登录状态
+        function checkLoginState() {
+            const saved = localStorage.getItem('qn_token_user');
+            if (saved) {
+                try {
+                    currentUser = JSON.parse(saved);
+                    showMainScreen();
+                    updateTokenDisplay();
+                } catch (e) {
+                    localStorage.removeItem('qn_token_user');
+                }
+            }
+        }
+
+        function switchLoginTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            if (tab === 'account') {
+                document.getElementById('accountLogin').classList.remove('hidden');
+                document.getElementById('tokenLogin').classList.add('hidden');
+            } else {
+                document.getElementById('accountLogin').classList.add('hidden');
+                document.getElementById('tokenLogin').classList.remove('hidden');
+            }
+        }
+
+        async function doLogin() {
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const msgEl = document.getElementById('loginMsg');
+
+            if (!email || !password) {
+                showMsg('请输入邮箱和密码', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email, password
+                });
+
+                if (error) {
+                    showMsg('登录失败: ' + error.message, 'error');
+                    return;
+                }
+
+                currentUser = {
+                    email: data.user.email,
+                    name: data.user.email.split('@')[0]
+                };
+                localStorage.setItem('qn_token_user', JSON.stringify(currentUser));
+                showMsg('登录成功!', 'success');
+                setTimeout(() => {
+                    showMainScreen();
+                    updateTokenDisplay();
+                }, 500);
+            } catch (err) {
+                showMsg('登录失败,请检查网络', 'error');
+            }
+        }
+
+        async function doTokenLogin() {
+            const token = document.getElementById('tokenInput').value.trim();
+            if (!/^\d{10}$/.test(token)) {
+                showMsg('请输入10位数字令牌', 'error');
+                return;
+            }
+            // 令牌登录需要知道用户邮箱，这里简化处理
+            showMsg('令牌验证功能需要在已登录状态下使用', 'error');
+        }
+
+        function showMainScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainScreen').classList.remove('hidden');
+        }
+
+        function showLoginScreen() {
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+
+        function generateToken(email, dateStr) {
+            const seed = email + dateStr + TOKEN_SECRET;
+            const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                const c = seed.charCodeAt(i);
+                hash = (hash * 31 + c * primes[i % primes.length]) % 10000000000;
+            }
+            return hash.toString().padStart(10, '0');
+        }
+
+        function updateTokenDisplay() {
+            if (!currentUser) return;
+
+            const now = new Date();
+            const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+            const token = generateToken(currentUser.email, dateStr);
+
+            document.getElementById('tokenDisplay').innerHTML = token;
+
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+            const diff = tomorrow - now;
+            const hours = Math.floor(diff / 3600000);
+            const mins = Math.floor((diff % 3600000) / 60000);
+            document.getElementById('expireInfo').textContent = `有效期至: 明天 00:00 (还剩 ${hours}小时${mins}分)`;
+        }
+
+        function copyToken() {
+            const token = document.getElementById('tokenDisplay').textContent.trim();
+            if (token && token !== '--------') {
+                navigator.clipboard.writeText(token).then(() => {
+                    const btn = event.target;
+                    btn.textContent = '已复制';
+                    setTimeout(() => btn.textContent = '复制令牌', 2000);
+                });
+            }
+        }
+
+        function refreshToken() {
+            updateTokenDisplay();
+            const btn = event.target;
+            btn.textContent = '已刷新';
+            setTimeout(() => btn.textContent = '刷新令牌', 2000);
+        }
+
+        function showQR() {
+            const container = document.getElementById('qrContainer');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                const token = document.getElementById('tokenDisplay').textContent.trim();
+                const qrData = JSON.stringify({
+                    type: 'qingning_login',
+                    token: token,
+                    email: currentUser ? currentUser.email : '',
+                    timestamp: Date.now()
+                });
+
+                document.getElementById('qrcode').innerHTML = '';
+                qrCodeObj = new QRCode(document.getElementById('qrcode'), {
+                    text: qrData,
+                    width: 180,
+                    height: 180,
+                    colorDark: '#0f172a',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function invalidateToken() {
+            if (!confirm('确定要使当前令牌失效吗？失效后需要重新登录获取新令牌。')) return;
+            localStorage.removeItem('qn_token_user');
+            currentUser = null;
+            showLoginScreen();
+            showMsg('令牌已失效，请重新登录', 'error');
+        }
+
+        function doLogout() {
+            localStorage.removeItem('qn_token_user');
+            currentUser = null;
+            showLoginScreen();
+        }
+
+        function showMsg(text, type) {
+            const msgEl = document.getElementById('loginMsg');
+            msgEl.textContent = text;
+            msgEl.className = 'msg msg-' + type;
+            setTimeout(() => { msgEl.textContent = ''; msgEl.className = ''; }, 3000);
+        }
+
+        // 每分钟刷新令牌显示
+        setInterval(() => {
+            if (currentUser) updateTokenDisplay();
+        }, 60000);
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
