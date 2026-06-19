@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠档案室 - 前身历史</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #e2e8f0;
+            background-color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* 导航栏 */
+        .page-navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .page-navbar a {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .page-navbar a svg { width: 28px; height: 28px; color: #22c55e; }
+        .page-navbar a span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 8px 18px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 14px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+        .btn-back svg { width: 16px; height: 16px; }
+
+        /* 主内容 */
+        .page-main { max-width: 900px; margin: 0 auto; padding: 88px 24px 60px; }
+
+        /* 页面标题 */
+        .page-header { text-align: center; margin-bottom: 48px; }
+        .page-header h1 {
+            font-size: 32px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 12px; display: flex; align-items: center;
+            justify-content: center; gap: 12px;
+        }
+        .page-header h1 svg { width: 32px; height: 32px; color: #f59e0b; }
+        .page-header p { font-size: 15px; color: #64748b; max-width: 600px; margin: 0 auto; }
+
+        /* 时间线 */
+        .timeline { position: relative; padding-left: 40px; }
+        .timeline::before {
+            content: ''; position: absolute; left: 15px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(to bottom, #f59e0b, #22c55e, #3b82f6);
+            border-radius: 1px;
+        }
+
+        .timeline-item {
+            position: relative; margin-bottom: 48px;
+            animation: fadeInUp 0.5s ease forwards;
+            opacity: 0;
+        }
+        .timeline-item:nth-child(1) { animation-delay: 0.1s; }
+        .timeline-item:nth-child(2) { animation-delay: 0.3s; }
+        .timeline-item:nth-child(3) { animation-delay: 0.5s; }
+        .timeline-item:nth-child(4) { animation-delay: 0.7s; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .timeline-dot {
+            position: absolute; left: -33px; top: 6px;
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 3px solid; background: #0f172a; z-index: 1;
+        }
+        .timeline-item:nth-child(1) .timeline-dot { border-color: #f59e0b; }
+        .timeline-item:nth-child(2) .timeline-dot { border-color: #f59e0b; }
+        .timeline-item:nth-child(3) .timeline-dot { border-color: #22c55e; }
+        .timeline-item:nth-child(4) .timeline-dot { border-color: #3b82f6; }
+
+        .timeline-date {
+            font-size: 12px; color: #64748b; font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
+        }
+
+        .timeline-card {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .timeline-card:hover {
+            border-color: rgba(148, 163, 184, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .timeline-card-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+        }
+        .timeline-card-icon { font-size: 28px; }
+        .timeline-card-title { font-size: 20px; font-weight: 700; color: #f1f5f9; }
+        .timeline-card-subtitle { font-size: 13px; color: #64748b; }
+        .timeline-card-desc {
+            font-size: 14px; color: #94a3b8; line-height: 1.8; margin-bottom: 16px;
+        }
+
+        .timeline-card-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+        .timeline-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+        }
+        .tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+        .tag-green { background: rgba(34, 197, 94, 0.15); color: #4ade80; }
+        .tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+        .tag-gray { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+
+        /* 截图预览区 */
+        .preview-frame {
+            margin-top: 16px; border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            background: #1e293b;
+        }
+        .preview-frame-header {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px; background: rgba(15, 23, 42, 0.8);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .preview-frame-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+        }
+        .preview-frame-dot:nth-child(1) { background: #ef4444; }
+        .preview-frame-dot:nth-child(2) { background: #f59e0b; }
+        .preview-frame-dot:nth-child(3) { background: #22c55e; }
+        .preview-frame-url {
+            margin-left: 8px; font-size: 11px; color: #64748b;
+            background: rgba(15, 23, 42, 0.6); padding: 2px 10px;
+            border-radius: 4px; flex: 1;
+        }
+        .preview-frame-body {
+            padding: 16px; min-height: 120px;
+            font-size: 13px; color: #94a3b8; line-height: 1.7;
+        }
+        .preview-frame-body .site-title {
+            font-size: 18px; font-weight: 700; color: #e2e8f0; margin-bottom: 8px;
+        }
+        .preview-frame-body .site-nav {
+            display: flex; gap: 12px; margin-bottom: 12px; padding-bottom: 8px;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .preview-frame-body .site-nav span {
+            font-size: 12px; color: #64748b; padding: 2px 0;
+            border-bottom: 1px solid transparent;
+        }
+        .preview-frame-body .site-nav span.active {
+            color: #e2e8f0; border-bottom-color: #3b82f6;
+        }
+        .preview-frame-body .site-hero {
+            text-align: center; padding: 20px 0;
+        }
+        .preview-frame-body .site-hero h2 {
+            font-size: 16px; font-weight: 600; color: #e2e8f0; margin-bottom: 6px;
+        }
+        .preview-frame-body .site-hero p {
+            font-size: 12px; color: #64748b;
+        }
+
+        /* 分隔线 */
+        .divider {
+            display: flex; align-items: center; gap: 16px;
+            margin: 40px 0; color: #475569; font-size: 13px;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px;
+            background: linear-gradient(to right, transparent, rgba(148, 163, 184, 0.2), transparent);
+        }
+
+        /* 总结卡片 */
+        .summary-card {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            border-radius: 16px; padding: 32px; text-align: center;
+        }
+        .summary-card h2 {
+            font-size: 22px; font-weight: 700; color: #f1f5f9; margin-bottom: 12px;
+        }
+        .summary-card p {
+            font-size: 14px; color: #94a3b8; max-width: 500px; margin: 0 auto 20px;
+        }
+        .summary-stats {
+            display: flex; justify-content: center; gap: 32px; flex-wrap: wrap;
+        }
+        .summary-stat { text-align: center; }
+        .summary-stat-num {
+            font-size: 28px; font-weight: 700;
+            background: linear-gradient(135deg, #22c55e, #3b82f6);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .summary-stat-label { font-size: 12px; color: #64748b; margin-top: 4px; }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .page-main { padding: 80px 16px 40px; }
+            .page-header h1 { font-size: 24px; }
+            .timeline { padding-left: 32px; }
+            .timeline::before { left: 11px; }
+            .timeline-dot { left: -29px; width: 14px; height: 14px; }
+            .timeline-card { padding: 16px; }
+            .timeline-card-title { font-size: 17px; }
+            .summary-stats { gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="page-navbar">
+        <a href="archive.html">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>青柠档案室</span>
+        </a>
+        <a href="index.html" class="btn-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            返回网盘
+        </a>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="page-main">
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <h1>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                前身历史
+            </h1>
+            <p>记录青柠网盘诞生之前，网站经历的每一次蜕变</p>
+        </div>
+
+        <!-- 时间线 -->
+        <div class="timeline">
+            <!-- 阶段1：MySite -->
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">2026年5月9日 · 初始版本</div>
+                <div class="timeline-card">
+                    <div class="timeline-card-header">
+                        <span class="timeline-card-icon">🌐</span>
+                        <div>
+                            <div class="timeline-card-title">MySite - 简约现代风格网站</div>
+                            <div class="timeline-card-subtitle">commit: 8e365f8</div>
+                        </div>
+                    </div>
+                    <div class="timeline-card-desc">
+                        这是网站的最初形态。一个名为"MySite"的简约现代风格展示网站，包含首页、关于、服务、联系四个板块。页面采用蓝白配色，带有平滑滚动和响应式布局，是整个青柠生态的起点。
+                    </div>
+                    <div class="timeline-card-tags">
+                        <span class="timeline-tag tag-amber">初始版本</span>
+                        <span class="timeline-tag tag-gray">展示网站</span>
+                        <span class="timeline-tag tag-gray">蓝白配色</span>
+                    </div>
+                    <div class="preview-frame">
+                        <div class="preview-frame-header">
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-url">MySite</div>
+                        </div>
+                        <div class="preview-frame-body">
+                            <div class="site-nav">
+                                <span class="active">首页</span>
+                                <span>关于</span>
+                                <span>服务</span>
+                                <span>联系</span>
+                            </div>
+                            <div class="site-hero">
+                                <h2>欢迎来到我的网站</h2>
+                                <p>简约设计，专注内容，为你提供最佳体验</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阶段2：添加署名 -->
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">2026年5月9日 · 迭代更新</div>
+                <div class="timeline-card">
+                    <div class="timeline-card-header">
+                        <span class="timeline-card-icon">✍️</span>
+                        <div>
+                            <div class="timeline-card-title">添加制作人署名</div>
+                            <div class="timeline-card-subtitle">commit: 9e0aa30</div>
+                        </div>
+                    </div>
+                    <div class="timeline-card-desc">
+                        在页脚添加了"王梓豪制作"的署名信息，标志着网站开始有了个人品牌意识。随后清除了示例文件，显示空状态，为下一步改造做准备。
+                    </div>
+                    <div class="timeline-card-tags">
+                        <span class="timeline-tag tag-amber">品牌标识</span>
+                        <span class="timeline-tag tag-gray">页脚更新</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阶段3：王梓豪的网盘 -->
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">2026年5月9日 · 重大转型</div>
+                <div class="timeline-card">
+                    <div class="timeline-card-header">
+                        <span class="timeline-card-icon">📁</span>
+                        <div>
+                            <div class="timeline-card-title">王梓豪的网盘 - 文件分享站</div>
+                            <div class="timeline-card-subtitle">commit: ef86bac</div>
+                        </div>
+                    </div>
+                    <div class="timeline-card-desc">
+                        网站进行了重大改造，从展示型网站转型为网盘文件分享站。Logo 改为"王梓豪网盘"，导航栏精简为"文件列表、关于、联系我"，新增了文件上传、文件卡片展示、搜索功能等核心网盘特性。这是青柠网盘的雏形。
+                    </div>
+                    <div class="timeline-card-tags">
+                        <span class="timeline-tag tag-green">重大转型</span>
+                        <span class="timeline-tag tag-gray">网盘功能</span>
+                        <span class="timeline-tag tag-gray">文件分享</span>
+                    </div>
+                    <div class="preview-frame">
+                        <div class="preview-frame-header">
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-url">王梓豪的网盘</div>
+                        </div>
+                        <div class="preview-frame-body">
+                            <div class="site-nav">
+                                <span class="active">文件列表</span>
+                                <span>关于</span>
+                                <span>联系我</span>
+                            </div>
+                            <div class="site-hero">
+                                <h2>王梓豪的网盘</h2>
+                                <p>文件分享，简单高效</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 阶段4：青柠网盘诞生 -->
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-date">2026年5月9日 · 品牌诞生</div>
+                <div class="timeline-card">
+                    <div class="timeline-card-header">
+                        <span class="timeline-card-icon">🍋</span>
+                        <div>
+                            <div class="timeline-card-title">青柠网盘 - 正式更名</div>
+                            <div class="timeline-card-subtitle">commit: d4cc770</div>
+                        </div>
+                    </div>
+                    <div class="timeline-card-desc">
+                        网站正式更名为"青柠网盘"，整体配色从蓝白色系更新为青柠绿色系，建立了统一的品牌视觉风格。从此，"青柠"品牌正式诞生，后续陆续发展出青柠社区、青柠杀毒、青柠OS等完整生态。
+                    </div>
+                    <div class="timeline-card-tags">
+                        <span class="timeline-tag tag-blue">品牌诞生</span>
+                        <span class="timeline-tag tag-green">青柠绿</span>
+                        <span class="timeline-tag tag-blue">新纪元</span>
+                    </div>
+                    <div class="preview-frame">
+                        <div class="preview-frame-header">
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-dot"></div>
+                            <div class="preview-frame-url">青柠网盘</div>
+                        </div>
+                        <div class="preview-frame-body">
+                            <div class="site-nav">
+                                <span class="active">文件列表</span>
+                                <span>上传文件</span>
+                                <span>青柠社区</span>
+                                <span>APP下载</span>
+                                <span>关于</span>
+                            </div>
+                            <div class="site-hero">
+                                <h2 style="color:#22c55e">青柠网盘</h2>
+                                <p>简洁高效的云端存储服务</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div class="divider">从 MySite 到青柠生态</div>
+
+        <!-- 总结 -->
+        <div class="summary-card">
+            <h2>从一个人网站到青柠生态</h2>
+            <p>短短一天之内，网站经历了四次重大蜕变，从简单的展示页面发展为完整的网盘系统，并最终孕育出"青柠"品牌和整个生态系统。</p>
+            <div class="summary-stats">
+                <div class="summary-stat">
+                    <div class="summary-stat-num">4</div>
+                    <div class="summary-stat-label">历史阶段</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-num">1</div>
+                    <div class="summary-stat-label">天完成蜕变</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="summary-stat-num">6+</div>
+                    <div class="summary-stat-label">青柠产品</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 滚动动画
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    entry.target.style.animationPlayState = 'running';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.timeline-item').forEach(function(item) {
+            item.style.animationPlayState = 'paused';
+            observer.observe(item);
+        });
+    </script>
+</body>
+</html>
