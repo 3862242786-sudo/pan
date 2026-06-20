@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>青柠3D工坊 - 2D变3D，一键搞定</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            line-height: 1.6;
+            color: #e2e8f0;
+            background-color: #0f172a;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* ========== 导航栏 ========== */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34, 197, 94, 0.15);
+            z-index: 1000; padding: 0 24px; height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .navbar-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: #e2e8f0; font-size: 18px; font-weight: 700;
+        }
+        .navbar-logo svg { width: 28px; height: 28px; color: #22c55e; }
+        .navbar-logo span {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .navbar-links {
+            display: flex; align-items: center; gap: 8px; list-style: none;
+        }
+        .navbar-links a {
+            text-decoration: none; color: #94a3b8; font-size: 14px; font-weight: 500;
+            padding: 8px 16px; border-radius: 8px; transition: all 0.2s ease;
+        }
+        .navbar-links a:hover {
+            color: #22c55e; background: rgba(34, 197, 94, 0.08);
+        }
+        .btn-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 8px; text-decoration: none; font-size: 13px;
+            font-weight: 500; transition: all 0.2s ease; cursor: pointer;
+        }
+        .btn-back:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+        .navbar-right {
+            display: flex; align-items: center; gap: 12px;
+        }
+
+        /* ========== Hero Section ========== */
+        .hero {
+            padding: 140px 24px 80px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(34, 197, 94, 0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 16px; border-radius: 20px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.25);
+            color: #22c55e; font-size: 13px; font-weight: 500;
+            margin-bottom: 24px;
+        }
+        .hero-badge svg { width: 14px; height: 14px; }
+        .hero h1 {
+            font-size: 48px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 16px; line-height: 1.2;
+            position: relative;
+        }
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero p {
+            font-size: 16px; color: #94a3b8; max-width: 560px;
+            margin: 0 auto 32px; line-height: 1.8;
+            position: relative;
+        }
+        .hero-buttons {
+            display: flex; align-items: center; justify-content: center;
+            gap: 16px; flex-wrap: wrap; position: relative;
+        }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px; background: #22c55e; color: #0f172a;
+            border: none; border-radius: 10px; font-size: 15px;
+            font-weight: 600; text-decoration: none; cursor: pointer;
+            transition: all 0.25s ease; box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+        }
+        .btn-primary:hover {
+            background: #16a34a; transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(34, 197, 94, 0.4);
+        }
+        .btn-primary svg { width: 18px; height: 18px; }
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 12px 28px; background: rgba(30, 41, 59, 0.8);
+            color: #e2e8f0; border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 10px; font-size: 15px; font-weight: 500;
+            text-decoration: none; cursor: pointer; transition: all 0.25s ease;
+        }
+        .btn-secondary:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: rgba(148, 163, 184, 0.4); transform: translateY(-2px);
+        }
+        .btn-secondary svg { width: 18px; height: 18px; }
+
+        /* ========== 通用 Section ========== */
+        .section {
+            max-width: 1100px; margin: 0 auto;
+            padding: 60px 24px;
+        }
+        .section-header {
+            text-align: center; margin-bottom: 48px;
+        }
+        .section-header h2 {
+            font-size: 28px; font-weight: 700; color: #f1f5f9;
+            margin-bottom: 12px;
+        }
+        .section-header p {
+            font-size: 15px; color: #64748b; max-width: 500px; margin: 0 auto;
+        }
+
+        /* ========== Features Section ========== */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+        .feature-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 28px 24px;
+            transition: all 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        .feature-icon {
+            width: 48px; height: 48px; border-radius: 10px;
+            background: rgba(34, 197, 94, 0.1);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px;
+        }
+        .feature-icon svg { width: 24px; height: 24px; color: #22c55e; }
+        .feature-card h3 {
+            font-size: 17px; font-weight: 600; color: #f1f5f9;
+            margin-bottom: 8px;
+        }
+        .feature-card p {
+            font-size: 14px; color: #94a3b8; line-height: 1.7;
+        }
+
+        /* ========== Modes Section ========== */
+        .modes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        .mode-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px; padding: 32px 28px;
+            transition: all 0.3s ease;
+        }
+        .mode-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        .mode-header {
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 20px;
+        }
+        .mode-icon {
+            width: 52px; height: 52px; border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .mode-icon svg { width: 26px; height: 26px; color: #22c55e; }
+        .mode-header h3 {
+            font-size: 20px; font-weight: 700; color: #f1f5f9;
+        }
+        .mode-header .mode-source {
+            font-size: 12px; color: #64748b; margin-top: 2px;
+        }
+        .mode-meta {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+            margin-bottom: 16px;
+        }
+        .mode-meta-item {
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px; padding: 10px 14px;
+        }
+        .mode-meta-item .label {
+            font-size: 11px; color: #64748b; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 4px;
+        }
+        .mode-meta-item .value {
+            font-size: 13px; color: #e2e8f0; font-weight: 500;
+        }
+        .mode-desc {
+            font-size: 14px; color: #94a3b8; line-height: 1.7;
+            margin-bottom: 16px;
+        }
+        .mode-rating {
+            display: flex; align-items: center; gap: 20px;
+        }
+        .rating-item {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .rating-item .rating-label {
+            font-size: 12px; color: #64748b;
+        }
+        .stars {
+            display: flex; gap: 2px;
+        }
+        .stars svg { width: 14px; height: 14px; }
+        .star-filled { color: #22c55e; }
+        .star-empty { color: #334155; }
+
+        /* ========== Download Section ========== */
+        .download-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .download-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 14px; padding: 32px 28px;
+            transition: all 0.3s ease;
+            display: flex; flex-direction: column;
+        }
+        .download-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        .download-header {
+            display: flex; align-items: center; gap: 14px;
+            margin-bottom: 16px;
+        }
+        .download-icon {
+            width: 52px; height: 52px; border-radius: 12px;
+            background: rgba(34, 197, 94, 0.1);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .download-icon svg { width: 26px; height: 26px; color: #22c55e; }
+        .download-header h3 {
+            font-size: 20px; font-weight: 700; color: #f1f5f9;
+        }
+        .download-card .desc {
+            font-size: 14px; color: #94a3b8; line-height: 1.7;
+            margin-bottom: 12px;
+        }
+        .download-card .requirements {
+            font-size: 13px; color: #64748b; margin-bottom: 20px;
+            padding: 10px 14px; background: rgba(15, 23, 42, 0.6);
+            border-radius: 8px;
+        }
+        .download-card .requirements strong {
+            color: #94a3b8;
+        }
+        .download-card .btn-download {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 8px; padding: 12px 24px; margin-top: auto;
+            background: rgba(34, 197, 94, 0.12);
+            border: 1px solid rgba(34, 197, 94, 0.3); color: #22c55e;
+            border-radius: 10px; font-size: 14px; font-weight: 600;
+            text-decoration: none; cursor: pointer; transition: all 0.25s ease;
+        }
+        .download-card .btn-download:hover {
+            background: rgba(34, 197, 94, 0.22);
+            border-color: rgba(34, 197, 94, 0.5); transform: translateY(-1px);
+        }
+        .download-card .btn-download svg { width: 16px; height: 16px; }
+
+        /* ========== Guide Section ========== */
+        .guide-steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            position: relative;
+        }
+        .step-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px; padding: 28px 24px;
+            text-align: center; transition: all 0.3s ease;
+            position: relative;
+        }
+        .step-card:hover {
+            border-color: rgba(34, 197, 94, 0.3);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+        .step-number {
+            width: 40px; height: 40px; border-radius: 10px;
+            background: rgba(34, 197, 94, 0.15);
+            color: #22c55e; font-size: 18px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 16px;
+        }
+        .step-card h3 {
+            font-size: 16px; font-weight: 600; color: #f1f5f9;
+            margin-bottom: 8px;
+        }
+        .step-card p {
+            font-size: 13px; color: #94a3b8; line-height: 1.7;
+        }
+
+        /* ========== Footer ========== */
+        .footer {
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 32px 24px; text-align: center;
+            max-width: 1100px; margin: 40px auto 0;
+        }
+        .footer p {
+            font-size: 13px; color: #64748b; line-height: 1.8;
+        }
+        .footer a {
+            color: #22c55e; text-decoration: none;
+            transition: color 0.2s ease;
+        }
+        .footer a:hover { color: #4ade80; text-decoration: underline; }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 768px) {
+            .navbar-links { display: none; }
+            .hero h1 { font-size: 32px; }
+            .hero { padding: 120px 20px 60px; }
+            .hero-buttons { flex-direction: column; }
+            .hero-buttons a, .hero-buttons button { width: 100%; justify-content: center; }
+            .section { padding: 40px 16px; }
+            .section-header h2 { font-size: 24px; }
+            .modes-grid { grid-template-columns: 1fr; }
+            .download-grid { grid-template-columns: 1fr; }
+            .guide-steps { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 480px) {
+            .guide-steps { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== 导航栏 ========== -->
+<nav class="navbar">
+    <a href="3d-workshop.html" class="navbar-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </svg>
+        <span>青柠3D工坊</span>
+    </a>
+    <ul class="navbar-links">
+        <li><a href="#features">功能</a></li>
+        <li><a href="#modes">模式</a></li>
+        <li><a href="#download">下载</a></li>
+        <li><a href="#guide">使用指南</a></li>
+    </ul>
+    <div class="navbar-right">
+        <a href="index.html" class="btn-back">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+            返回主站
+        </a>
+    </div>
+</nav>
+
+<!-- ========== Hero Section ========== -->
+<section class="hero">
+    <div class="hero-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        开源免费 | 本地运行
+    </div>
+    <h1>2D 变 <span class="highlight">3D</span>，一键搞定</h1>
+    <p>基于开源 AI 模型，将普通照片转换为 3D 场景。支持多种模式，本地运行，隐私安全。</p>
+    <div class="hero-buttons">
+        <a href="2d-to-3d-app.html" class="btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            在线体验
+        </a>
+        <a href="https://github.com/3862242786-sudo/qingning-3d-workshop" target="_blank" rel="noopener" class="btn-secondary">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+            </svg>
+            GitHub
+        </a>
+    </div>
+</section>
+
+<!-- ========== Features Section ========== -->
+<section class="section" id="features">
+    <div class="section-header">
+        <h2>核心功能</h2>
+        <p>简单易用，功能强大的 2D 转 3D 工具</p>
+    </div>
+    <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+            </div>
+            <h3>多种模式</h3>
+            <p>支持 SHARP 单图3D、DUSt3R 多视图、Depth Pro 深度图三种模式，满足不同需求</p>
+        </div>
+        <!-- Feature 2 -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                    <line x1="8" y1="21" x2="16" y2="21"/>
+                    <line x1="12" y1="17" x2="12" y2="21"/>
+                </svg>
+            </div>
+            <h3>本地运行</h3>
+            <p>所有模型在本地运行，不上传图片到云端，保护你的隐私安全</p>
+        </div>
+        <!-- Feature 3 -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </div>
+            <h3>一键生成</h3>
+            <p>选择模式、上传图片、一键生成3D场景，操作简单直观</p>
+        </div>
+        <!-- Feature 4 -->
+        <div class="feature-card">
+            <div class="feature-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                </svg>
+            </div>
+            <h3>跨平台</h3>
+            <p>支持 Windows EXE 和 Android APK，在不同设备上都能使用</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Modes Section ========== -->
+<section class="section" id="modes">
+    <div class="section-header">
+        <h2>转换模式</h2>
+        <p>三种模式各有优势，按需选择</p>
+    </div>
+    <div class="modes-grid">
+        <!-- SHARP -->
+        <div class="mode-card">
+            <div class="mode-header">
+                <div class="mode-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                        <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3>SHARP 单图3D</h3>
+                    <div class="mode-source">Apple 开源项目</div>
+                </div>
+            </div>
+            <div class="mode-meta">
+                <div class="mode-meta-item">
+                    <div class="label">输入</div>
+                    <div class="value">1 张照片</div>
+                </div>
+                <div class="mode-meta-item">
+                    <div class="label">硬件</div>
+                    <div class="value">中端 GPU / CPU</div>
+                </div>
+            </div>
+            <p class="mode-desc">苹果计算机视觉团队开源的单目视图合成模型，质量最高，适合高质量单图转3D场景。</p>
+            <div class="mode-rating">
+                <div class="rating-item">
+                    <span class="rating-label">质量</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+                <div class="rating-item">
+                    <span class="rating-label">速度</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DUSt3R -->
+        <div class="mode-card">
+            <div class="mode-header">
+                <div class="mode-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                        <polyline points="2 17 12 22 22 17"/>
+                        <polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3>DUSt3R 多视图</h3>
+                    <div class="mode-source">Naver Labs 开源</div>
+                </div>
+            </div>
+            <div class="mode-meta">
+                <div class="mode-meta-item">
+                    <div class="label">输入</div>
+                    <div class="value">2 张以上照片</div>
+                </div>
+                <div class="mode-meta-item">
+                    <div class="label">硬件</div>
+                    <div class="value">CPU 可运行</div>
+                </div>
+            </div>
+            <p class="mode-desc">无需相机参数，从多张照片重建3D场景，适合多角度拍摄的物体或场景。</p>
+            <div class="mode-rating">
+                <div class="rating-item">
+                    <span class="rating-label">质量</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+                <div class="rating-item">
+                    <span class="rating-label">速度</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Depth Pro -->
+        <div class="mode-card">
+            <div class="mode-header">
+                <div class="mode-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+                        <line x1="8" y1="2" x2="8" y2="18"/>
+                        <line x1="16" y1="6" x2="16" y2="22"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3>Depth Pro 深度图</h3>
+                    <div class="mode-source">Apple 开源</div>
+                </div>
+            </div>
+            <div class="mode-meta">
+                <div class="mode-meta-item">
+                    <div class="label">输入</div>
+                    <div class="value">1 张照片</div>
+                </div>
+                <div class="mode-meta-item">
+                    <div class="label">硬件</div>
+                    <div class="value">CPU 可运行</div>
+                </div>
+            </div>
+            <p class="mode-desc">0.3秒生成深度图，速度最快，适合快速预览和批量处理。</p>
+            <div class="mode-rating">
+                <div class="rating-item">
+                    <span class="rating-label">质量</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-empty" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+                <div class="rating-item">
+                    <span class="rating-label">速度</span>
+                    <div class="stars">
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                        <svg class="star-filled" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Download Section ========== -->
+<section class="section" id="download">
+    <div class="section-header">
+        <h2>下载</h2>
+        <p>获取源码，在本地构建运行</p>
+    </div>
+    <div class="download-grid">
+        <!-- Windows -->
+        <div class="download-card">
+            <div class="download-header">
+                <div class="download-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                        <line x1="8" y1="21" x2="16" y2="21"/>
+                        <line x1="12" y1="17" x2="12" y2="21"/>
+                    </svg>
+                </div>
+                <h3>Windows EXE</h3>
+            </div>
+            <p class="desc">Windows 10/11 本地应用，基于 Python + PyQt6 构建，提供完整的图形界面操作体验。</p>
+            <div class="requirements">
+                <strong>系统要求：</strong>Windows 10/11, Python 3.10+
+            </div>
+            <a href="https://github.com/3862242786-sudo/qingning-3d-workshop/tree/main/exe" target="_blank" rel="noopener" class="btn-download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                下载源码
+            </a>
+        </div>
+
+        <!-- Android -->
+        <div class="download-card">
+            <div class="download-header">
+                <div class="download-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                        <line x1="12" y1="18" x2="12.01" y2="18"/>
+                    </svg>
+                </div>
+                <h3>Android APK</h3>
+            </div>
+            <p class="desc">Android 应用，生成 Termux 命令执行，在手机上即可完成 3D 转换。</p>
+            <div class="requirements">
+                <strong>系统要求：</strong>Android 8.0+, Termux
+            </div>
+            <a href="https://github.com/3862242786-sudo/qingning-3d-workshop/tree/main/apk" target="_blank" rel="noopener" class="btn-download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                下载源码
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Guide Section ========== -->
+<section class="section" id="guide">
+    <div class="section-header">
+        <h2>使用指南</h2>
+        <p>四步完成 2D 到 3D 的转换</p>
+    </div>
+    <div class="guide-steps">
+        <div class="step-card">
+            <div class="step-number">1</div>
+            <h3>选择模式</h3>
+            <p>根据需求选择 SHARP 单图3D、DUSt3R 多视图或 Depth Pro 深度图模式</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">2</div>
+            <h3>上传素材</h3>
+            <p>选择一张或多张照片作为输入素材，支持常见图片格式</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">3</div>
+            <h3>配置参数</h3>
+            <p>选择运行设备（GPU/CPU）、输出分辨率等参数</p>
+        </div>
+        <div class="step-card">
+            <div class="step-number">4</div>
+            <h3>生成3D</h3>
+            <p>一键生成3D场景，支持在线预览和下载结果</p>
+        </div>
+    </div>
+</section>
+
+<!-- ========== Footer ========== -->
+<footer class="footer">
+    <p>
+        青柠3D工坊 | 基于 <a href="qna-architecture.html">青柠架构 v1.0</a>
+    </p>
+    <p>
+        <a href="https://github.com/3862242786-sudo/qingning-3d-workshop" target="_blank" rel="noopener">GitHub</a>
+        | 各模型遵循其原始开源协议
+    </p>
+</footer>
+
+</body>
+</html>
