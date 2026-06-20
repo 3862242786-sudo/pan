@@ -1,6 +1,7 @@
 /**
  * 青柠架构加载器 (QNA-Loader)
  * 按需加载核心和模块，减少初始加载量
+ * v1.5: 新增自动依赖解析、v1.5 核心模块支持
  */
 
 (function() {
@@ -10,6 +11,26 @@
 
     // 已加载的模块
     var loaded = {};
+
+    // 模块路径映射（含 v1.5 新增模块）
+    var MODULE_MAP = {
+        'auth':     'modules/qna-auth.js',
+        'site':     'modules/qna-site.js',
+        'store':    'core/qna-store.js',
+        'monitor':  'core/qna-monitor.js',
+        'plugin':   'core/qna-plugin.js',
+        'security': 'core/qna-security.js'
+    };
+
+    // 模块依赖声明（v1.5 自动依赖解析）
+    var DEPENDENCIES = {
+        'auth':     ['store'],
+        'site':     ['store'],
+        'monitor':  [],
+        'plugin':   [],
+        'security': [],
+        'store':    []
+    };
 
     // 加载单个脚本
     function loadScript(src) {
@@ -39,6 +60,27 @@
         });
     }
 
+    // 解析依赖（拓扑排序，避免重复加载）
+    function resolveDependencies(modules) {
+        var resolved = [];
+        var visited = {};
+
+        function visit(modName) {
+            if (visited[modName]) return;
+            visited[modName] = true;
+
+            var deps = DEPENDENCIES[modName] || [];
+            deps.forEach(function(dep) {
+                visit(dep);
+            });
+
+            resolved.push(modName);
+        }
+
+        modules.forEach(function(mod) { visit(mod); });
+        return resolved;
+    }
+
     // 青柠架构入口
     window.QNA = window.QNA || {};
 
@@ -51,15 +93,14 @@
             loadScript(BASE_PATH + 'core/qna-core.js')
         ];
 
-        // 按需加载模块
-        modules.forEach(function(mod) {
-            switch(mod) {
-                case 'auth':
-                    promises.push(loadScript(BASE_PATH + 'modules/qna-auth.js'));
-                    break;
-                case 'site':
-                    promises.push(loadScript(BASE_PATH + 'modules/qna-site.js'));
-                    break;
+        // 解析依赖顺序
+        var ordered = resolveDependencies(modules);
+
+        // 按依赖顺序加载模块
+        ordered.forEach(function(mod) {
+            var path = MODULE_MAP[mod];
+            if (path) {
+                promises.push(loadScript(BASE_PATH + path));
             }
         });
 

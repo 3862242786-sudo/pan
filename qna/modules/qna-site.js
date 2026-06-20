@@ -1,6 +1,7 @@
 /**
  * 青柠架构 - 站点控制模块 (QNA-Site)
  * 网站关闭/维护、全局设置
+ * v1.5: ETag 缓存支持、stale-while-revalidate 策略
  */
 
 QNA.module.define('site', function(QNA) {
@@ -51,19 +52,60 @@ QNA.module.define('site', function(QNA) {
             });
         },
 
-        // 获取站点设置
+        // 获取站点设置（v1.5: ETag + stale-while-revalidate）
         fetchSettings: function() {
+            var self = this;
+            var cacheKey = 'site_settings';
+            var settingsUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/site_settings.json';
+
             return new Promise(function(resolve, reject) {
                 try {
-                    var settingsUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/site_settings.json';
-                    fetch(settingsUrl + '?t=' + Date.now())
-                        .then(function(resp) { return resp.json(); })
-                        .then(resolve)
+                    // v1.5: 检查缓存，实现 stale-while-revalidate
+                    var cached = QNA.cache.get(cacheKey);
+                    var cachedETag = cached ? cached.etag : null;
+
+                    // 如果有缓存，立即返回缓存数据（stale），后台刷新
+                    if (cached && cached.value) {
+                        resolve(cached.value);
+                        // 后台静默刷新
+                        self._fetchSettingsRemote(settingsUrl, cacheKey, cachedETag);
+                        return;
+                    }
+
+                    // 无缓存，直接请求
+                    self._fetchSettingsRemote(settingsUrl, cacheKey, null)
+                        .then(function(settings) { resolve(settings); })
                         .catch(reject);
                 } catch(e) {
                     reject(e);
                 }
             });
+        },
+
+        // v1.5: 实际请求远程设置（内部方法）
+        _fetchSettingsRemote: function(url, cacheKey, oldETag) {
+            var fetchOptions = {};
+            // v1.5: 如果有 ETag，发送 If-None-Match
+            if (oldETag) {
+                fetchOptions.headers = { 'If-None-Match': oldETag };
+            }
+
+            return fetch(url + '?t=' + Date.now(), fetchOptions)
+                .then(function(resp) {
+                    // 304 Not Modified，缓存仍有效
+                    if (resp.status === 304) {
+                        var cached = QNA.cache.get(cacheKey);
+                        return cached ? cached.value : null;
+                    }
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    var newETag = resp.headers.get('ETag') || null;
+                    return resp.json().then(function(data) {
+                        // v1.5: 带 ETag 存入缓存
+                        QNA.cache.set(cacheKey, data, QNA.config.cacheDuration, newETag);
+                        EventBus.emit('site:settingsUpdated', data);
+                        return data;
+                    });
+                });
         },
 
         // 跳转到关闭页面

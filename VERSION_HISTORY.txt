@@ -1,0 +1,2780 @@
+========================================
+青柠架构版本历史
+========================================
+
+项目名称：青柠架构 (Qingning Architecture)
+项目作者：王梓豪
+编程语言：JavaScript、CSS、HTML
+运行环境：现代浏览器（Chrome、Firefox、Safari、Edge）
+后端服务：Supabase（认证、存储）
+托管平台：GitHub Pages
+开源协议：MIT
+
+
+========================================
+v1.0.0 - 代号「轻装上阵」
+发布日期：2024年
+========================================
+
+更新日志：
+- 初始版本发布
+- 核心层：Utils 工具函数、Cache LRU 缓存、EventBus 事件总线、Module 模块系统
+- 认证模块：登录、注册、找回密码、权限守卫
+- 站点控制模块：网站关闭/维护、激活码解锁
+- UI 层：CSS 变量、组件类名、动画系统
+- 加载器：按需加载核心和模块
+
+--- qna-loader.js ---
+/**
+ * 青柠架构加载器 (QNA-Loader)
+ * 按需加载核心和模块，减少初始加载量
+ * v1.5: 新增自动依赖解析、v1.5 核心模块支持
+ */
+
+(function() {
+    'use strict';
+
+    var BASE_PATH = document.currentScript ? document.currentScript.src.replace(/qna-loader\.js$/, '') : './qna/';
+
+    // 已加载的模块
+    var loaded = {};
+
+    // 模块路径映射（含 v1.5 新增模块）
+    var MODULE_MAP = {
+        'auth':     'modules/qna-auth.js',
+        'site':     'modules/qna-site.js',
+        'store':    'core/qna-store.js',
+        'monitor':  'core/qna-monitor.js',
+        'plugin':   'core/qna-plugin.js',
+        'security': 'core/qna-security.js'
+    };
+
+    // 模块依赖声明（v1.5 自动依赖解析）
+    var DEPENDENCIES = {
+        'auth':     ['store'],
+        'site':     ['store'],
+        'monitor':  [],
+        'plugin':   [],
+        'security': [],
+        'store':    []
+    };
+
+    // 加载单个脚本
+    function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+            if (loaded[src]) { resolve(); return; }
+
+            var script = document.createElement('script');
+            script.src = src;
+            script.async = false;
+            script.onload = function() { loaded[src] = true; resolve(); };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // 加载单个样式
+    function loadStyle(href) {
+        return new Promise(function(resolve, reject) {
+            if (loaded[href]) { resolve(); return; }
+
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.onload = function() { loaded[href] = true; resolve(); };
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
+    // 解析依赖（拓扑排序，避免重复加载）
+    function resolveDependencies(modules) {
+        var resolved = [];
+        var visited = {};
+
+        function visit(modName) {
+            if (visited[modName]) return;
+            visited[modName] = true;
+
+            var deps = DEPENDENCIES[modName] || [];
+            deps.forEach(function(dep) {
+                visit(dep);
+            });
+
+            resolved.push(modName);
+        }
+
+        modules.forEach(function(mod) { visit(mod); });
+        return resolved;
+    }
+
+    // 青柠架构入口
+    window.QNA = window.QNA || {};
+
+    window.QNA.load = function(modules) {
+        modules = modules || [];
+
+        var promises = [
+            // 核心必须加载
+            loadStyle(BASE_PATH + 'ui/qna-ui.css'),
+            loadScript(BASE_PATH + 'core/qna-core.js')
+        ];
+
+        // 解析依赖顺序
+        var ordered = resolveDependencies(modules);
+
+        // 按依赖顺序加载模块
+        ordered.forEach(function(mod) {
+            var path = MODULE_MAP[mod];
+            if (path) {
+                promises.push(loadScript(BASE_PATH + path));
+            }
+        });
+
+        return Promise.all(promises);
+    };
+
+    // 简写：加载全部常用模块
+    window.QNA.init = function() {
+        return window.QNA.load(['auth', 'site']);
+    };
+
+})();
+
+--- core/qna-core.js ---
+/**
+ * 青柠架构核心 (Qingning Architecture Core)
+ * 版本: 1.5.0 (代号: 勇往直前)
+ * 所有青柠系网站共享的统一底层框架
+ */
+
+(function(global) {
+    'use strict';
+
+    // ============ 配置 ============
+    var CONFIG = {
+        version: '1.5.0',
+        codename: '勇往直前',
+        name: 'Qingning Architecture',
+        supabaseUrl: 'https://qljnyepwofqcrfjwjlhv.supabase.co',
+        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsam55ZXB3b2ZxY3JmandsbGh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2Mzg0ODUsImV4cCI6MjA2MjIxNDQ4NX0.K4gOwMzc0L3T3qL3IbykC5v1qM8fS6x6RjEeH4u8kXg',
+        adminEmail: '3862242786@qq.com',
+        cacheDuration: 60000, // 缓存有效期 60秒
+        debug: false
+    };
+
+    // ============ 工具函数 ============
+    var Utils = {
+        // 安全的DOM选择
+        $: function(selector) { return document.querySelector(selector); },
+        $$: function(selector) { return document.querySelectorAll(selector); },
+
+        // 事件委托（性能优化：减少事件监听器数量）
+        delegate: function(parent, event, selector, handler) {
+            parent.addEventListener(event, function(e) {
+                var target = e.target.closest(selector);
+                if (target && parent.contains(target)) {
+                    handler.call(target, e);
+                }
+            });
+        },
+
+        // 节流
+        throttle: function(fn, delay) {
+            var last = 0;
+            return function() {
+                var now = Date.now();
+                if (now - last >= delay) {
+                    last = now;
+                    fn.apply(this, arguments);
+                }
+            };
+        },
+
+        // 防抖
+        debounce: function(fn, delay) {
+            var timer;
+            return function() {
+                clearTimeout(timer);
+                timer = setTimeout(fn.bind(this, arguments), delay);
+            };
+        },
+
+        // 格式化文件大小
+        formatSize: function(bytes) {
+            if (!bytes) return '0 B';
+            var k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        // 格式化日期
+        formatDate: function(date) {
+            if (typeof date === 'string') date = new Date(date);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        },
+
+        // 深拷贝
+        deepClone: function(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        },
+
+        // 合并对象
+        extend: function(target, source) {
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    target[key] = source[key];
+                }
+            }
+            return target;
+        },
+
+        // 深度合并对象 (v1.5 新增)
+        merge: function(target, source) {
+            var result = QNA.utils.deepClone(target);
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) &&
+                        result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+                        result[key] = QNA.utils.merge(result[key], source[key]);
+                    } else {
+                        result[key] = source[key];
+                    }
+                }
+            }
+            return result;
+        },
+
+        // 重试异步操作，带退避策略 (v1.5 新增)
+        retry: function(fn, options) {
+            options = options || {};
+            var maxRetries = options.maxRetries || 3;
+            var delay = options.delay || 1000;
+            var backoff = options.backoff || 2;
+            var retries = 0;
+
+            function attempt() {
+                return fn().catch(function(err) {
+                    retries++;
+                    if (retries >= maxRetries) throw err;
+                    var waitTime = delay * Math.pow(backoff, retries - 1);
+                    return new Promise(function(resolve) { setTimeout(resolve, waitTime); })
+                        .then(attempt);
+                });
+            }
+            return attempt();
+        },
+
+        // 生成唯一ID
+        uuid: function() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        },
+
+        // 本地存储封装（带过期时间）
+        storage: {
+            set: function(key, value, ttl) {
+                var item = { value: value, time: Date.now() };
+                if (ttl) item.ttl = ttl;
+                localStorage.setItem('qna_' + key, JSON.stringify(item));
+            },
+            get: function(key) {
+                var item = localStorage.getItem('qna_' + key);
+                if (!item) return null;
+                try {
+                    item = JSON.parse(item);
+                    if (item.ttl && Date.now() - item.time > item.ttl) {
+                        localStorage.removeItem('qna_' + key);
+                        return null;
+                    }
+                    return item.value;
+                } catch(e) { return null; }
+            },
+            remove: function(key) {
+                localStorage.removeItem('qna_' + key);
+            },
+            clear: function() {
+                var keys = Object.keys(localStorage);
+                keys.forEach(function(k) {
+                    if (k.startsWith('qna_')) localStorage.removeItem(k);
+                });
+            }
+        },
+
+        // 日志（生产环境可关闭）
+        log: function() {
+            if (CONFIG.debug) console.log.apply(console, ['[QNA]'].concat(Array.prototype.slice.call(arguments)));
+        },
+        error: function() {
+            if (CONFIG.debug) console.error.apply(console, ['[QNA]'].concat(Array.prototype.slice.call(arguments)));
+        }
+    };
+
+    // ============ 缓存系统 ============
+    var Cache = {
+        _data: {},
+        _maxSize: 100,
+
+        get: function(key) {
+            var item = this._data[key];
+            if (!item) return null;
+            if (item.expire && Date.now() > item.expire) {
+                delete this._data[key];
+                return null;
+            }
+            item.hits = (item.hits || 0) + 1;
+            // v1.5: 返回包含 etag 的完整缓存项
+            return { value: item.value, etag: item.etag || null };
+        },
+
+        // 获取纯值（向后兼容）
+        getValue: function(key) {
+            var result = this.get(key);
+            return result ? result.value : null;
+        },
+
+        set: function(key, value, ttl, etag) {
+            // LRU清理
+            var keys = Object.keys(this._data);
+            if (keys.length >= this._maxSize) {
+                var minHits = Infinity, minKey;
+                keys.forEach(function(k) {
+                    if (this._data[k].hits < minHits) {
+                        minHits = this._data[k].hits;
+                        minKey = k;
+                    }
+                }.bind(this));
+                delete this._data[minKey];
+            }
+
+            this._data[key] = {
+                value: value,
+                expire: ttl ? Date.now() + ttl : null,
+                hits: 0,
+                time: Date.now(),
+                etag: etag || null  // v1.5: ETag 支持
+            };
+        },
+
+        clear: function() {
+            this._data = {};
+        },
+
+        remove: function(key) {
+            delete this._data[key];
+        },
+
+        // v1.5: 检查 ETag 是否变化
+        checkETag: function(key, newETag) {
+            var item = this._data[key];
+            if (!item || !item.etag) return false; // 无旧 ETag，视为已变化
+            return item.etag === newETag; // 返回 true 表示未变化
+        }
+    };
+
+    // ============ 事件总线（组件间通信） ============
+    var EventBus = {
+        _events: {},
+
+        on: function(event, handler) {
+            if (!this._events[event]) this._events[event] = [];
+            this._events[event].push(handler);
+        },
+
+        off: function(event, handler) {
+            if (!this._events[event]) return;
+            var idx = this._events[event].indexOf(handler);
+            if (idx > -1) this._events[event].splice(idx, 1);
+        },
+
+        emit: function(event, data) {
+            if (!this._events[event]) return;
+            this._events[event].forEach(function(handler) {
+                try { handler(data); } catch(e) {}
+            });
+        },
+
+        once: function(event, handler) {
+            var self = this;
+            var wrapper = function(data) {
+                self.off(event, wrapper);
+                handler(data);
+            };
+            this.on(event, wrapper);
+        },
+
+        // v1.5: 等待事件触发（返回 Promise）
+        waitFor: function(event, timeout) {
+            var self = this;
+            return new Promise(function(resolve, reject) {
+                var timer;
+                if (timeout) {
+                    timer = setTimeout(function() {
+                        self.off(event, handler);
+                        reject(new Error('waitFor timeout: ' + event));
+                    }, timeout);
+                }
+                var handler = function(data) {
+                    if (timer) clearTimeout(timer);
+                    self.off(event, handler);
+                    resolve(data);
+                };
+                self.on(event, handler);
+            });
+        }
+    };
+
+    // ============ 模块系统 ============
+    var Modules = {};
+    var Module = {
+        define: function(name, factory) {
+            if (Modules[name]) {
+                Utils.error('模块已存在:', name);
+                return;
+            }
+            Modules[name] = { factory: factory, instance: null };
+        },
+
+        use: function(name) {
+            var mod = Modules[name];
+            if (!mod) {
+                Utils.error('模块不存在:', name);
+                return null;
+            }
+            if (!mod.instance) {
+                mod.instance = mod.factory(QNA);
+            }
+            return mod.instance;
+        },
+
+        list: function() {
+            return Object.keys(Modules);
+        }
+    };
+
+    // ============ 初始化 ============
+    function init() {
+        Utils.log('初始化中...', CONFIG.version);
+
+        // 检测环境
+        var ua = navigator.userAgent;
+        var isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(ua);
+        var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        Utils.storage.set('env', {
+            isMobile: isMobile,
+            isDark: isDark,
+            language: navigator.language,
+            screen: { width: screen.width, height: screen.height }
+        });
+
+        // 发布初始化完成事件
+        EventBus.emit('qna:ready', { config: CONFIG, utils: Utils });
+    }
+
+    // ============ 暴露全局对象 ============
+    var QNA = {
+        version: CONFIG.version,
+        config: CONFIG,
+        utils: Utils,
+        cache: Cache,
+        event: EventBus,
+        module: Module,
+        init: init
+    };
+
+    global.QNA = QNA;
+
+    // DOM就绪后自动初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})(window);
+
+--- modules/qna-auth.js ---
+/**
+ * 青柠架构 - 认证模块 (QNA-Auth)
+ * 统一处理登录、注册、权限、激活码
+ * v1.5: 新增 store 同步、token 登录、跨标签页同步
+ */
+
+QNA.module.define('auth', function(QNA) {
+    'use strict';
+
+    var Utils = QNA.utils;
+    var EventBus = QNA.event;
+
+    // v1.5: 获取 store 模块（可能未加载）
+    function getStore() {
+        try { return QNA.module.use('store'); } catch(e) { return null; }
+    }
+
+    // Supabase 客户端（懒加载）
+    var supabaseClient = null;
+    function getSupabase() {
+        if (!supabaseClient && window.supabase) {
+            supabaseClient = window.supabase.createClient(
+                QNA.config.supabaseUrl,
+                QNA.config.supabaseKey
+            );
+        }
+        return supabaseClient;
+    }
+
+    // v1.5: 同步用户状态到 store
+    function syncToStore() {
+        var store = getStore();
+        if (!store) return;
+        var user = Auth.getUser();
+        store.set('user', user);
+        store.set('auth', { loggedIn: user.loggedIn, isAdmin: user.isAdmin });
+    }
+
+    // ============ 用户状态 ============
+    var Auth = {
+        // 获取当前用户
+        getUser: function() {
+            return {
+                loggedIn: localStorage.getItem('qn_logged_in') === 'true',
+                isAdmin: localStorage.getItem('qn_is_admin') === 'true',
+                email: localStorage.getItem('qn_user_email') || '',
+                name: localStorage.getItem('qn_user_name') || '',
+                avatar: localStorage.getItem('qn_user_avatar') || ''
+            };
+        },
+
+        // 检查是否登录
+        isLoggedIn: function() {
+            return localStorage.getItem('qn_logged_in') === 'true';
+        },
+
+        // 检查是否站长
+        isAdmin: function() {
+            return localStorage.getItem('qn_is_admin') === 'true';
+        },
+
+        // 检查激活码
+        checkActivation: function(code) {
+            return code && code.startsWith('xt');
+        },
+
+        // 登录
+        login: async function(email, password) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { data, error } = await supabase.auth.signInWithPassword({ email: email, password: password });
+                if (error) return { success: false, error: error.message };
+
+                var isAdmin = (email === QNA.config.adminEmail);
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_name', data.user.user_metadata?.name || email.split('@')[0]);
+
+                // 生成档案室密钥（如果是站长）
+                if (isAdmin) {
+                    localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+                }
+
+                EventBus.emit('auth:login', { email: email, isAdmin: isAdmin });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
+                return { success: true, user: data.user };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 注册
+        register: async function(email, password, name) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: { name: name || email.split('@')[0] } }
+                });
+                if (error) return { success: false, error: error.message };
+                return { success: true, user: data.user };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 找回密码
+        resetPassword: async function(email) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/auth.html'
+                });
+                if (error) return { success: false, error: error.message };
+                return { success: true };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 登出
+        logout: async function() {
+            var supabase = getSupabase();
+            if (supabase) {
+                try { await supabase.auth.signOut(); } catch(e) {}
+            }
+
+            // 清除所有登录状态
+            var keys = ['qn_logged_in', 'qn_is_admin', 'qn_user_email', 'qn_user_name',
+                        'qn_user_avatar', 'qn_archive_key', 'qn_os_activation_code'];
+            keys.forEach(function(k) { localStorage.removeItem(k); });
+
+            EventBus.emit('auth:logout', {});
+            // v1.5: 同步到 store + 跨标签页
+            syncToStore();
+        },
+
+        // 更新导航栏用户状态
+        updateNav: function() {
+            var user = this.getUser();
+            var loginLink = document.querySelector('.nav-login a');
+            var loginLi = document.querySelector('.nav-login');
+
+            if (!loginLink || !loginLi) return;
+
+            if (user.loggedIn) {
+                loginLink.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + (user.name || '用户');
+                loginLink.href = 'profile.html';
+
+                // 如果是站长，添加管理入口
+                if (user.isAdmin && !document.querySelector('.nav-admin')) {
+                    var adminLi = document.createElement('li');
+                    adminLi.className = 'nav-admin';
+                    adminLi.innerHTML = '<a href="admin.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>管理</a>';
+                    loginLi.parentNode.insertBefore(adminLi, loginLi.nextSibling);
+                }
+            } else {
+                loginLink.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>登录';
+                loginLink.href = 'auth.html';
+
+                // 移除管理入口
+                var adminLi = document.querySelector('.nav-admin');
+                if (adminLi) adminLi.remove();
+            }
+        },
+
+        // v1.5: Token 登录（验证 Supabase active_tokens.json）
+        loginByToken: async function(token) {
+            if (!token) return { success: false, error: '缺少 token' };
+
+            try {
+                var tokensUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/active_tokens.json';
+                var resp = await fetch(tokensUrl + '?t=' + Date.now());
+                if (!resp.ok) return { success: false, error: '无法获取 token 列表' };
+
+                var tokens = await resp.json();
+                var tokenEntry = null;
+
+                // 查找匹配的 token
+                if (Array.isArray(tokens)) {
+                    tokenEntry = tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                } else if (tokens.tokens && Array.isArray(tokens.tokens)) {
+                    tokenEntry = tokens.tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                }
+
+                if (!tokenEntry) {
+                    return { success: false, error: 'Token 无效或已过期' };
+                }
+
+                // 模拟登录状态
+                var email = tokenEntry.email || '';
+                var isAdmin = (email === QNA.config.adminEmail);
+                var name = tokenEntry.name || email.split('@')[0] || 'Token用户';
+
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_name', name);
+                localStorage.setItem('qn_user_avatar', tokenEntry.avatar || '');
+
+                if (isAdmin) {
+                    localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+                }
+
+                EventBus.emit('auth:login', { email: email, isAdmin: isAdmin, viaToken: true });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
+
+                return { success: true, user: { email: email, name: name, isAdmin: isAdmin } };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 权限守卫
+        guard: function(options) {
+            options = options || {};
+            var user = this.getUser();
+
+            if (options.requireLogin && !user.loggedIn) {
+                if (options.redirect !== false) {
+                    window.location.href = 'auth.html?redirect=' + encodeURIComponent(window.location.href);
+                }
+                return false;
+            }
+
+            if (options.requireAdmin && !user.isAdmin) {
+                alert('需要站长权限');
+                if (options.redirect !== false) {
+                    window.location.href = 'index.html';
+                }
+                return false;
+            }
+
+            return true;
+        }
+    };
+
+    // 监听登录状态变化，自动更新导航
+    EventBus.on('auth:login', function() { Auth.updateNav(); });
+    EventBus.on('auth:logout', function() { Auth.updateNav(); });
+
+    // DOM就绪后更新导航
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { Auth.updateNav(); });
+    } else {
+        Auth.updateNav();
+    }
+
+    return Auth;
+});
+
+--- modules/qna-site.js ---
+/**
+ * 青柠架构 - 站点控制模块 (QNA-Site)
+ * 网站关闭/维护、全局设置
+ * v1.5: ETag 缓存支持、stale-while-revalidate 策略
+ */
+
+QNA.module.define('site', function(QNA) {
+    'use strict';
+
+    var Utils = QNA.utils;
+    var EventBus = QNA.event;
+
+    // 排除检查的页面
+    var EXCLUDE_PAGES = ['closed.html', 'auth.html', 'admin.html'];
+
+    var Site = {
+        // 检查网站是否关闭
+        checkClosed: function() {
+            var currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            if (EXCLUDE_PAGES.indexOf(currentPage) !== -1) return;
+
+            // 站长已登录，跳过
+            var isLoggedIn = localStorage.getItem('qn_logged_in');
+            var isAdmin = localStorage.getItem('qn_is_admin');
+            if (isLoggedIn === 'true' && isAdmin === 'true') return;
+
+            // 已解锁，跳过
+            if (sessionStorage.getItem('qn_site_unlocked') === 'true') return;
+
+            // 从缓存检查
+            var cached = localStorage.getItem('qn_site_closed');
+            var cachedTime = parseInt(localStorage.getItem('qn_site_closed_time') || '0');
+            var now = Date.now();
+
+            if (cached && (now - cachedTime) < QNA.config.cacheDuration) {
+                if (cached === 'true') {
+                    this.redirectToClosed();
+                }
+                return;
+            }
+
+            // 从云端检查
+            this.fetchSettings().then(function(settings) {
+                localStorage.setItem('qn_site_closed', settings.siteClosed ? 'true' : 'false');
+                localStorage.setItem('qn_site_closed_time', now.toString());
+
+                if (settings.siteClosed) {
+                    this.redirectToClosed(settings);
+                }
+            }.bind(this)).catch(function() {
+                // 网络错误不阻止访问
+            });
+        },
+
+        // 获取站点设置（v1.5: ETag + stale-while-revalidate）
+        fetchSettings: function() {
+            var self = this;
+            var cacheKey = 'site_settings';
+            var settingsUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/site_settings.json';
+
+            return new Promise(function(resolve, reject) {
+                try {
+                    // v1.5: 检查缓存，实现 stale-while-revalidate
+                    var cached = QNA.cache.get(cacheKey);
+                    var cachedETag = cached ? cached.etag : null;
+
+                    // 如果有缓存，立即返回缓存数据（stale），后台刷新
+                    if (cached && cached.value) {
+                        resolve(cached.value);
+                        // 后台静默刷新
+                        self._fetchSettingsRemote(settingsUrl, cacheKey, cachedETag);
+                        return;
+                    }
+
+                    // 无缓存，直接请求
+                    self._fetchSettingsRemote(settingsUrl, cacheKey, null)
+                        .then(function(settings) { resolve(settings); })
+                        .catch(reject);
+                } catch(e) {
+                    reject(e);
+                }
+            });
+        },
+
+        // v1.5: 实际请求远程设置（内部方法）
+        _fetchSettingsRemote: function(url, cacheKey, oldETag) {
+            var fetchOptions = {};
+            // v1.5: 如果有 ETag，发送 If-None-Match
+            if (oldETag) {
+                fetchOptions.headers = { 'If-None-Match': oldETag };
+            }
+
+            return fetch(url + '?t=' + Date.now(), fetchOptions)
+                .then(function(resp) {
+                    // 304 Not Modified，缓存仍有效
+                    if (resp.status === 304) {
+                        var cached = QNA.cache.get(cacheKey);
+                        return cached ? cached.value : null;
+                    }
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    var newETag = resp.headers.get('ETag') || null;
+                    return resp.json().then(function(data) {
+                        // v1.5: 带 ETag 存入缓存
+                        QNA.cache.set(cacheKey, data, QNA.config.cacheDuration, newETag);
+                        EventBus.emit('site:settingsUpdated', data);
+                        return data;
+                    });
+                });
+        },
+
+        // 跳转到关闭页面
+        redirectToClosed: function(settings) {
+            settings = settings || {};
+            var params = new URLSearchParams();
+            if (settings.closedTitle) params.set('title', settings.closedTitle);
+            if (settings.closedDesc) params.set('desc', settings.closedDesc);
+
+            var url = 'closed.html';
+            if (params.toString()) url += '?' + params.toString();
+            window.location.replace(url);
+        },
+
+        // 解锁网站（输入激活码后）
+        unlock: function(code, callback) {
+            this.fetchSettings().then(function(settings) {
+                var validCodes = settings.unlockCodes || [];
+                var isValid = code && (code.startsWith('xt') || validCodes.indexOf(code) !== -1 || code === settings.adminUnlockCode);
+
+                if (isValid) {
+                    sessionStorage.setItem('qn_site_unlocked', 'true');
+                    if (callback) callback(true);
+                } else {
+                    if (callback) callback(false);
+                }
+            }).catch(function() {
+                // 离线模式：检查本地存储
+                var localCodes = localStorage.getItem('qn_unlock_codes') || '';
+                var codes = localCodes.split(',').map(function(c) { return c.trim(); }).filter(function(c) { return c; });
+                var isValid = code && (code.startsWith('xt') || codes.indexOf(code) !== -1);
+
+                if (isValid) {
+                    sessionStorage.setItem('qn_site_unlocked', 'true');
+                    if (callback) callback(true);
+                } else {
+                    if (callback) callback(false);
+                }
+            });
+        },
+
+        // 保存设置到云端
+        saveSettings: function(settings) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    var supabase = window.supabase ? window.supabase.createClient(
+                        QNA.config.supabaseUrl, QNA.config.supabaseKey
+                    ) : null;
+
+                    if (!supabase) {
+                        reject(new Error('Supabase 未加载'));
+                        return;
+                    }
+
+                    supabase.storage.from('files').upload('site_settings.json', JSON.stringify(settings), {
+                        cacheControl: '60',
+                        upsert: true,
+                        contentType: 'application/json'
+                    }).then(resolve).catch(reject);
+                } catch(e) {
+                    reject(e);
+                }
+            });
+        },
+
+        // 获取公告
+        getAnnouncement: function() {
+            return Utils.storage.get('announcement') || '';
+        },
+
+        // 设置公告
+        setAnnouncement: function(text) {
+            Utils.storage.set('announcement', text);
+        }
+    };
+
+    // 页面加载时自动检查
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { Site.checkClosed(); });
+    } else {
+        Site.checkClosed();
+    }
+
+    return Site;
+});
+
+--- ui/qna-ui.css ---
+/**
+ * 青柠架构 UI 基础样式 (QNA-UI)
+ * 所有青柠系网站共享的CSS变量和基础组件
+ * 减少重复CSS，统一视觉风格
+ */
+
+/* ============ CSS变量（主题系统） ============ */
+:root {
+    /* 颜色系统 */
+    --qna-primary: #22c55e;
+    --qna-primary-dark: #16a34a;
+    --qna-primary-light: #4ade80;
+    --qna-secondary: #3b82f6;
+    --qna-accent: #f59e0b;
+    --qna-danger: #ef4444;
+
+    /* 背景色 */
+    --qna-bg-dark: #0f172a;
+    --qna-bg-card: #1e293b;
+    --qna-bg-hover: rgba(34, 197, 94, 0.08);
+
+    /* 文字色 */
+    --qna-text: #e2e8f0;
+    --qna-text-light: #f1f5f9;
+    --qna-text-muted: #94a3b8;
+    --qna-text-dim: #64748b;
+
+    /* 边框 */
+    --qna-border: rgba(148, 163, 184, 0.1);
+    --qna-border-hover: rgba(148, 163, 184, 0.25);
+
+    /* 阴影 */
+    --qna-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --qna-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    /* 圆角 */
+    --qna-radius: 12px;
+    --qna-radius-sm: 8px;
+    --qna-radius-lg: 16px;
+
+    /* 间距 */
+    --qna-gap: 16px;
+    --qna-gap-sm: 8px;
+    --qna-gap-lg: 24px;
+
+    /* 字体 */
+    --qna-font: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --qna-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* 过渡 */
+    --qna-transition: all 0.3s ease;
+}
+
+/* ============ 基础重置 ============ */
+/* 注意：不设置 body 背景色和颜色，由各页面自己的 styles.css 控制 */
+/* 避免覆盖页面原有主题 */
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============ 通用组件 ============ */
+
+/* 卡片 */
+.qna-card {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius);
+    padding: var(--qna-gap-lg);
+    transition: var(--qna-transition);
+}
+.qna-card:hover {
+    border-color: var(--qna-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--qna-shadow);
+}
+
+/* 按钮 */
+.qna-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--qna-radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--qna-transition);
+    text-decoration: none;
+}
+.qna-btn-primary {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-dark));
+    color: #fff;
+}
+.qna-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+.qna-btn-secondary {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    color: var(--qna-text-muted);
+}
+.qna-btn-secondary:hover {
+    border-color: var(--qna-border-hover);
+    color: var(--qna-text);
+}
+.qna-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* 输入框 */
+.qna-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius-sm);
+    color: var(--qna-text);
+    font-size: 14px;
+    outline: none;
+    transition: var(--qna-transition);
+}
+.qna-input:focus {
+    border-color: var(--qna-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+.qna-input::placeholder {
+    color: var(--qna-text-dim);
+}
+
+/* 标签 */
+.qna-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.qna-tag-green { background: rgba(34, 197, 94, 0.15); color: var(--qna-primary-light); }
+.qna-tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.qna-tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.qna-tag-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* 消息提示 */
+.qna-msg {
+    padding: 12px 16px;
+    border-radius: var(--qna-radius-sm);
+    font-size: 13px;
+    display: none;
+}
+.qna-msg.show { display: block; }
+.qna-msg-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--qna-primary-light);
+}
+.qna-msg-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* 加载动画 */
+.qna-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--qna-border);
+    border-top-color: var(--qna-primary);
+    border-radius: 50%;
+    animation: qna-spin 0.8s linear infinite;
+}
+@keyframes qna-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 骨架屏 */
+.qna-skeleton {
+    background: linear-gradient(90deg, var(--qna-bg-card) 25%, #334155 50%, var(--qna-bg-card) 75%);
+    background-size: 200% 100%;
+    animation: qna-shimmer 1.5s infinite;
+    border-radius: var(--qna-radius-sm);
+}
+@keyframes qna-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 渐变文字 */
+.qna-gradient-text {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 玻璃效果 */
+.qna-glass {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* ============ 布局工具 ============ */
+.qna-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--qna-gap);
+}
+.qna-flex {
+    display: flex;
+}
+.qna-flex-col {
+    flex-direction: column;
+}
+.qna-items-center {
+    align-items: center;
+}
+.qna-justify-between {
+    justify-content: space-between;
+}
+.qna-gap {
+    gap: var(--qna-gap);
+}
+.qna-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--qna-gap);
+}
+
+/* ============ 动画 ============ */
+@keyframes qna-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes qna-fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes qna-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.qna-anim-fadeIn { animation: qna-fadeIn 0.4s ease; }
+.qna-anim-fadeInUp { animation: qna-fadeInUp 0.5s ease; }
+.qna-anim-fadeInDown { animation: qna-fadeInDown 0.5s ease; }
+.qna-anim-scaleIn { animation: qna-scaleIn 0.3s ease; }
+
+/* 滚动显示动画 */
+.qna-scroll-anim {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.qna-scroll-anim.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+    :root {
+        --qna-gap: 12px;
+        --qna-gap-lg: 16px;
+    }
+    .qna-grid {
+        grid-template-columns: 1fr;
+    }
+    .qna-card {
+        padding: var(--qna-gap);
+    }
+}
+
+
+========================================
+v1.5.0 - 代号「勇往直前」
+发布日期：2026年6月
+========================================
+
+更新日志：
+- 新增统一状态层（Store）：跨标签页同步，BroadcastChannel API
+- 新增性能监控（Monitor）：页面性能采集、API 计时、错误捕获
+- 新增安全层（Security）：HMAC 签名验证、XSS 防护、输入消毒
+- 新增插件系统（Plugin）：可扩展的插件注册机制
+- 缓存系统升级：ETag 支持、stale-while-revalidate 策略
+- 事件总线升级：waitFor 异步等待方法
+- 工具函数升级：merge 深度合并、retry 带退避重试
+- 加载器升级：自动依赖解析、拓扑排序
+- 认证模块升级：Store 状态同步、令牌登录支持
+- 站点控制升级：ETag 协商缓存、后台静默刷新
+
+--- qna-loader.js ---
+/**
+ * 青柠架构加载器 (QNA-Loader)
+ * 按需加载核心和模块，减少初始加载量
+ * v1.5: 新增自动依赖解析、v1.5 核心模块支持
+ */
+
+(function() {
+    'use strict';
+
+    var BASE_PATH = document.currentScript ? document.currentScript.src.replace(/qna-loader\.js$/, '') : './qna/';
+
+    // 已加载的模块
+    var loaded = {};
+
+    // 模块路径映射（含 v1.5 新增模块）
+    var MODULE_MAP = {
+        'auth':     'modules/qna-auth.js',
+        'site':     'modules/qna-site.js',
+        'store':    'core/qna-store.js',
+        'monitor':  'core/qna-monitor.js',
+        'plugin':   'core/qna-plugin.js',
+        'security': 'core/qna-security.js'
+    };
+
+    // 模块依赖声明（v1.5 自动依赖解析）
+    var DEPENDENCIES = {
+        'auth':     ['store'],
+        'site':     ['store'],
+        'monitor':  [],
+        'plugin':   [],
+        'security': [],
+        'store':    []
+    };
+
+    // 加载单个脚本
+    function loadScript(src) {
+        return new Promise(function(resolve, reject) {
+            if (loaded[src]) { resolve(); return; }
+
+            var script = document.createElement('script');
+            script.src = src;
+            script.async = false;
+            script.onload = function() { loaded[src] = true; resolve(); };
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
+    }
+
+    // 加载单个样式
+    function loadStyle(href) {
+        return new Promise(function(resolve, reject) {
+            if (loaded[href]) { resolve(); return; }
+
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.onload = function() { loaded[href] = true; resolve(); };
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
+    // 解析依赖（拓扑排序，避免重复加载）
+    function resolveDependencies(modules) {
+        var resolved = [];
+        var visited = {};
+
+        function visit(modName) {
+            if (visited[modName]) return;
+            visited[modName] = true;
+
+            var deps = DEPENDENCIES[modName] || [];
+            deps.forEach(function(dep) {
+                visit(dep);
+            });
+
+            resolved.push(modName);
+        }
+
+        modules.forEach(function(mod) { visit(mod); });
+        return resolved;
+    }
+
+    // 青柠架构入口
+    window.QNA = window.QNA || {};
+
+    window.QNA.load = function(modules) {
+        modules = modules || [];
+
+        var promises = [
+            // 核心必须加载
+            loadStyle(BASE_PATH + 'ui/qna-ui.css'),
+            loadScript(BASE_PATH + 'core/qna-core.js')
+        ];
+
+        // 解析依赖顺序
+        var ordered = resolveDependencies(modules);
+
+        // 按依赖顺序加载模块
+        ordered.forEach(function(mod) {
+            var path = MODULE_MAP[mod];
+            if (path) {
+                promises.push(loadScript(BASE_PATH + path));
+            }
+        });
+
+        return Promise.all(promises);
+    };
+
+    // 简写：加载全部常用模块
+    window.QNA.init = function() {
+        return window.QNA.load(['auth', 'site']);
+    };
+
+})();
+
+--- core/qna-core.js ---
+/**
+ * 青柠架构核心 (Qingning Architecture Core)
+ * 版本: 1.5.0 (代号: 勇往直前)
+ * 所有青柠系网站共享的统一底层框架
+ */
+
+(function(global) {
+    'use strict';
+
+    // ============ 配置 ============
+    var CONFIG = {
+        version: '1.5.0',
+        codename: '勇往直前',
+        name: 'Qingning Architecture',
+        supabaseUrl: 'https://qljnyepwofqcrfjwjlhv.supabase.co',
+        supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsam55ZXB3b2ZxY3JmandsbGh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2Mzg0ODUsImV4cCI6MjA2MjIxNDQ4NX0.K4gOwMzc0L3T3qL3IbykC5v1qM8fS6x6RjEeH4u8kXg',
+        adminEmail: '3862242786@qq.com',
+        cacheDuration: 60000, // 缓存有效期 60秒
+        debug: false
+    };
+
+    // ============ 工具函数 ============
+    var Utils = {
+        // 安全的DOM选择
+        $: function(selector) { return document.querySelector(selector); },
+        $$: function(selector) { return document.querySelectorAll(selector); },
+
+        // 事件委托（性能优化：减少事件监听器数量）
+        delegate: function(parent, event, selector, handler) {
+            parent.addEventListener(event, function(e) {
+                var target = e.target.closest(selector);
+                if (target && parent.contains(target)) {
+                    handler.call(target, e);
+                }
+            });
+        },
+
+        // 节流
+        throttle: function(fn, delay) {
+            var last = 0;
+            return function() {
+                var now = Date.now();
+                if (now - last >= delay) {
+                    last = now;
+                    fn.apply(this, arguments);
+                }
+            };
+        },
+
+        // 防抖
+        debounce: function(fn, delay) {
+            var timer;
+            return function() {
+                clearTimeout(timer);
+                timer = setTimeout(fn.bind(this, arguments), delay);
+            };
+        },
+
+        // 格式化文件大小
+        formatSize: function(bytes) {
+            if (!bytes) return '0 B';
+            var k = 1024, sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        },
+
+        // 格式化日期
+        formatDate: function(date) {
+            if (typeof date === 'string') date = new Date(date);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit'
+            });
+        },
+
+        // 深拷贝
+        deepClone: function(obj) {
+            return JSON.parse(JSON.stringify(obj));
+        },
+
+        // 合并对象
+        extend: function(target, source) {
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    target[key] = source[key];
+                }
+            }
+            return target;
+        },
+
+        // 深度合并对象 (v1.5 新增)
+        merge: function(target, source) {
+            var result = QNA.utils.deepClone(target);
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) &&
+                        result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+                        result[key] = QNA.utils.merge(result[key], source[key]);
+                    } else {
+                        result[key] = source[key];
+                    }
+                }
+            }
+            return result;
+        },
+
+        // 重试异步操作，带退避策略 (v1.5 新增)
+        retry: function(fn, options) {
+            options = options || {};
+            var maxRetries = options.maxRetries || 3;
+            var delay = options.delay || 1000;
+            var backoff = options.backoff || 2;
+            var retries = 0;
+
+            function attempt() {
+                return fn().catch(function(err) {
+                    retries++;
+                    if (retries >= maxRetries) throw err;
+                    var waitTime = delay * Math.pow(backoff, retries - 1);
+                    return new Promise(function(resolve) { setTimeout(resolve, waitTime); })
+                        .then(attempt);
+                });
+            }
+            return attempt();
+        },
+
+        // 生成唯一ID
+        uuid: function() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        },
+
+        // 本地存储封装（带过期时间）
+        storage: {
+            set: function(key, value, ttl) {
+                var item = { value: value, time: Date.now() };
+                if (ttl) item.ttl = ttl;
+                localStorage.setItem('qna_' + key, JSON.stringify(item));
+            },
+            get: function(key) {
+                var item = localStorage.getItem('qna_' + key);
+                if (!item) return null;
+                try {
+                    item = JSON.parse(item);
+                    if (item.ttl && Date.now() - item.time > item.ttl) {
+                        localStorage.removeItem('qna_' + key);
+                        return null;
+                    }
+                    return item.value;
+                } catch(e) { return null; }
+            },
+            remove: function(key) {
+                localStorage.removeItem('qna_' + key);
+            },
+            clear: function() {
+                var keys = Object.keys(localStorage);
+                keys.forEach(function(k) {
+                    if (k.startsWith('qna_')) localStorage.removeItem(k);
+                });
+            }
+        },
+
+        // 日志（生产环境可关闭）
+        log: function() {
+            if (CONFIG.debug) console.log.apply(console, ['[QNA]'].concat(Array.prototype.slice.call(arguments)));
+        },
+        error: function() {
+            if (CONFIG.debug) console.error.apply(console, ['[QNA]'].concat(Array.prototype.slice.call(arguments)));
+        }
+    };
+
+    // ============ 缓存系统 ============
+    var Cache = {
+        _data: {},
+        _maxSize: 100,
+
+        get: function(key) {
+            var item = this._data[key];
+            if (!item) return null;
+            if (item.expire && Date.now() > item.expire) {
+                delete this._data[key];
+                return null;
+            }
+            item.hits = (item.hits || 0) + 1;
+            // v1.5: 返回包含 etag 的完整缓存项
+            return { value: item.value, etag: item.etag || null };
+        },
+
+        // 获取纯值（向后兼容）
+        getValue: function(key) {
+            var result = this.get(key);
+            return result ? result.value : null;
+        },
+
+        set: function(key, value, ttl, etag) {
+            // LRU清理
+            var keys = Object.keys(this._data);
+            if (keys.length >= this._maxSize) {
+                var minHits = Infinity, minKey;
+                keys.forEach(function(k) {
+                    if (this._data[k].hits < minHits) {
+                        minHits = this._data[k].hits;
+                        minKey = k;
+                    }
+                }.bind(this));
+                delete this._data[minKey];
+            }
+
+            this._data[key] = {
+                value: value,
+                expire: ttl ? Date.now() + ttl : null,
+                hits: 0,
+                time: Date.now(),
+                etag: etag || null  // v1.5: ETag 支持
+            };
+        },
+
+        clear: function() {
+            this._data = {};
+        },
+
+        remove: function(key) {
+            delete this._data[key];
+        },
+
+        // v1.5: 检查 ETag 是否变化
+        checkETag: function(key, newETag) {
+            var item = this._data[key];
+            if (!item || !item.etag) return false; // 无旧 ETag，视为已变化
+            return item.etag === newETag; // 返回 true 表示未变化
+        }
+    };
+
+    // ============ 事件总线（组件间通信） ============
+    var EventBus = {
+        _events: {},
+
+        on: function(event, handler) {
+            if (!this._events[event]) this._events[event] = [];
+            this._events[event].push(handler);
+        },
+
+        off: function(event, handler) {
+            if (!this._events[event]) return;
+            var idx = this._events[event].indexOf(handler);
+            if (idx > -1) this._events[event].splice(idx, 1);
+        },
+
+        emit: function(event, data) {
+            if (!this._events[event]) return;
+            this._events[event].forEach(function(handler) {
+                try { handler(data); } catch(e) {}
+            });
+        },
+
+        once: function(event, handler) {
+            var self = this;
+            var wrapper = function(data) {
+                self.off(event, wrapper);
+                handler(data);
+            };
+            this.on(event, wrapper);
+        },
+
+        // v1.5: 等待事件触发（返回 Promise）
+        waitFor: function(event, timeout) {
+            var self = this;
+            return new Promise(function(resolve, reject) {
+                var timer;
+                if (timeout) {
+                    timer = setTimeout(function() {
+                        self.off(event, handler);
+                        reject(new Error('waitFor timeout: ' + event));
+                    }, timeout);
+                }
+                var handler = function(data) {
+                    if (timer) clearTimeout(timer);
+                    self.off(event, handler);
+                    resolve(data);
+                };
+                self.on(event, handler);
+            });
+        }
+    };
+
+    // ============ 模块系统 ============
+    var Modules = {};
+    var Module = {
+        define: function(name, factory) {
+            if (Modules[name]) {
+                Utils.error('模块已存在:', name);
+                return;
+            }
+            Modules[name] = { factory: factory, instance: null };
+        },
+
+        use: function(name) {
+            var mod = Modules[name];
+            if (!mod) {
+                Utils.error('模块不存在:', name);
+                return null;
+            }
+            if (!mod.instance) {
+                mod.instance = mod.factory(QNA);
+            }
+            return mod.instance;
+        },
+
+        list: function() {
+            return Object.keys(Modules);
+        }
+    };
+
+    // ============ 初始化 ============
+    function init() {
+        Utils.log('初始化中...', CONFIG.version);
+
+        // 检测环境
+        var ua = navigator.userAgent;
+        var isMobile = /Mobile|Android|iPhone|iPad|iPod/i.test(ua);
+        var isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        Utils.storage.set('env', {
+            isMobile: isMobile,
+            isDark: isDark,
+            language: navigator.language,
+            screen: { width: screen.width, height: screen.height }
+        });
+
+        // 发布初始化完成事件
+        EventBus.emit('qna:ready', { config: CONFIG, utils: Utils });
+    }
+
+    // ============ 暴露全局对象 ============
+    var QNA = {
+        version: CONFIG.version,
+        config: CONFIG,
+        utils: Utils,
+        cache: Cache,
+        event: EventBus,
+        module: Module,
+        init: init
+    };
+
+    global.QNA = QNA;
+
+    // DOM就绪后自动初始化
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+})(window);
+
+--- core/qna-store.js ---
+/**
+ * 青柠架构 - 统一状态层 (QNA-Store)
+ * v1.5 新增 - 轻量状态管理 + 跨标签页同步
+ */
+QNA.module.define('store', function(QNA) {
+    var state = {};
+    var subscribers = {};
+    var channel = null;
+
+    // 初始化 BroadcastChannel（跨标签页同步）
+    try {
+        channel = new BroadcastChannel('qna_state_sync');
+        channel.onmessage = function(e) {
+            if (e.data && e.data.type === 'state_update') {
+                state[e.data.key] = e.data.value;
+                _notify(e.data.key, e.data.value);
+            }
+        };
+    } catch(e) {}
+
+    function _notify(key, value) {
+        if (subscribers[key]) {
+            subscribers[key].forEach(function(fn) {
+                try { fn(value, key); } catch(e) {}
+            });
+        }
+        QNA.event.emit('store:' + key, value);
+    }
+
+    var Store = {
+        get: function(key) { return state[key]; },
+        set: function(key, value) {
+            state[key] = value;
+            _notify(key, value);
+            // 持久化关键状态
+            if (key === 'user' || key === 'auth') {
+                QNA.utils.storage.set('store_' + key, value, 3600000);
+            }
+            // 跨标签页同步
+            if (channel) {
+                try { channel.postMessage({ type: 'state_update', key: key, value: value }); } catch(e) {}
+            }
+        },
+        remove: function(key) {
+            delete state[key];
+            _notify(key, null);
+        },
+        subscribe: function(key, callback) {
+            if (!subscribers[key]) subscribers[key] = [];
+            subscribers[key].push(callback);
+            // 返回取消订阅函数
+            return function() {
+                var idx = subscribers[key].indexOf(callback);
+                if (idx > -1) subscribers[key].splice(idx, 1);
+            };
+        },
+        // 从 localStorage 恢复状态
+        restore: function() {
+            var keys = ['user', 'auth'];
+            keys.forEach(function(key) {
+                var saved = QNA.utils.storage.get('store_' + key);
+                if (saved) state[key] = saved;
+            });
+        },
+        // 获取所有状态快照
+        snapshot: function() { return JSON.parse(JSON.stringify(state)); }
+    };
+
+    return Store;
+});
+
+--- core/qna-monitor.js ---
+/**
+ * 青柠架构 - 性能监控 (QNA-Monitor)
+ * v1.5 新增 - 页面性能采集、错误上报
+ */
+QNA.module.define('monitor', function(QNA) {
+    var metrics = [];
+    var errors = [];
+
+    // 采集页面加载性能
+    function collectPerformance() {
+        if (window.performance && performance.getEntriesByType) {
+            var nav = performance.getEntriesByType('navigation')[0];
+            if (nav) {
+                metrics.push({
+                    page: location.pathname,
+                    fcp: nav.responseStart,
+                    lcp: nav.loadEventEnd,
+                    domReady: nav.domContentLoadedEventEnd,
+                    timestamp: Date.now()
+                });
+            }
+        }
+    }
+
+    // 自动捕获 JS 错误
+    function captureErrors() {
+        window.addEventListener('error', function(e) {
+            errors.push({
+                message: e.message,
+                file: e.filename,
+                line: e.lineno,
+                timestamp: Date.now()
+            });
+        });
+        window.addEventListener('unhandledrejection', function(e) {
+            errors.push({
+                message: 'Promise: ' + (e.reason ? e.reason.message || e.reason : 'Unknown'),
+                timestamp: Date.now()
+            });
+        });
+    }
+
+    // API 请求计时
+    function wrapFetch() {
+        var originalFetch = window.fetch;
+        window.fetch = function() {
+            var start = Date.now();
+            return originalFetch.apply(this, arguments).then(function(resp) {
+                metrics.push({
+                    type: 'api',
+                    url: arguments[0],
+                    status: resp.status,
+                    duration: Date.now() - start,
+                    timestamp: Date.now()
+                });
+                return resp;
+            }).catch(function(err) {
+                metrics.push({
+                    type: 'api',
+                    url: arguments[0],
+                    error: err.message,
+                    duration: Date.now() - start,
+                    timestamp: Date.now()
+                });
+                throw err;
+            });
+        };
+    }
+
+    var Monitor = {
+        init: function() {
+            captureErrors();
+            wrapFetch();
+            if (document.readyState === 'complete') {
+                collectPerformance();
+            } else {
+                window.addEventListener('load', collectPerformance);
+            }
+        },
+        getMetrics: function() { return metrics.slice(); },
+        getErrors: function() { return errors.slice(); },
+        getReport: function() {
+            return { metrics: metrics.slice(), errors: errors.slice(), version: QNA.version };
+        },
+        // 上报到 Supabase
+        report: function() {
+            // 留空，由站长按需配置上报地址
+        }
+    };
+
+    return Monitor;
+});
+
+--- core/qna-plugin.js ---
+/**
+ * 青柠架构 - 插件系统 (QNA-Plugin)
+ * v1.5 新增 - 可扩展的插件注册机制
+ */
+QNA.module.define('plugin', function(QNA) {
+    var plugins = {};
+
+    var Plugin = {
+        register: function(name, definition) {
+            if (plugins[name]) {
+                QNA.utils.error('插件已存在:', name);
+                return;
+            }
+            plugins[name] = {
+                name: name,
+                definition: definition,
+                instance: null,
+                enabled: false
+            };
+        },
+        enable: function(name) {
+            var plugin = plugins[name];
+            if (!plugin) { QNA.utils.error('插件不存在:', name); return; }
+            if (!plugin.instance) {
+                plugin.instance = plugin.definition(QNA);
+            }
+            if (plugin.instance.init) plugin.instance.init();
+            plugin.enabled = true;
+            QNA.event.emit('plugin:enabled', { name: name });
+        },
+        disable: function(name) {
+            var plugin = plugins[name];
+            if (!plugin) return;
+            if (plugin.instance && plugin.instance.destroy) plugin.instance.destroy();
+            plugin.enabled = false;
+            QNA.event.emit('plugin:disabled', { name: name });
+        },
+        get: function(name) {
+            return plugins[name] ? plugins[name].instance : null;
+        },
+        list: function() {
+            return Object.keys(plugins).map(function(name) {
+                return { name: name, enabled: plugins[name].enabled };
+            });
+        }
+    };
+
+    return Plugin;
+});
+
+--- core/qna-security.js ---
+/**
+ * 青柠架构 - 安全层 (QNA-Security)
+ * v1.5 新增 - HMAC 签名验证、输入消毒
+ */
+QNA.module.define('security', function(QNA) {
+
+    var Security = {
+        // 简易 HMAC-SHA256（浏览器端实现）
+        hmacSHA256: function(message, secret) {
+            var encoder = new TextEncoder();
+            var keyData = encoder.encode(secret);
+            var msgData = encoder.encode(message);
+            // 使用 SubtleCrypto（异步）
+            return crypto.subtle.importKey('raw', keyData, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
+                .then(function(key) {
+                    return crypto.subtle.sign('HMAC', key, msgData);
+                })
+                .then(function(signature) {
+                    return Array.from(new Uint8Array(signature)).map(function(b) {
+                        return b.toString(16).padStart(2, '0');
+                    }).join('');
+                });
+        },
+
+        // 同步简化签名（用于非安全关键场景）
+        simpleSign: function(data, secret) {
+            var str = JSON.stringify(data) + secret;
+            var hash = 0;
+            for (var i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(36);
+        },
+
+        // 验证签名
+        verifySign: function(data, signature, secret) {
+            return this.simpleSign(data, secret) === signature;
+        },
+
+        // HTML 转义（防 XSS）
+        escapeHTML: function(str) {
+            var div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        },
+
+        // 消毒输入（移除危险字符）
+        sanitize: function(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[<>'"&]/g, function(c) {
+                return { '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;', '&': '&amp;' }[c];
+            });
+        },
+
+        // CSP 安全检查
+        checkCSP: function() {
+            var meta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
+            return !!meta;
+        }
+    };
+
+    return Security;
+});
+
+--- modules/qna-auth.js ---
+/**
+ * 青柠架构 - 认证模块 (QNA-Auth)
+ * 统一处理登录、注册、权限、激活码
+ * v1.5: 新增 store 同步、token 登录、跨标签页同步
+ */
+
+QNA.module.define('auth', function(QNA) {
+    'use strict';
+
+    var Utils = QNA.utils;
+    var EventBus = QNA.event;
+
+    // v1.5: 获取 store 模块（可能未加载）
+    function getStore() {
+        try { return QNA.module.use('store'); } catch(e) { return null; }
+    }
+
+    // Supabase 客户端（懒加载）
+    var supabaseClient = null;
+    function getSupabase() {
+        if (!supabaseClient && window.supabase) {
+            supabaseClient = window.supabase.createClient(
+                QNA.config.supabaseUrl,
+                QNA.config.supabaseKey
+            );
+        }
+        return supabaseClient;
+    }
+
+    // v1.5: 同步用户状态到 store
+    function syncToStore() {
+        var store = getStore();
+        if (!store) return;
+        var user = Auth.getUser();
+        store.set('user', user);
+        store.set('auth', { loggedIn: user.loggedIn, isAdmin: user.isAdmin });
+    }
+
+    // ============ 用户状态 ============
+    var Auth = {
+        // 获取当前用户
+        getUser: function() {
+            return {
+                loggedIn: localStorage.getItem('qn_logged_in') === 'true',
+                isAdmin: localStorage.getItem('qn_is_admin') === 'true',
+                email: localStorage.getItem('qn_user_email') || '',
+                name: localStorage.getItem('qn_user_name') || '',
+                avatar: localStorage.getItem('qn_user_avatar') || ''
+            };
+        },
+
+        // 检查是否登录
+        isLoggedIn: function() {
+            return localStorage.getItem('qn_logged_in') === 'true';
+        },
+
+        // 检查是否站长
+        isAdmin: function() {
+            return localStorage.getItem('qn_is_admin') === 'true';
+        },
+
+        // 检查激活码
+        checkActivation: function(code) {
+            return code && code.startsWith('xt');
+        },
+
+        // 登录
+        login: async function(email, password) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { data, error } = await supabase.auth.signInWithPassword({ email: email, password: password });
+                if (error) return { success: false, error: error.message };
+
+                var isAdmin = (email === QNA.config.adminEmail);
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_name', data.user.user_metadata?.name || email.split('@')[0]);
+
+                // 生成档案室密钥（如果是站长）
+                if (isAdmin) {
+                    localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+                }
+
+                EventBus.emit('auth:login', { email: email, isAdmin: isAdmin });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
+                return { success: true, user: data.user };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 注册
+        register: async function(email, password, name) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: { data: { name: name || email.split('@')[0] } }
+                });
+                if (error) return { success: false, error: error.message };
+                return { success: true, user: data.user };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 找回密码
+        resetPassword: async function(email) {
+            var supabase = getSupabase();
+            if (!supabase) return { success: false, error: 'Supabase 未加载' };
+
+            try {
+                var { error } = await supabase.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin + '/auth.html'
+                });
+                if (error) return { success: false, error: error.message };
+                return { success: true };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 登出
+        logout: async function() {
+            var supabase = getSupabase();
+            if (supabase) {
+                try { await supabase.auth.signOut(); } catch(e) {}
+            }
+
+            // 清除所有登录状态
+            var keys = ['qn_logged_in', 'qn_is_admin', 'qn_user_email', 'qn_user_name',
+                        'qn_user_avatar', 'qn_archive_key', 'qn_os_activation_code'];
+            keys.forEach(function(k) { localStorage.removeItem(k); });
+
+            EventBus.emit('auth:logout', {});
+            // v1.5: 同步到 store + 跨标签页
+            syncToStore();
+        },
+
+        // 更新导航栏用户状态
+        updateNav: function() {
+            var user = this.getUser();
+            var loginLink = document.querySelector('.nav-login a');
+            var loginLi = document.querySelector('.nav-login');
+
+            if (!loginLink || !loginLi) return;
+
+            if (user.loggedIn) {
+                loginLink.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' + (user.name || '用户');
+                loginLink.href = 'profile.html';
+
+                // 如果是站长，添加管理入口
+                if (user.isAdmin && !document.querySelector('.nav-admin')) {
+                    var adminLi = document.createElement('li');
+                    adminLi.className = 'nav-admin';
+                    adminLi.innerHTML = '<a href="admin.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>管理</a>';
+                    loginLi.parentNode.insertBefore(adminLi, loginLi.nextSibling);
+                }
+            } else {
+                loginLink.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>登录';
+                loginLink.href = 'auth.html';
+
+                // 移除管理入口
+                var adminLi = document.querySelector('.nav-admin');
+                if (adminLi) adminLi.remove();
+            }
+        },
+
+        // v1.5: Token 登录（验证 Supabase active_tokens.json）
+        loginByToken: async function(token) {
+            if (!token) return { success: false, error: '缺少 token' };
+
+            try {
+                var tokensUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/active_tokens.json';
+                var resp = await fetch(tokensUrl + '?t=' + Date.now());
+                if (!resp.ok) return { success: false, error: '无法获取 token 列表' };
+
+                var tokens = await resp.json();
+                var tokenEntry = null;
+
+                // 查找匹配的 token
+                if (Array.isArray(tokens)) {
+                    tokenEntry = tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                } else if (tokens.tokens && Array.isArray(tokens.tokens)) {
+                    tokenEntry = tokens.tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                }
+
+                if (!tokenEntry) {
+                    return { success: false, error: 'Token 无效或已过期' };
+                }
+
+                // 模拟登录状态
+                var email = tokenEntry.email || '';
+                var isAdmin = (email === QNA.config.adminEmail);
+                var name = tokenEntry.name || email.split('@')[0] || 'Token用户';
+
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_name', name);
+                localStorage.setItem('qn_user_avatar', tokenEntry.avatar || '');
+
+                if (isAdmin) {
+                    localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+                }
+
+                EventBus.emit('auth:login', { email: email, isAdmin: isAdmin, viaToken: true });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
+
+                return { success: true, user: { email: email, name: name, isAdmin: isAdmin } };
+            } catch (err) {
+                return { success: false, error: err.message };
+            }
+        },
+
+        // 权限守卫
+        guard: function(options) {
+            options = options || {};
+            var user = this.getUser();
+
+            if (options.requireLogin && !user.loggedIn) {
+                if (options.redirect !== false) {
+                    window.location.href = 'auth.html?redirect=' + encodeURIComponent(window.location.href);
+                }
+                return false;
+            }
+
+            if (options.requireAdmin && !user.isAdmin) {
+                alert('需要站长权限');
+                if (options.redirect !== false) {
+                    window.location.href = 'index.html';
+                }
+                return false;
+            }
+
+            return true;
+        }
+    };
+
+    // 监听登录状态变化，自动更新导航
+    EventBus.on('auth:login', function() { Auth.updateNav(); });
+    EventBus.on('auth:logout', function() { Auth.updateNav(); });
+
+    // DOM就绪后更新导航
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { Auth.updateNav(); });
+    } else {
+        Auth.updateNav();
+    }
+
+    return Auth;
+});
+
+--- modules/qna-site.js ---
+/**
+ * 青柠架构 - 站点控制模块 (QNA-Site)
+ * 网站关闭/维护、全局设置
+ * v1.5: ETag 缓存支持、stale-while-revalidate 策略
+ */
+
+QNA.module.define('site', function(QNA) {
+    'use strict';
+
+    var Utils = QNA.utils;
+    var EventBus = QNA.event;
+
+    // 排除检查的页面
+    var EXCLUDE_PAGES = ['closed.html', 'auth.html', 'admin.html'];
+
+    var Site = {
+        // 检查网站是否关闭
+        checkClosed: function() {
+            var currentPage = window.location.pathname.split('/').pop() || 'index.html';
+            if (EXCLUDE_PAGES.indexOf(currentPage) !== -1) return;
+
+            // 站长已登录，跳过
+            var isLoggedIn = localStorage.getItem('qn_logged_in');
+            var isAdmin = localStorage.getItem('qn_is_admin');
+            if (isLoggedIn === 'true' && isAdmin === 'true') return;
+
+            // 已解锁，跳过
+            if (sessionStorage.getItem('qn_site_unlocked') === 'true') return;
+
+            // 从缓存检查
+            var cached = localStorage.getItem('qn_site_closed');
+            var cachedTime = parseInt(localStorage.getItem('qn_site_closed_time') || '0');
+            var now = Date.now();
+
+            if (cached && (now - cachedTime) < QNA.config.cacheDuration) {
+                if (cached === 'true') {
+                    this.redirectToClosed();
+                }
+                return;
+            }
+
+            // 从云端检查
+            this.fetchSettings().then(function(settings) {
+                localStorage.setItem('qn_site_closed', settings.siteClosed ? 'true' : 'false');
+                localStorage.setItem('qn_site_closed_time', now.toString());
+
+                if (settings.siteClosed) {
+                    this.redirectToClosed(settings);
+                }
+            }.bind(this)).catch(function() {
+                // 网络错误不阻止访问
+            });
+        },
+
+        // 获取站点设置（v1.5: ETag + stale-while-revalidate）
+        fetchSettings: function() {
+            var self = this;
+            var cacheKey = 'site_settings';
+            var settingsUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/site_settings.json';
+
+            return new Promise(function(resolve, reject) {
+                try {
+                    // v1.5: 检查缓存，实现 stale-while-revalidate
+                    var cached = QNA.cache.get(cacheKey);
+                    var cachedETag = cached ? cached.etag : null;
+
+                    // 如果有缓存，立即返回缓存数据（stale），后台刷新
+                    if (cached && cached.value) {
+                        resolve(cached.value);
+                        // 后台静默刷新
+                        self._fetchSettingsRemote(settingsUrl, cacheKey, cachedETag);
+                        return;
+                    }
+
+                    // 无缓存，直接请求
+                    self._fetchSettingsRemote(settingsUrl, cacheKey, null)
+                        .then(function(settings) { resolve(settings); })
+                        .catch(reject);
+                } catch(e) {
+                    reject(e);
+                }
+            });
+        },
+
+        // v1.5: 实际请求远程设置（内部方法）
+        _fetchSettingsRemote: function(url, cacheKey, oldETag) {
+            var fetchOptions = {};
+            // v1.5: 如果有 ETag，发送 If-None-Match
+            if (oldETag) {
+                fetchOptions.headers = { 'If-None-Match': oldETag };
+            }
+
+            return fetch(url + '?t=' + Date.now(), fetchOptions)
+                .then(function(resp) {
+                    // 304 Not Modified，缓存仍有效
+                    if (resp.status === 304) {
+                        var cached = QNA.cache.get(cacheKey);
+                        return cached ? cached.value : null;
+                    }
+                    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                    var newETag = resp.headers.get('ETag') || null;
+                    return resp.json().then(function(data) {
+                        // v1.5: 带 ETag 存入缓存
+                        QNA.cache.set(cacheKey, data, QNA.config.cacheDuration, newETag);
+                        EventBus.emit('site:settingsUpdated', data);
+                        return data;
+                    });
+                });
+        },
+
+        // 跳转到关闭页面
+        redirectToClosed: function(settings) {
+            settings = settings || {};
+            var params = new URLSearchParams();
+            if (settings.closedTitle) params.set('title', settings.closedTitle);
+            if (settings.closedDesc) params.set('desc', settings.closedDesc);
+
+            var url = 'closed.html';
+            if (params.toString()) url += '?' + params.toString();
+            window.location.replace(url);
+        },
+
+        // 解锁网站（输入激活码后）
+        unlock: function(code, callback) {
+            this.fetchSettings().then(function(settings) {
+                var validCodes = settings.unlockCodes || [];
+                var isValid = code && (code.startsWith('xt') || validCodes.indexOf(code) !== -1 || code === settings.adminUnlockCode);
+
+                if (isValid) {
+                    sessionStorage.setItem('qn_site_unlocked', 'true');
+                    if (callback) callback(true);
+                } else {
+                    if (callback) callback(false);
+                }
+            }).catch(function() {
+                // 离线模式：检查本地存储
+                var localCodes = localStorage.getItem('qn_unlock_codes') || '';
+                var codes = localCodes.split(',').map(function(c) { return c.trim(); }).filter(function(c) { return c; });
+                var isValid = code && (code.startsWith('xt') || codes.indexOf(code) !== -1);
+
+                if (isValid) {
+                    sessionStorage.setItem('qn_site_unlocked', 'true');
+                    if (callback) callback(true);
+                } else {
+                    if (callback) callback(false);
+                }
+            });
+        },
+
+        // 保存设置到云端
+        saveSettings: function(settings) {
+            return new Promise(function(resolve, reject) {
+                try {
+                    var supabase = window.supabase ? window.supabase.createClient(
+                        QNA.config.supabaseUrl, QNA.config.supabaseKey
+                    ) : null;
+
+                    if (!supabase) {
+                        reject(new Error('Supabase 未加载'));
+                        return;
+                    }
+
+                    supabase.storage.from('files').upload('site_settings.json', JSON.stringify(settings), {
+                        cacheControl: '60',
+                        upsert: true,
+                        contentType: 'application/json'
+                    }).then(resolve).catch(reject);
+                } catch(e) {
+                    reject(e);
+                }
+            });
+        },
+
+        // 获取公告
+        getAnnouncement: function() {
+            return Utils.storage.get('announcement') || '';
+        },
+
+        // 设置公告
+        setAnnouncement: function(text) {
+            Utils.storage.set('announcement', text);
+        }
+    };
+
+    // 页面加载时自动检查
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() { Site.checkClosed(); });
+    } else {
+        Site.checkClosed();
+    }
+
+    return Site;
+});
+
+--- ui/qna-ui.css ---
+/**
+ * 青柠架构 UI 基础样式 (QNA-UI)
+ * 所有青柠系网站共享的CSS变量和基础组件
+ * 减少重复CSS，统一视觉风格
+ */
+
+/* ============ CSS变量（主题系统） ============ */
+:root {
+    /* 颜色系统 */
+    --qna-primary: #22c55e;
+    --qna-primary-dark: #16a34a;
+    --qna-primary-light: #4ade80;
+    --qna-secondary: #3b82f6;
+    --qna-accent: #f59e0b;
+    --qna-danger: #ef4444;
+
+    /* 背景色 */
+    --qna-bg-dark: #0f172a;
+    --qna-bg-card: #1e293b;
+    --qna-bg-hover: rgba(34, 197, 94, 0.08);
+
+    /* 文字色 */
+    --qna-text: #e2e8f0;
+    --qna-text-light: #f1f5f9;
+    --qna-text-muted: #94a3b8;
+    --qna-text-dim: #64748b;
+
+    /* 边框 */
+    --qna-border: rgba(148, 163, 184, 0.1);
+    --qna-border-hover: rgba(148, 163, 184, 0.25);
+
+    /* 阴影 */
+    --qna-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --qna-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    /* 圆角 */
+    --qna-radius: 12px;
+    --qna-radius-sm: 8px;
+    --qna-radius-lg: 16px;
+
+    /* 间距 */
+    --qna-gap: 16px;
+    --qna-gap-sm: 8px;
+    --qna-gap-lg: 24px;
+
+    /* 字体 */
+    --qna-font: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --qna-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+    /* 过渡 */
+    --qna-transition: all 0.3s ease;
+}
+
+/* ============ 基础重置 ============ */
+/* 注意：不设置 body 背景色和颜色，由各页面自己的 styles.css 控制 */
+/* 避免覆盖页面原有主题 */
+
+html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============ 通用组件 ============ */
+
+/* 卡片 */
+.qna-card {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius);
+    padding: var(--qna-gap-lg);
+    transition: var(--qna-transition);
+}
+.qna-card:hover {
+    border-color: var(--qna-border-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--qna-shadow);
+}
+
+/* 按钮 */
+.qna-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: var(--qna-radius-sm);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--qna-transition);
+    text-decoration: none;
+}
+.qna-btn-primary {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-dark));
+    color: #fff;
+}
+.qna-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.3);
+}
+.qna-btn-secondary {
+    background: var(--qna-bg-card);
+    border: 1px solid var(--qna-border);
+    color: var(--qna-text-muted);
+}
+.qna-btn-secondary:hover {
+    border-color: var(--qna-border-hover);
+    color: var(--qna-text);
+}
+.qna-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* 输入框 */
+.qna-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--qna-border);
+    border-radius: var(--qna-radius-sm);
+    color: var(--qna-text);
+    font-size: 14px;
+    outline: none;
+    transition: var(--qna-transition);
+}
+.qna-input:focus {
+    border-color: var(--qna-primary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+.qna-input::placeholder {
+    color: var(--qna-text-dim);
+}
+
+/* 标签 */
+.qna-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.qna-tag-green { background: rgba(34, 197, 94, 0.15); color: var(--qna-primary-light); }
+.qna-tag-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.qna-tag-amber { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+.qna-tag-red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+
+/* 消息提示 */
+.qna-msg {
+    padding: 12px 16px;
+    border-radius: var(--qna-radius-sm);
+    font-size: 13px;
+    display: none;
+}
+.qna-msg.show { display: block; }
+.qna-msg-success {
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    color: var(--qna-primary-light);
+}
+.qna-msg-error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* 加载动画 */
+.qna-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--qna-border);
+    border-top-color: var(--qna-primary);
+    border-radius: 50%;
+    animation: qna-spin 0.8s linear infinite;
+}
+@keyframes qna-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* 骨架屏 */
+.qna-skeleton {
+    background: linear-gradient(90deg, var(--qna-bg-card) 25%, #334155 50%, var(--qna-bg-card) 75%);
+    background-size: 200% 100%;
+    animation: qna-shimmer 1.5s infinite;
+    border-radius: var(--qna-radius-sm);
+}
+@keyframes qna-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* 渐变文字 */
+.qna-gradient-text {
+    background: linear-gradient(135deg, var(--qna-primary), var(--qna-primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* 玻璃效果 */
+.qna-glass {
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+/* ============ 布局工具 ============ */
+.qna-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--qna-gap);
+}
+.qna-flex {
+    display: flex;
+}
+.qna-flex-col {
+    flex-direction: column;
+}
+.qna-items-center {
+    align-items: center;
+}
+.qna-justify-between {
+    justify-content: space-between;
+}
+.qna-gap {
+    gap: var(--qna-gap);
+}
+.qna-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--qna-gap);
+}
+
+/* ============ 动画 ============ */
+@keyframes qna-fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes qna-fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes qna-scaleIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+@keyframes qna-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.qna-anim-fadeIn { animation: qna-fadeIn 0.4s ease; }
+.qna-anim-fadeInUp { animation: qna-fadeInUp 0.5s ease; }
+.qna-anim-fadeInDown { animation: qna-fadeInDown 0.5s ease; }
+.qna-anim-scaleIn { animation: qna-scaleIn 0.3s ease; }
+
+/* 滚动显示动画 */
+.qna-scroll-anim {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.qna-scroll-anim.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ============ 响应式 ============ */
+@media (max-width: 768px) {
+    :root {
+        --qna-gap: 12px;
+        --qna-gap-lg: 16px;
+    }
+    .qna-grid {
+        grid-template-columns: 1fr;
+    }
+    .qna-card {
+        padding: var(--qna-gap);
+    }
+}

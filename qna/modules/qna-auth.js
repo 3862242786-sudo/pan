@@ -1,6 +1,7 @@
 /**
  * 青柠架构 - 认证模块 (QNA-Auth)
  * 统一处理登录、注册、权限、激活码
+ * v1.5: 新增 store 同步、token 登录、跨标签页同步
  */
 
 QNA.module.define('auth', function(QNA) {
@@ -8,6 +9,11 @@ QNA.module.define('auth', function(QNA) {
 
     var Utils = QNA.utils;
     var EventBus = QNA.event;
+
+    // v1.5: 获取 store 模块（可能未加载）
+    function getStore() {
+        try { return QNA.module.use('store'); } catch(e) { return null; }
+    }
 
     // Supabase 客户端（懒加载）
     var supabaseClient = null;
@@ -19,6 +25,15 @@ QNA.module.define('auth', function(QNA) {
             );
         }
         return supabaseClient;
+    }
+
+    // v1.5: 同步用户状态到 store
+    function syncToStore() {
+        var store = getStore();
+        if (!store) return;
+        var user = Auth.getUser();
+        store.set('user', user);
+        store.set('auth', { loggedIn: user.loggedIn, isAdmin: user.isAdmin });
     }
 
     // ============ 用户状态 ============
@@ -70,6 +85,8 @@ QNA.module.define('auth', function(QNA) {
                 }
 
                 EventBus.emit('auth:login', { email: email, isAdmin: isAdmin });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
                 return { success: true, user: data.user };
             } catch (err) {
                 return { success: false, error: err.message };
@@ -123,6 +140,8 @@ QNA.module.define('auth', function(QNA) {
             keys.forEach(function(k) { localStorage.removeItem(k); });
 
             EventBus.emit('auth:logout', {});
+            // v1.5: 同步到 store + 跨标签页
+            syncToStore();
         },
 
         // 更新导航栏用户状态
@@ -151,6 +170,58 @@ QNA.module.define('auth', function(QNA) {
                 // 移除管理入口
                 var adminLi = document.querySelector('.nav-admin');
                 if (adminLi) adminLi.remove();
+            }
+        },
+
+        // v1.5: Token 登录（验证 Supabase active_tokens.json）
+        loginByToken: async function(token) {
+            if (!token) return { success: false, error: '缺少 token' };
+
+            try {
+                var tokensUrl = QNA.config.supabaseUrl + '/storage/v1/object/public/files/active_tokens.json';
+                var resp = await fetch(tokensUrl + '?t=' + Date.now());
+                if (!resp.ok) return { success: false, error: '无法获取 token 列表' };
+
+                var tokens = await resp.json();
+                var tokenEntry = null;
+
+                // 查找匹配的 token
+                if (Array.isArray(tokens)) {
+                    tokenEntry = tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                } else if (tokens.tokens && Array.isArray(tokens.tokens)) {
+                    tokenEntry = tokens.tokens.find(function(t) {
+                        return t.token === token && t.active === true;
+                    });
+                }
+
+                if (!tokenEntry) {
+                    return { success: false, error: 'Token 无效或已过期' };
+                }
+
+                // 模拟登录状态
+                var email = tokenEntry.email || '';
+                var isAdmin = (email === QNA.config.adminEmail);
+                var name = tokenEntry.name || email.split('@')[0] || 'Token用户';
+
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_name', name);
+                localStorage.setItem('qn_user_avatar', tokenEntry.avatar || '');
+
+                if (isAdmin) {
+                    localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
+                }
+
+                EventBus.emit('auth:login', { email: email, isAdmin: isAdmin, viaToken: true });
+                // v1.5: 同步到 store + 跨标签页
+                syncToStore();
+
+                return { success: true, user: { email: email, name: name, isAdmin: isAdmin } };
+            } catch (err) {
+                return { success: false, error: err.message };
             }
         },
 

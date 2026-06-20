@@ -297,17 +297,17 @@
             <img src="assets/qna-logo.jpg" alt="">
             <div>
                 <div class="hero-title-text">青柠架构</div>
-                <div class="hero-version">v1.0.0</div>
+                <div class="hero-version">v1.5.0</div>
             </div>
         </div>
-        <div class="hero-codename">代号：<span>轻装上阵</span></div>
+        <div class="hero-codename">代号：<span>勇往直前</span></div>
         <p class="hero-desc">
             青柠系网站的统一底层框架。按需加载、缓存优化、统一认证、站点控制——<br>
             让每一行代码都服务于性能与体验。
         </p>
         <div class="hero-stats">
             <div class="hero-stat">
-                <div class="hero-stat-num">4</div>
+                <div class="hero-stat-num">8</div>
                 <div class="hero-stat-label">核心模块</div>
             </div>
             <div class="hero-stat">
@@ -363,6 +363,26 @@
                 <div class="feature-title">统一视觉</div>
                 <div class="feature-desc">CSS 变量 + 组件类名，所有页面风格一致。暗色主题、玻璃效果、动画标准化。</div>
             </div>
+            <div class="feature-card">
+                <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                <div class="feature-title">统一状态层</div>
+                <div class="feature-desc">Store 模块，跨标签页同步，登录状态实时共享。多标签页之间数据一致性保障。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+                <div class="feature-title">性能监控</div>
+                <div class="feature-desc">Monitor 模块，页面加载采集，API 计时，错误自动捕获。全链路性能可视化。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></div>
+                <div class="feature-title">安全层</div>
+                <div class="feature-desc">Security 模块，HMAC 签名验证，XSS 防护，输入消毒。为全站安全保驾护航。</div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg></div>
+                <div class="feature-title">插件系统</div>
+                <div class="feature-desc">Plugin 模块，可扩展的插件注册机制，按需启用/禁用。灵活扩展，不影响核心。</div>
+            </div>
         </div>
     </section>
 
@@ -382,7 +402,7 @@
                 <div class="arch-layer-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
                 <div>
                     <div class="arch-layer-title">模块层</div>
-                    <div class="arch-layer-desc">Auth 认证、Site 站点控制、Cache 缓存、EventBus 事件总线</div>
+                    <div class="arch-layer-desc">Auth 认证、Site 站点控制、Store 状态管理、Monitor 性能监控、Plugin 插件系统、Security 安全层、Cache 缓存、EventBus 事件总线</div>
                 </div>
             </div>
             <div class="arch-arrow">↓</div>
@@ -453,9 +473,19 @@
         </div>
     </section>
 
+    <!-- 版本历史 -->
+    <section class="architecture">
+        <h2 class="section-title">版本历史</h2>
+        <div class="arch-diagram" style="text-align:center;">
+            <p style="color:#94a3b8;font-size:15px;line-height:1.8;">
+                完整的版本更新记录请查看 <a href="VERSION_HISTORY.txt" style="color:#22c55e;text-decoration:underline;">VERSION_HISTORY.txt</a>
+            </p>
+        </div>
+    </section>
+
     <!-- 页脚 -->
     <footer class="footer">
-        <p>青柠架构 v1.0.0 · 代号「轻装上阵」</p>
+        <p>青柠架构 v1.5.0 · 代号「勇往直前」</p>
         <p style="margin-top:4px">&copy; 2024-2026 青柠网盘 · 王梓豪制作</p>
     </footer>
 

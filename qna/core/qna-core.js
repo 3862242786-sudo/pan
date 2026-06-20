@@ -1,6 +1,6 @@
 /**
  * 青柠架构核心 (Qingning Architecture Core)
- * 版本: 1.0.0
+ * 版本: 1.5.0 (代号: 勇往直前)
  * 所有青柠系网站共享的统一底层框架
  */
 
@@ -9,7 +9,8 @@
 
     // ============ 配置 ============
     var CONFIG = {
-        version: '1.0.0',
+        version: '1.5.0',
+        codename: '勇往直前',
         name: 'Qingning Architecture',
         supabaseUrl: 'https://qljnyepwofqcrfjwjlhv.supabase.co',
         supabaseKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFsam55ZXB3b2ZxY3JmandsbGh2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY2Mzg0ODUsImV4cCI6MjA2MjIxNDQ4NX0.K4gOwMzc0L3T3qL3IbykC5v1qM8fS6x6RjEeH4u8kXg',
@@ -87,6 +88,42 @@
             return target;
         },
 
+        // 深度合并对象 (v1.5 新增)
+        merge: function(target, source) {
+            var result = QNA.utils.deepClone(target);
+            for (var key in source) {
+                if (source.hasOwnProperty(key)) {
+                    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key]) &&
+                        result[key] && typeof result[key] === 'object' && !Array.isArray(result[key])) {
+                        result[key] = QNA.utils.merge(result[key], source[key]);
+                    } else {
+                        result[key] = source[key];
+                    }
+                }
+            }
+            return result;
+        },
+
+        // 重试异步操作，带退避策略 (v1.5 新增)
+        retry: function(fn, options) {
+            options = options || {};
+            var maxRetries = options.maxRetries || 3;
+            var delay = options.delay || 1000;
+            var backoff = options.backoff || 2;
+            var retries = 0;
+
+            function attempt() {
+                return fn().catch(function(err) {
+                    retries++;
+                    if (retries >= maxRetries) throw err;
+                    var waitTime = delay * Math.pow(backoff, retries - 1);
+                    return new Promise(function(resolve) { setTimeout(resolve, waitTime); })
+                        .then(attempt);
+                });
+            }
+            return attempt();
+        },
+
         // 生成唯一ID
         uuid: function() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -147,10 +184,17 @@
                 return null;
             }
             item.hits = (item.hits || 0) + 1;
-            return item.value;
+            // v1.5: 返回包含 etag 的完整缓存项
+            return { value: item.value, etag: item.etag || null };
         },
 
-        set: function(key, value, ttl) {
+        // 获取纯值（向后兼容）
+        getValue: function(key) {
+            var result = this.get(key);
+            return result ? result.value : null;
+        },
+
+        set: function(key, value, ttl, etag) {
             // LRU清理
             var keys = Object.keys(this._data);
             if (keys.length >= this._maxSize) {
@@ -168,7 +212,8 @@
                 value: value,
                 expire: ttl ? Date.now() + ttl : null,
                 hits: 0,
-                time: Date.now()
+                time: Date.now(),
+                etag: etag || null  // v1.5: ETag 支持
             };
         },
 
@@ -178,6 +223,13 @@
 
         remove: function(key) {
             delete this._data[key];
+        },
+
+        // v1.5: 检查 ETag 是否变化
+        checkETag: function(key, newETag) {
+            var item = this._data[key];
+            if (!item || !item.etag) return false; // 无旧 ETag，视为已变化
+            return item.etag === newETag; // 返回 true 表示未变化
         }
     };
 
@@ -210,6 +262,26 @@
                 handler(data);
             };
             this.on(event, wrapper);
+        },
+
+        // v1.5: 等待事件触发（返回 Promise）
+        waitFor: function(event, timeout) {
+            var self = this;
+            return new Promise(function(resolve, reject) {
+                var timer;
+                if (timeout) {
+                    timer = setTimeout(function() {
+                        self.off(event, handler);
+                        reject(new Error('waitFor timeout: ' + event));
+                    }, timeout);
+                }
+                var handler = function(data) {
+                    if (timer) clearTimeout(timer);
+                    self.off(event, handler);
+                    resolve(data);
+                };
+                self.on(event, handler);
+            });
         }
     };
 
