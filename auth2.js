@@ -332,10 +332,8 @@ async function handleTokenLogin(e) {
             return;
         }
 
-        // 2. 验证令牌 - 需要知道是哪个用户的令牌
-        // 令牌格式: 用户邮箱 + 日期 生成的 SHA256 前10位数字
-        // 由于我们不知道用户邮箱，需要尝试所有已知用户的令牌
-        const validUser = await validateTokenAgainstUsers(token);
+        // 2. 从 Supabase 下载活跃令牌列表验证
+        const validUser = await validateTokenFromCloud(token);
 
         if (!validUser) {
             showMessage('tokenMessage', '登录失败，此令牌已失效', true);
@@ -345,10 +343,8 @@ async function handleTokenLogin(e) {
         // 3. 令牌有效，执行登录
         showMessage('tokenMessage', '令牌验证成功！正在登录...', false);
 
-        // 保存登录状态
         saveLoginState(validUser.email);
         localStorage.setItem('qn_login_method', 'token');
-        localStorage.setItem('qn_token_used', token);
 
         // 初始化用户档案
         try {
@@ -380,6 +376,38 @@ async function handleTokenLogin(e) {
     }
 }
 
+// 从云端验证令牌（APP上传的令牌列表）
+async function validateTokenFromCloud(token) {
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .download('active_tokens.json');
+
+        if (error || !data) return null;
+
+        const text = await data.text();
+        const obj = JSON.parse(text);
+        const tokens = obj.tokens || [];
+
+        // 查找匹配的令牌
+        for (let i = 0; i < tokens.length; i++) {
+            const t = tokens[i];
+            if (t.token === token) {
+                // 检查是否过期
+                if (t.expires && Date.now() > t.expires) {
+                    return null; // 已过期
+                }
+                return { email: t.email };
+            }
+        }
+
+        return null;
+    } catch (e) {
+        console.error('Cloud token validation error:', e);
+        return null;
+    }
+}
+
 // 加载被禁用的令牌列表（从云端）
 async function loadDisabledTokens() {
     try {
@@ -395,71 +423,15 @@ async function loadDisabledTokens() {
     }
 }
 
-// 验证令牌是否匹配某个用户（支持版本号）
-async function validateTokenAgainstUsers(token) {
-    const today = new Date();
-    const dateStr = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
-
-    // 尝试从 localStorage 获取已知用户
-    const knownEmails = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('qn_profile_')) {
-            try {
-                const profile = JSON.parse(localStorage.getItem(key));
-                if (profile && profile.email) knownEmails.push(profile.email);
-            } catch (e) {}
-        }
-    }
-
-    // 也尝试从当前 Supabase session 获取（如果已登录）
-    try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session && session.user && session.user.email) {
-            if (!knownEmails.includes(session.user.email)) {
-                knownEmails.push(session.user.email);
-            }
-        }
-    } catch (e) {}
-
-    // 对每个已知邮箱验证令牌（尝试多个版本号）
-    for (const email of knownEmails) {
-        // 尝试版本号 0-10（覆盖正常和刷新后的令牌）
-        for (let version = 0; version <= 10; version++) {
-            const expectedToken = generateExpectedToken(email, dateStr, version);
-            if (expectedToken === token) {
-                return { email: email };
-            }
-        }
-    }
-
-    // 如果没有匹配，返回 null（令牌无效）
-    return null;
-}
-
-// 生成预期令牌（与 APK 使用完全相同的跨平台算法）
-// 支持版本号：email + date + version + secret
-function generateExpectedToken(email, dateStr, version) {
-    const seed = email + dateStr + (version || 0) + 'QINGNING_TOKEN_V2';
-    // 使用质数混合算法，确保 JS 和 Python 结果完全一致
-    const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-        const c = seed.charCodeAt(i);
-        hash = (hash * 31 + c * primes[i % primes.length]) % 10000000000;
-    }
-    // 确保10位，不足前面补0
-    return hash.toString().padStart(10, '0');
-}
-
-// ===== 扫码登录 =====
+// ===== 页面加载时异步验证Session =====
+checkLoginState();
 let qrCheckInterval = null;
-let currentQRToken = null;
+let currentQRSessionId = null;
 
 function startQRLogin() {
     generateQRCode();
-    // 每3秒检查一次是否被扫描
-    qrCheckInterval = setInterval(checkQRScanned, 3000);
+    // 每3秒从 Supabase 检查是否被扫描
+    qrCheckInterval = setInterval(checkQRScannedFromCloud, 3000);
     // 每60秒刷新二维码
     setTimeout(function() {
         if (document.getElementById('qrLoginForm') && document.getElementById('qrLoginForm').style.display !== 'none') {
@@ -475,31 +447,56 @@ function stopQRCheck() {
     }
 }
 
-function generateQRCode() {
+async function generateQRCode() {
     const container = document.getElementById('qrcodeContainer');
     if (!container) return;
 
-    // 生成一个随机的扫码会话ID
-    currentQRToken = 'qr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    // 生成唯一的会话ID
+    currentQRSessionId = 'qr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 
-    // 将会话ID存入 localStorage（模拟服务端存储）
-    const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
-    qrSessions[currentQRToken] = {
-        status: 'waiting',
-        createdAt: Date.now(),
-        email: null
-    };
-    localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
+    // 将会话写入 Supabase（状态：等待扫描）
+    try {
+        let sessions = {};
+        try {
+            const { data } = await supabaseClient.storage.from(BUCKET_NAME).download('qr_sessions.json');
+            if (data) {
+                const text = await data.text();
+                sessions = JSON.parse(text);
+            }
+        } catch (e) {}
 
-    // 生成二维码内容：包含扫码会话ID和网站URL
+        // 清理超过5分钟的旧会话
+        const now = Date.now();
+        for (const key in sessions) {
+            if (now - (sessions[key].createdAt || 0) > 300000) {
+                delete sessions[key];
+            }
+        }
+
+        sessions[currentQRSessionId] = {
+            status: 'waiting',
+            createdAt: now,
+            email: null
+        };
+
+        await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .upload('qr_sessions.json', JSON.stringify(sessions), {
+                cacheControl: '5',
+                upsert: true,
+                contentType: 'application/json'
+            });
+    } catch (e) {
+        console.error('Failed to create QR session:', e);
+    }
+
+    // 生成二维码
     const qrData = JSON.stringify({
         type: 'qingning_qr_login',
-        sessionId: currentQRToken,
-        url: window.location.origin + window.location.pathname,
+        sessionId: currentQRSessionId,
         timestamp: Date.now()
     });
 
-    // 使用 qrcode.js 生成标准二维码
     container.innerHTML = '';
     if (typeof QRCode !== 'undefined') {
         new QRCode(container, {
@@ -511,58 +508,74 @@ function generateQRCode() {
             correctLevel: QRCode.CorrectLevel.M
         });
     } else {
-        // 备用：显示文本提示
         container.innerHTML = '<div style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#64748b;font-size:12px;text-align:center;padding:10px;">二维码加载失败<br>请刷新页面</div>';
     }
 }
 
-// 检查二维码是否被扫描（轮询 localStorage）
-function checkQRScanned() {
-    if (!currentQRToken) return;
+// 从 Supabase 检查扫码状态
+async function checkQRScannedFromCloud() {
+    if (!currentQRSessionId) return;
 
-    const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
-    const session = qrSessions[currentQRToken];
+    try {
+        const { data, error } = await supabaseClient.storage
+            .from(BUCKET_NAME)
+            .download('qr_sessions.json');
 
-    if (!session) return;
+        if (error || !data) return;
 
-    if (session.status === 'scanned' && session.email) {
-        // 扫码成功，执行登录
-        stopQRCheck();
-        showMessage('qrMessage', '扫码成功！正在登录...', false);
+        const text = await data.text();
+        const sessions = JSON.parse(text);
+        const session = sessions[currentQRSessionId];
 
-        saveLoginState(session.email);
-        localStorage.setItem('qn_login_method', 'qr');
+        if (session && session.status === 'scanned' && session.email) {
+            // 扫码成功，执行登录
+            stopQRCheck();
+            showMessage('qrMessage', '扫码成功！正在登录...', false);
 
-        // 初始化用户档案
-        try {
-            var profileKey = 'qn_profile_' + session.email;
-            if (!localStorage.getItem(profileKey)) {
-                localStorage.setItem(profileKey, JSON.stringify({
-                    email: session.email,
-                    username: session.email.split('@')[0],
-                    bio: '',
-                    avatar_url: '',
-                    banner_url: '',
-                    verified: false,
-                    role: session.email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false,
-                    created_at: new Date().toISOString()
-                }));
-            }
-        } catch (pe) { console.warn('Profile init:', pe); }
+            saveLoginState(session.email);
+            localStorage.setItem('qn_login_method', 'qr');
 
-        // 清理会话
-        delete qrSessions[currentQRToken];
-        localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
+            // 初始化用户档案
+            try {
+                var profileKey = 'qn_profile_' + session.email;
+                if (!localStorage.getItem(profileKey)) {
+                    localStorage.setItem(profileKey, JSON.stringify({
+                        email: session.email,
+                        username: session.email.split('@')[0],
+                        bio: '',
+                        avatar_url: '',
+                        banner_url: '',
+                        verified: false,
+                        role: session.email === ADMIN_EMAIL ? 'admin' : 'user',
+                        favorites_public: false,
+                        created_at: new Date().toISOString()
+                    }));
+                }
+            } catch (pe) { console.warn('Profile init:', pe); }
 
-        // 跳转
-        setTimeout(function() {
-            if (session.email === ADMIN_EMAIL) {
-                window.location.href = 'admin.html';
-            } else {
-                window.location.href = 'index.html';
-            }
-        }, 1000);
+            // 清理会话
+            delete sessions[currentQRSessionId];
+            try {
+                await supabaseClient.storage
+                    .from(BUCKET_NAME)
+                    .upload('qr_sessions.json', JSON.stringify(sessions), {
+                        cacheControl: '5',
+                        upsert: true,
+                        contentType: 'application/json'
+                    });
+            } catch (e) {}
+
+            // 跳转
+            setTimeout(function() {
+                if (session.email === ADMIN_EMAIL) {
+                    window.location.href = 'admin.html';
+                } else {
+                    window.location.href = 'index.html';
+                }
+            }, 1000);
+        }
+    } catch (e) {
+        // 静默失败，下次轮询重试
     }
 }
 

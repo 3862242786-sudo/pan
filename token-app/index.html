@@ -326,6 +326,51 @@
             const hours = Math.floor(diff / 3600000);
             const mins = Math.floor((diff % 3600000) / 60000);
             document.getElementById('expireInfo').textContent = `有效期至: 明天 00:00 (还剩 ${hours}小时${mins}分)`;
+
+            // 上传令牌到 Supabase，让网站端可以验证
+            uploadTokenToCloud();
+        }
+
+        // 上传令牌到 Supabase Storage
+        async function uploadTokenToCloud() {
+            if (!currentUser || !currentToken || !supabaseClient) return;
+
+            try {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(0, 0, 0, 0);
+
+                let tokensData = { tokens: [] };
+                try {
+                    const { data } = await supabaseClient.storage.from('qingning-pan').download('active_tokens.json');
+                    if (data) {
+                        const text = await data.text();
+                        tokensData = JSON.parse(text);
+                    }
+                } catch (e) {}
+
+                // 移除该邮箱的旧令牌
+                tokensData.tokens = tokensData.tokens.filter(t => t.email !== currentUser.email);
+
+                // 添加新令牌
+                tokensData.tokens.push({
+                    email: currentUser.email,
+                    token: currentToken,
+                    version: tokenVersion,
+                    createdAt: Date.now(),
+                    expires: tomorrow.getTime()
+                });
+
+                await supabaseClient.storage
+                    .from('qingning-pan')
+                    .upload('active_tokens.json', JSON.stringify(tokensData), {
+                        cacheControl: '5',
+                        upsert: true,
+                        contentType: 'application/json'
+                    });
+            } catch (e) {
+                console.error('Upload token failed:', e);
+            }
         }
 
         function copyToken() {
@@ -436,20 +481,49 @@
             try {
                 const data = JSON.parse(qrData);
                 if (data.type === 'qingning_qr_login' && data.sessionId) {
-                    // 将扫码结果写入 localStorage，网站端会轮询检测
-                    const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
-                    qrSessions[data.sessionId] = {
-                        status: 'scanned',
-                        email: currentUser.email,
-                        scannedAt: Date.now()
-                    };
-                    localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
-                    showScanMsg('登录成功！网站端已自动登录', 'success');
+                    // 将扫码结果写入 Supabase，网站端会轮询检测
+                    submitQRScanToCloud(data.sessionId);
                 } else {
                     showScanMsg('二维码格式不正确', 'error');
                 }
             } catch (e) {
                 showScanMsg('无法识别二维码内容', 'error');
+            }
+        }
+
+        // 将扫码结果写入 Supabase
+        async function submitQRScanToCloud(sessionId) {
+            try {
+                let sessions = {};
+                try {
+                    const { data } = await supabaseClient.storage.from('qingning-pan').download('qr_sessions.json');
+                    if (data) {
+                        const text = await data.text();
+                        sessions = JSON.parse(text);
+                    }
+                } catch (e) {}
+
+                if (sessions[sessionId]) {
+                    sessions[sessionId] = {
+                        status: 'scanned',
+                        email: currentUser.email,
+                        scannedAt: Date.now()
+                    };
+
+                    await supabaseClient.storage
+                        .from('qingning-pan')
+                        .upload('qr_sessions.json', JSON.stringify(sessions), {
+                            cacheControl: '5',
+                            upsert: true,
+                            contentType: 'application/json'
+                        });
+
+                    showScanMsg('登录成功！网站端已自动登录', 'success');
+                } else {
+                    showScanMsg('二维码已过期，请刷新网站重新获取', 'error');
+                }
+            } catch (e) {
+                showScanMsg('提交失败: ' + e.message, 'error');
             }
         }
 
@@ -465,16 +539,8 @@
                 return;
             }
 
-            const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
-            qrSessions[sessionId] = {
-                status: 'scanned',
-                email: currentUser.email,
-                scannedAt: Date.now()
-            };
-            localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
-
+            submitQRScanToCloud(sessionId);
             document.getElementById('manualSessionId').value = '';
-            showScanMsg('登录成功！网站端已自动登录', 'success');
         }
 
         function showScanMsg(text, type) {
