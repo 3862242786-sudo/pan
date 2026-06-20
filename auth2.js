@@ -38,6 +38,7 @@ function switchTab(tab) {
     const registerForm = document.getElementById('registerForm');
     const forgotForm = document.getElementById('forgotForm');
     const tokenForm = document.getElementById('tokenForm');
+    const qrForm = document.getElementById('qrLoginForm');
     const header = document.querySelector('.auth-header p');
 
     // 隐藏所有表单
@@ -45,6 +46,10 @@ function switchTab(tab) {
     if (registerForm) registerForm.style.display = 'none';
     if (forgotForm) forgotForm.style.display = 'none';
     if (tokenForm) tokenForm.style.display = 'none';
+    if (qrForm) qrForm.style.display = 'none';
+
+    // 停止二维码轮询
+    stopQRCheck();
 
     if (tab === 'login') {
         if (loginForm) loginForm.style.display = 'block';
@@ -58,6 +63,10 @@ function switchTab(tab) {
     } else if (tab === 'token') {
         if (tokenForm) tokenForm.style.display = 'block';
         if (header) header.textContent = '令牌登录';
+    } else if (tab === 'qrcode') {
+        if (qrForm) qrForm.style.display = 'block';
+        if (header) header.textContent = '扫码登录';
+        startQRLogin();
     }
 }
 
@@ -437,6 +446,160 @@ function generateExpectedToken(email, dateStr) {
     }
     // 确保10位，不足前面补0
     return hash.toString().padStart(10, '0');
+}
+
+// ===== 扫码登录 =====
+let qrCheckInterval = null;
+let currentQRToken = null;
+
+function startQRLogin() {
+    generateQRCode();
+    // 每3秒检查一次是否被扫描
+    qrCheckInterval = setInterval(checkQRScanned, 3000);
+    // 每60秒刷新二维码
+    setTimeout(function() {
+        if (document.getElementById('qrLoginForm') && document.getElementById('qrLoginForm').style.display !== 'none') {
+            generateQRCode();
+        }
+    }, 60000);
+}
+
+function stopQRCheck() {
+    if (qrCheckInterval) {
+        clearInterval(qrCheckInterval);
+        qrCheckInterval = null;
+    }
+}
+
+function generateQRCode() {
+    const container = document.getElementById('qrcodeContainer');
+    if (!container) return;
+
+    // 生成一个随机的扫码会话ID
+    currentQRToken = 'qr_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    // 将会话ID存入 localStorage（模拟服务端存储）
+    const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
+    qrSessions[currentQRToken] = {
+        status: 'waiting',
+        createdAt: Date.now(),
+        email: null
+    };
+    localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
+
+    // 生成二维码内容：包含扫码会话ID和网站URL
+    const qrData = JSON.stringify({
+        type: 'qingning_qr_login',
+        sessionId: currentQRToken,
+        url: window.location.origin + window.location.pathname,
+        timestamp: Date.now()
+    });
+
+    // 使用简单的二维码生成（基于 canvas）
+    container.innerHTML = '';
+    drawSimpleQR(container, qrData, 180);
+}
+
+// 简单的二维码绘制（基于 canvas 的 QR 模式）
+function drawSimpleQR(container, text, size) {
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // 使用一个确定性算法将文本转为二维码图案
+    // 实际项目中应使用 qrcode.js 库，这里为了独立运行用简化版
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#0f172a';
+
+    const cells = 25;
+    const cellSize = size / cells;
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash = hash & hash;
+    }
+
+    // 绘制定位图案（三个角）
+    drawPositionPattern(ctx, 1, 1, cellSize);
+    drawPositionPattern(ctx, cells - 8, 1, cellSize);
+    drawPositionPattern(ctx, 1, cells - 8, cellSize);
+
+    // 绘制数据图案
+    for (let row = 0; row < cells; row++) {
+        for (let col = 0; col < cells; col++) {
+            // 跳过定位图案区域
+            if ((row < 9 && col < 9) || (row < 9 && col > cells - 10) || (row > cells - 10 && col < 9)) continue;
+            const val = Math.abs((hash + row * 31 + col * 17) % 100);
+            if (val < 50) {
+                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+
+    container.appendChild(canvas);
+}
+
+function drawPositionPattern(ctx, x, y, cellSize) {
+    // 外框 7x7
+    for (let i = 0; i < 7; i++) {
+        for (let j = 0; j < 7; j++) {
+            if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
+                ctx.fillRect((x + j) * cellSize, (y + i) * cellSize, cellSize, cellSize);
+            }
+        }
+    }
+}
+
+// 检查二维码是否被扫描（轮询 localStorage）
+function checkQRScanned() {
+    if (!currentQRToken) return;
+
+    const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
+    const session = qrSessions[currentQRToken];
+
+    if (!session) return;
+
+    if (session.status === 'scanned' && session.email) {
+        // 扫码成功，执行登录
+        stopQRCheck();
+        showMessage('qrMessage', '扫码成功！正在登录...', false);
+
+        saveLoginState(session.email);
+        localStorage.setItem('qn_login_method', 'qr');
+
+        // 初始化用户档案
+        try {
+            var profileKey = 'qn_profile_' + session.email;
+            if (!localStorage.getItem(profileKey)) {
+                localStorage.setItem(profileKey, JSON.stringify({
+                    email: session.email,
+                    username: session.email.split('@')[0],
+                    bio: '',
+                    avatar_url: '',
+                    banner_url: '',
+                    verified: false,
+                    role: session.email === ADMIN_EMAIL ? 'admin' : 'user',
+                    favorites_public: false,
+                    created_at: new Date().toISOString()
+                }));
+            }
+        } catch (pe) { console.warn('Profile init:', pe); }
+
+        // 清理会话
+        delete qrSessions[currentQRToken];
+        localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
+
+        // 跳转
+        setTimeout(function() {
+            if (session.email === ADMIN_EMAIL) {
+                window.location.href = 'admin.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }, 1000);
+    }
 }
 
 // 页面加载时异步验证Session
