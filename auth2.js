@@ -395,7 +395,7 @@ async function loadDisabledTokens() {
     }
 }
 
-// 验证令牌是否匹配某个用户
+// 验证令牌是否匹配某个用户（支持版本号）
 async function validateTokenAgainstUsers(token) {
     const today = new Date();
     const dateStr = today.getFullYear() + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
@@ -422,11 +422,14 @@ async function validateTokenAgainstUsers(token) {
         }
     } catch (e) {}
 
-    // 对每个已知邮箱验证令牌
+    // 对每个已知邮箱验证令牌（尝试多个版本号）
     for (const email of knownEmails) {
-        const expectedToken = generateExpectedToken(email, dateStr);
-        if (expectedToken === token) {
-            return { email: email };
+        // 尝试版本号 0-10（覆盖正常和刷新后的令牌）
+        for (let version = 0; version <= 10; version++) {
+            const expectedToken = generateExpectedToken(email, dateStr, version);
+            if (expectedToken === token) {
+                return { email: email };
+            }
         }
     }
 
@@ -435,8 +438,9 @@ async function validateTokenAgainstUsers(token) {
 }
 
 // 生成预期令牌（与 APK 使用完全相同的跨平台算法）
-function generateExpectedToken(email, dateStr) {
-    const seed = email + dateStr + 'QINGNING_TOKEN_V2';
+// 支持版本号：email + date + version + secret
+function generateExpectedToken(email, dateStr, version) {
+    const seed = email + dateStr + (version || 0) + 'QINGNING_TOKEN_V2';
     // 使用质数混合算法，确保 JS 和 Python 结果完全一致
     const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
     let hash = 0;
@@ -495,60 +499,20 @@ function generateQRCode() {
         timestamp: Date.now()
     });
 
-    // 使用简单的二维码生成（基于 canvas）
+    // 使用 qrcode.js 生成标准二维码
     container.innerHTML = '';
-    drawSimpleQR(container, qrData, 180);
-}
-
-// 简单的二维码绘制（基于 canvas 的 QR 模式）
-function drawSimpleQR(container, text, size) {
-    const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-
-    // 使用一个确定性算法将文本转为二维码图案
-    // 实际项目中应使用 qrcode.js 库，这里为了独立运行用简化版
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#0f172a';
-
-    const cells = 25;
-    const cellSize = size / cells;
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-        hash = ((hash << 5) - hash) + text.charCodeAt(i);
-        hash = hash & hash;
-    }
-
-    // 绘制定位图案（三个角）
-    drawPositionPattern(ctx, 1, 1, cellSize);
-    drawPositionPattern(ctx, cells - 8, 1, cellSize);
-    drawPositionPattern(ctx, 1, cells - 8, cellSize);
-
-    // 绘制数据图案
-    for (let row = 0; row < cells; row++) {
-        for (let col = 0; col < cells; col++) {
-            // 跳过定位图案区域
-            if ((row < 9 && col < 9) || (row < 9 && col > cells - 10) || (row > cells - 10 && col < 9)) continue;
-            const val = Math.abs((hash + row * 31 + col * 17) % 100);
-            if (val < 50) {
-                ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-            }
-        }
-    }
-
-    container.appendChild(canvas);
-}
-
-function drawPositionPattern(ctx, x, y, cellSize) {
-    // 外框 7x7
-    for (let i = 0; i < 7; i++) {
-        for (let j = 0; j < 7; j++) {
-            if (i === 0 || i === 6 || j === 0 || j === 6 || (i >= 2 && i <= 4 && j >= 2 && j <= 4)) {
-                ctx.fillRect((x + j) * cellSize, (y + i) * cellSize, cellSize, cellSize);
-            }
-        }
+    if (typeof QRCode !== 'undefined') {
+        new QRCode(container, {
+            text: qrData,
+            width: 180,
+            height: 180,
+            colorDark: '#0f172a',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+        });
+    } else {
+        // 备用：显示文本提示
+        container.innerHTML = '<div style="width:180px;height:180px;display:flex;align-items:center;justify-content:center;background:#f1f5f9;color:#64748b;font-size:12px;text-align:center;padding:10px;">二维码加载失败<br>请刷新页面</div>';
     }
 }
 

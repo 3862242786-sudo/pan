@@ -18,31 +18,16 @@
             -webkit-tap-highlight-color: transparent;
         }
         .container { max-width: 420px; margin: 0 auto; padding: 20px; }
-        .logo {
-            text-align: center;
-            padding: 40px 0 20px;
-        }
-        .logo h1 {
-            font-size: 28px;
-            color: #22c55e;
-            font-weight: 700;
-        }
-        .logo p {
-            color: #64748b;
-            font-size: 13px;
-            margin-top: 6px;
-        }
+        .logo { text-align: center; padding: 40px 0 20px; }
+        .logo h1 { font-size: 28px; color: #22c55e; font-weight: 700; }
+        .logo p { color: #64748b; font-size: 13px; margin-top: 6px; }
         .card {
             background: #1e293b;
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 16px;
         }
-        .card-title {
-            font-size: 14px;
-            color: #94a3b8;
-            margin-bottom: 12px;
-        }
+        .card-title { font-size: 14px; color: #94a3b8; margin-bottom: 12px; }
         .token-display {
             font-family: 'Courier New', monospace;
             font-size: 36px;
@@ -52,16 +37,8 @@
             letter-spacing: 4px;
             padding: 16px 0;
         }
-        .token-placeholder {
-            color: #475569;
-            font-size: 20px;
-        }
-        .expire-info {
-            text-align: center;
-            color: #64748b;
-            font-size: 12px;
-            margin-top: 8px;
-        }
+        .token-placeholder { color: #475569; font-size: 20px; }
+        .expire-info { text-align: center; color: #64748b; font-size: 12px; margin-top: 8px; }
         .btn {
             width: 100%;
             padding: 14px;
@@ -74,18 +51,9 @@
             margin-top: 12px;
         }
         .btn:active { opacity: 0.8; }
-        .btn-primary {
-            background: #22c55e;
-            color: #fff;
-        }
-        .btn-secondary {
-            background: #334155;
-            color: #94a3b8;
-        }
-        .btn-danger {
-            background: #ef4444;
-            color: #fff;
-        }
+        .btn-primary { background: #22c55e; color: #fff; }
+        .btn-secondary { background: #334155; color: #94a3b8; }
+        .btn-danger { background: #ef4444; color: #fff; }
         .input {
             width: 100%;
             padding: 14px;
@@ -98,7 +66,6 @@
             margin-bottom: 12px;
         }
         .input:focus { border-color: #22c55e; }
-        .form-group { margin-bottom: 16px; }
         .hidden { display: none !important; }
         .msg {
             text-align: center;
@@ -109,27 +76,9 @@
         }
         .msg-success { background: rgba(34,197,94,0.15); color: #22c55e; }
         .msg-error { background: rgba(239,68,68,0.15); color: #ef4444; }
-        .qr-section {
-            text-align: center;
-            padding: 16px;
-        }
-        #qrcode {
-            display: inline-block;
-            padding: 12px;
-            background: #fff;
-            border-radius: 12px;
-        }
-        .footer {
-            text-align: center;
-            padding: 20px;
-            color: #475569;
-            font-size: 11px;
-        }
-        .tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
+        .qr-section { text-align: center; padding: 16px; }
+        .footer { text-align: center; padding: 20px; color: #475569; font-size: 11px; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
         .tab {
             flex: 1;
             padding: 10px;
@@ -140,9 +89,47 @@
             color: #94a3b8;
             cursor: pointer;
         }
-        .tab.active {
-            background: #22c55e;
-            color: #fff;
+        .tab.active { background: #22c55e; color: #fff; }
+        .scan-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .scan-overlay video {
+            width: 100%;
+            max-width: 320px;
+            border-radius: 12px;
+            background: #000;
+        }
+        .scan-overlay .scan-frame {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border: 2px solid #22c55e;
+            border-radius: 12px;
+            pointer-events: none;
+        }
+        .scan-overlay .scan-frame::before,
+        .scan-overlay .scan-frame::after {
+            content: '';
+            position: absolute;
+            width: 20px; height: 20px;
+            border-color: #22c55e;
+            border-style: solid;
+        }
+        .scan-overlay .scan-frame::before {
+            top: -2px; left: -2px;
+            border-width: 4px 0 0 4px;
+        }
+        .scan-overlay .scan-frame::after {
+            bottom: -2px; right: -2px;
+            border-width: 0 4px 4px 0;
         }
     </style>
 </head>
@@ -160,18 +147,15 @@
                     <div class="tab active" onclick="switchLoginTab('account')">账户登录</div>
                     <div class="tab" onclick="switchLoginTab('token')">令牌登录</div>
                 </div>
-
                 <div id="accountLogin">
                     <input type="email" id="email" class="input" placeholder="青柠账户邮箱">
                     <input type="password" id="password" class="input" placeholder="密码">
                     <button class="btn btn-primary" onclick="doLogin()">登录</button>
                 </div>
-
                 <div id="tokenLogin" class="hidden">
                     <input type="text" id="tokenInput" class="input" placeholder="输入10位令牌" maxlength="10" inputmode="numeric">
                     <button class="btn btn-primary" onclick="doTokenLogin()">验证令牌</button>
                 </div>
-
                 <div id="loginMsg"></div>
             </div>
         </div>
@@ -190,14 +174,8 @@
 
             <div class="card">
                 <div class="card-title">扫码登录</div>
-                <p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">在青柠系网站选择「扫码登录」，显示二维码后，用APP扫描或手动输入会话ID</p>
+                <p style="color:#94a3b8;font-size:13px;margin-bottom:12px;">在青柠系网站选择「扫码登录」，显示二维码后，用APP扫描</p>
                 <button class="btn btn-primary" onclick="startScanQR()">扫描二维码</button>
-                <div id="scanContainer" class="qr-section hidden">
-                    <video id="scanVideo" style="width:100%;max-width:280px;border-radius:12px;background:#0f172a;" playsinline></video>
-                    <canvas id="scanCanvas" style="display:none;"></canvas>
-                    <p style="color:#64748b;font-size:12px;margin-top:8px">将二维码对准摄像头</p>
-                    <button class="btn btn-secondary" onclick="stopScanQR()" style="margin-top:8px;">取消扫描</button>
-                </div>
                 <div style="margin-top:12px">
                     <input type="text" id="manualSessionId" class="input" placeholder="或手动输入二维码中的会话ID" style="margin-bottom:8px;">
                     <button class="btn btn-secondary" onclick="manualQRLogin()">确认登录</button>
@@ -219,17 +197,29 @@
         </div>
     </div>
 
+    <!-- 扫码覆盖层 -->
+    <div id="scanOverlay" class="scan-overlay hidden">
+        <video id="scanVideo" playsinline></video>
+        <div class="scan-frame"></div>
+        <p style="color:#fff;margin-top:20px;font-size:14px;">将二维码放入框内</p>
+        <button class="btn btn-secondary" onclick="stopScanQR()" style="margin-top:20px;max-width:200px;">取消扫描</button>
+    </div>
+
+    <canvas id="scanCanvas" style="display:none;"></canvas>
+
     <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script>
-        // 配置
         const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
         const TOKEN_SECRET = 'QINGNING_TOKEN_V2';
 
         let supabaseClient;
         let currentUser = null;
-        let qrCodeObj = null;
+        let scanStream = null;
+        let scanInterval = null;
+        let currentToken = null;
+        let tokenVersion = 0;
 
         function init() {
             if (typeof window.supabase !== 'undefined') {
@@ -240,12 +230,12 @@
             }
         }
 
-        // 检查登录状态
         function checkLoginState() {
             const saved = localStorage.getItem('qn_token_user');
             if (saved) {
                 try {
                     currentUser = JSON.parse(saved);
+                    tokenVersion = parseInt(localStorage.getItem('qn_token_version') || '0');
                     showMainScreen();
                     updateTokenDisplay();
                 } catch (e) {
@@ -269,33 +259,22 @@
         async function doLogin() {
             const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
-            const msgEl = document.getElementById('loginMsg');
-
             if (!email || !password) {
                 showMsg('请输入邮箱和密码', 'error');
                 return;
             }
-
             try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email, password
-                });
-
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) {
                     showMsg('登录失败: ' + error.message, 'error');
                     return;
                 }
-
-                currentUser = {
-                    email: data.user.email,
-                    name: data.user.email.split('@')[0]
-                };
+                currentUser = { email: data.user.email, name: data.user.email.split('@')[0] };
                 localStorage.setItem('qn_token_user', JSON.stringify(currentUser));
+                tokenVersion = 0;
+                localStorage.setItem('qn_token_version', '0');
                 showMsg('登录成功!', 'success');
-                setTimeout(() => {
-                    showMainScreen();
-                    updateTokenDisplay();
-                }, 500);
+                setTimeout(() => { showMainScreen(); updateTokenDisplay(); }, 500);
             } catch (err) {
                 showMsg('登录失败,请检查网络', 'error');
             }
@@ -307,7 +286,6 @@
                 showMsg('请输入10位数字令牌', 'error');
                 return;
             }
-            // 令牌登录需要知道用户邮箱，这里简化处理
             showMsg('令牌验证功能需要在已登录状态下使用', 'error');
         }
 
@@ -321,8 +299,9 @@
             document.getElementById('loginScreen').classList.remove('hidden');
         }
 
-        function generateToken(email, dateStr) {
-            const seed = email + dateStr + TOKEN_SECRET;
+        // 生成令牌：email + date + version + secret
+        function generateToken(email, dateStr, version) {
+            const seed = email + dateStr + version + TOKEN_SECRET;
             const primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
             let hash = 0;
             for (let i = 0; i < seed.length; i++) {
@@ -334,12 +313,11 @@
 
         function updateTokenDisplay() {
             if (!currentUser) return;
-
             const now = new Date();
             const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
-            const token = generateToken(currentUser.email, dateStr);
+            currentToken = generateToken(currentUser.email, dateStr, tokenVersion);
 
-            document.getElementById('tokenDisplay').innerHTML = token;
+            document.getElementById('tokenDisplay').innerHTML = currentToken;
 
             const tomorrow = new Date(now);
             tomorrow.setDate(tomorrow.getDate() + 1);
@@ -361,24 +339,39 @@
             }
         }
 
+        // 刷新令牌：版本号+1，旧令牌失效
         function refreshToken() {
+            if (!currentUser) return;
+
+            // 将旧令牌加入失效列表
+            const oldToken = currentToken;
+            if (oldToken) {
+                let revoked = JSON.parse(localStorage.getItem('qn_revoked_tokens') || '[]');
+                revoked.push({ token: oldToken, revokedAt: Date.now() });
+                // 只保留最近100条
+                if (revoked.length > 100) revoked = revoked.slice(-100);
+                localStorage.setItem('qn_revoked_tokens', JSON.stringify(revoked));
+            }
+
+            // 版本号+1，生成新令牌
+            tokenVersion++;
+            localStorage.setItem('qn_token_version', tokenVersion.toString());
             updateTokenDisplay();
+
             const btn = event.target;
             btn.textContent = '已刷新';
             setTimeout(() => btn.textContent = '刷新令牌', 2000);
         }
 
-        let scanStream = null;
-        let scanInterval = null;
-
+        // ===== 扫码登录 =====
         async function startScanQR() {
             if (!currentUser) {
-                showMsg('请先登录账户', 'error');
+                showScanMsg('请先登录账户', 'error');
                 return;
             }
 
-            const container = document.getElementById('scanContainer');
-            container.classList.remove('hidden');
+            const overlay = document.getElementById('scanOverlay');
+            overlay.classList.remove('hidden');
 
             try {
                 const video = document.getElementById('scanVideo');
@@ -386,10 +379,12 @@
                     video: { facingMode: 'environment' }
                 });
                 video.srcObject = scanStream;
-                video.play();
+                await video.play();
 
-                // 开始解析二维码
-                scanInterval = setInterval(parseQRFrame, 500);
+                // 使用 jsQR 解析
+                scanInterval = setInterval(() => {
+                    parseQRFrameWithJsQR();
+                }, 300);
             } catch (err) {
                 showScanMsg('无法访问摄像头: ' + err.message, 'error');
                 stopScanQR();
@@ -397,8 +392,7 @@
         }
 
         function stopScanQR() {
-            const container = document.getElementById('scanContainer');
-            container.classList.add('hidden');
+            document.getElementById('scanOverlay').classList.add('hidden');
 
             if (scanInterval) {
                 clearInterval(scanInterval);
@@ -411,7 +405,7 @@
             }
         }
 
-        function parseQRFrame() {
+        function parseQRFrameWithJsQR() {
             const video = document.getElementById('scanVideo');
             const canvas = document.getElementById('scanCanvas');
             const ctx = canvas.getContext('2d');
@@ -422,77 +416,23 @@
             canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // 获取图像数据并尝试解析二维码
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const qrData = decodeQRFromImageData(imageData);
 
-            if (qrData) {
-                handleScannedQR(qrData);
-            }
-        }
+            // 使用 jsQR 库解析
+            if (typeof jsQR !== 'undefined') {
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert'
+                });
 
-        // 简化的二维码解码（基于图像特征检测）
-        function decodeQRFromImageData(imageData) {
-            // 在实际环境中，应该使用 jsQR 库
-            // 这里使用一个简化的方法：检测图像中是否有高对比度的黑白方块模式
-            const data = imageData.data;
-            const width = imageData.width;
-            const height = imageData.height;
-
-            // 采样中心区域
-            const cx = Math.floor(width / 2);
-            const cy = Math.floor(height / 2);
-            const sampleSize = Math.min(200, width, height);
-            const startX = cx - sampleSize / 2;
-            const startY = cy - sampleSize / 2;
-
-            // 检查是否有 QR 码定位图案特征（三个角的回字形）
-            let finderPatterns = 0;
-            const step = Math.floor(sampleSize / 25);
-
-            for (let y = startY; y < startY + sampleSize - step * 7; y += step) {
-                for (let x = startX; x < startX + sampleSize - step * 7; x += step) {
-                    if (isFinderPattern(data, width, Math.floor(x), Math.floor(y), step)) {
-                        finderPatterns++;
-                        if (finderPatterns >= 3) {
-                            // 检测到 QR 码特征，尝试从 localStorage 获取扫描结果
-                            // 实际应该解析二维码内容，这里简化处理
-                            return tryReadQRFromLocalStorage();
-                        }
-                    }
+                if (code && code.data) {
+                    handleScannedQR(code.data);
                 }
             }
-
-            return null;
-        }
-
-        function isFinderPattern(data, width, x, y, step) {
-            // 检查 7x7 区域是否符合定位图案特征
-            // 定位图案：黑色外框 -> 白色 -> 黑色中心
-            const getPixel = (px, py) => {
-                const i = (py * width + px) * 4;
-                return (data[i] + data[i + 1] + data[i + 2]) / 3;
-            };
-
-            const center = getPixel(x + step * 3, y + step * 3);
-            const mid = getPixel(x + step * 2, y + step * 2);
-            const outer = getPixel(x, y);
-
-            // 中心应该是黑色，中间环白色，外框黑色
-            return center < 80 && mid > 180 && outer < 80;
-        }
-
-        function tryReadQRFromLocalStorage() {
-            // 简化方案：用户手动输入二维码中的会话ID
-            // 实际应该解析二维码图像，这里提供手动输入作为备选
-            return null;
         }
 
         function handleScannedQR(qrData) {
             stopScanQR();
-            showScanMsg('二维码识别成功！正在登录...', 'success');
 
-            // 解析二维码数据
             try {
                 const data = JSON.parse(qrData);
                 if (data.type === 'qingning_qr_login' && data.sessionId) {
@@ -505,20 +445,14 @@
                     };
                     localStorage.setItem('qn_qr_sessions', JSON.stringify(qrSessions));
                     showScanMsg('登录成功！网站端已自动登录', 'success');
+                } else {
+                    showScanMsg('二维码格式不正确', 'error');
                 }
             } catch (e) {
-                showScanMsg('二维码格式错误', 'error');
+                showScanMsg('无法识别二维码内容', 'error');
             }
         }
 
-        function showScanMsg(text, type) {
-            const msgEl = document.getElementById('scanMsg');
-            msgEl.textContent = text;
-            msgEl.className = 'msg msg-' + type;
-            setTimeout(() => { msgEl.textContent = ''; msgEl.className = ''; }, 5000);
-        }
-
-        // 手动输入会话ID登录
         function manualQRLogin() {
             if (!currentUser) {
                 showScanMsg('请先登录账户', 'error');
@@ -531,7 +465,6 @@
                 return;
             }
 
-            // 将扫码结果写入 localStorage，网站端会轮询检测
             const qrSessions = JSON.parse(localStorage.getItem('qn_qr_sessions') || '{}');
             qrSessions[sessionId] = {
                 status: 'scanned',
@@ -544,17 +477,38 @@
             showScanMsg('登录成功！网站端已自动登录', 'success');
         }
 
+        function showScanMsg(text, type) {
+            const msgEl = document.getElementById('scanMsg');
+            msgEl.textContent = text;
+            msgEl.className = 'msg msg-' + type;
+            setTimeout(() => { msgEl.textContent = ''; msgEl.className = ''; }, 5000);
+        }
+
         function invalidateToken() {
             if (!confirm('确定要使当前令牌失效吗？失效后需要重新登录获取新令牌。')) return;
+
+            // 将当前令牌加入失效列表
+            if (currentToken) {
+                let revoked = JSON.parse(localStorage.getItem('qn_revoked_tokens') || '[]');
+                revoked.push({ token: currentToken, revokedAt: Date.now() });
+                localStorage.setItem('qn_revoked_tokens', JSON.stringify(revoked));
+            }
+
             localStorage.removeItem('qn_token_user');
+            localStorage.removeItem('qn_token_version');
             currentUser = null;
+            currentToken = null;
+            tokenVersion = 0;
             showLoginScreen();
             showMsg('令牌已失效，请重新登录', 'error');
         }
 
         function doLogout() {
             localStorage.removeItem('qn_token_user');
+            localStorage.removeItem('qn_token_version');
             currentUser = null;
+            currentToken = null;
+            tokenVersion = 0;
             showLoginScreen();
         }
 
@@ -565,12 +519,11 @@
             setTimeout(() => { msgEl.textContent = ''; msgEl.className = ''; }, 3000);
         }
 
-        // 每分钟刷新令牌显示
+        // 每分钟刷新显示
         setInterval(() => {
             if (currentUser) updateTokenDisplay();
         }, 60000);
 
-        // 初始化
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
