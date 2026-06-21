@@ -1262,9 +1262,9 @@
             started = true;
             document.getElementById('start-screen').classList.add('hidden');
 
-            scene = new SpaceShooterScene3D(engine);
             engine.scenes.register('game', SpaceShooterScene3D);
             engine.scenes.switch('game');
+            scene = engine.scenes.current();
             await scene.init();
             engine.start();
         }
