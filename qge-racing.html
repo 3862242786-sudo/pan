@@ -1208,5 +1208,266 @@
     // 初始渲染一帧
     renderer.render(scene, camera);
   </script>
+
+  <!-- ============================================
+       触屏控制（虚拟摇杆 + 按键）
+       ============================================ -->
+  <div id="touch-controls">
+    <!-- 左摇杆（转向） -->
+    <div id="touch-zone-left">
+      <div id="touch-joystick">
+        <div id="touch-joystick-knob"></div>
+      </div>
+      <div class="touch-label">转向</div>
+    </div>
+
+    <!-- 右侧按钮 -->
+    <div id="touch-zone-right">
+      <div id="touch-btn-accelerate" class="touch-btn touch-btn-accel">
+        <span>油门</span>
+      </div>
+      <div id="touch-btn-brake" class="touch-btn touch-btn-brake">
+        <span>刹车</span>
+      </div>
+      <div id="touch-btn-boost" class="touch-btn touch-btn-boost">
+        <span>氮气</span>
+      </div>
+      <div id="touch-btn-handbrake" class="touch-btn touch-btn-handbrake">
+        <span>漂移</span>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* 触屏控制 - 仅在触摸设备显示 */
+    #touch-controls {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 20;
+      pointer-events: none;
+      display: none;
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      #touch-controls { display: block; }
+      /* 隐藏键盘控制提示 */
+      #controls-hint { display: none; }
+    }
+
+    /* 左摇杆区 */
+    #touch-zone-left {
+      position: absolute;
+      bottom: 30px; left: 30px;
+      width: 130px; height: 130px;
+      pointer-events: auto;
+    }
+
+    #touch-joystick {
+      width: 130px; height: 130px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.12);
+      border: 2px solid rgba(34, 197, 94, 0.3);
+      position: relative;
+      touch-action: none;
+    }
+
+    #touch-joystick-knob {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(34, 197, 94, 0.5);
+      border: 2px solid rgba(34, 197, 94, 0.7);
+      transform: translate(-50%, -50%);
+      transition: none;
+    }
+
+    .touch-label {
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 11px;
+      margin-top: 4px;
+      letter-spacing: 2px;
+    }
+
+    /* 右侧按钮区 */
+    #touch-zone-right {
+      position: absolute;
+      bottom: 30px; right: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      pointer-events: auto;
+    }
+
+    .touch-btn {
+      width: 64px; height: 64px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .touch-btn:active, .touch-btn.active {
+      transform: scale(0.92);
+    }
+
+    .touch-btn-accel {
+      background: rgba(34, 197, 94, 0.3);
+      border: 2px solid rgba(34, 197, 94, 0.6);
+    }
+    .touch-btn-accel:active, .touch-btn-accel.active {
+      background: rgba(34, 197, 94, 0.6);
+    }
+
+    .touch-btn-brake {
+      background: rgba(239, 68, 68, 0.3);
+      border: 2px solid rgba(239, 68, 68, 0.6);
+    }
+    .touch-btn-brake:active, .touch-btn-brake.active {
+      background: rgba(239, 68, 68, 0.6);
+    }
+
+    .touch-btn-boost {
+      background: rgba(59, 130, 246, 0.3);
+      border: 2px solid rgba(59, 130, 246, 0.6);
+    }
+    .touch-btn-boost:active, .touch-btn-boost.active {
+      background: rgba(59, 130, 246, 0.6);
+    }
+
+    .touch-btn-handbrake {
+      background: rgba(249, 115, 22, 0.3);
+      border: 2px solid rgba(249, 115, 22, 0.6);
+      grid-column: span 2;
+      width: 100%;
+      border-radius: 32px;
+    }
+    .touch-btn-handbrake:active, .touch-btn-handbrake.active {
+      background: rgba(249, 115, 22, 0.6);
+    }
+
+    /* 手机竖屏适配 */
+    @media (max-width: 480px) {
+      #touch-zone-left { bottom: 20px; left: 14px; width: 100px; height: 100px; }
+      #touch-joystick { width: 100px; height: 100px; }
+      #touch-joystick-knob { width: 36px; height: 36px; }
+      #touch-zone-right { bottom: 20px; right: 10px; gap: 8px; }
+      .touch-btn { width: 54px; height: 54px; font-size: 10px; }
+      .touch-btn-handbrake { width: 100%; }
+      #speedometer { width: 100px; height: 100px; bottom: 12px; left: 12px; }
+      #miniMap { width: 80px; height: 80px; top: 60px; }
+      /* 适配小屏速度表文字 */
+      .speed-text { font-size: 20px; }
+      .speed-unit { font-size: 9px; }
+    }
+  </style>
+
+  <script>
+    // 触屏控制逻辑
+    (function() {
+      'use strict';
+
+      // ---- 左摇杆（转向） ----
+      const joystick = document.getElementById('touch-joystick');
+      const knob = document.getElementById('touch-joystick-knob');
+      let joyX = 0;
+      let joyTouchId = null;
+
+      // 获取摇杆中心坐标
+      function getJoystickCenter() {
+        const rect = joystick.getBoundingClientRect();
+        return { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, r: rect.width / 2 - 22 };
+      }
+
+      function updateJoystick(touchX, touchY) {
+        const { cx, cy, r } = getJoystickCenter();
+        let dx = touchX - cx;
+        let dy = touchY - cy;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > r) { dx = dx / dist * r; dy = dy / dist * r; }
+        joyX = dx / r; // -1 ~ 1
+        knob.style.transform = `translate(${dx - 22}px, ${dy - 22}px)`;
+      }
+
+      function resetJoystick() {
+        joyX = 0;
+        joyTouchId = null;
+        knob.style.transform = 'translate(-22px, -22px)';
+      }
+
+      joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        const t = e.changedTouches[0];
+        joyTouchId = t.identifier;
+        updateJoystick(t.clientX, t.clientY);
+      });
+      joystick.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        for (const t of e.changedTouches) {
+          if (t.identifier === joyTouchId) {
+            updateJoystick(t.clientX, t.clientY);
+          }
+        }
+      });
+      joystick.addEventListener('touchend', (e) => {
+        for (const t of e.changedTouches) {
+          if (t.identifier === joyTouchId) resetJoystick();
+        }
+      });
+      joystick.addEventListener('touchcancel', resetJoystick);
+
+      // ---- 右侧按钮 ----
+      function setupTouchBtn(id, inputKey) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          if (inputKey in touchInputs) touchInputs[inputKey] = true;
+          el.classList.add('active');
+        });
+        el.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          if (inputKey in touchInputs) touchInputs[inputKey] = false;
+          el.classList.remove('active');
+        });
+        el.addEventListener('touchcancel', () => {
+          if (inputKey in touchInputs) touchInputs[inputKey] = false;
+          el.classList.remove('active');
+        });
+        // 鼠标 fallback（桌面调试）
+        el.addEventListener('mousedown', () => { if (inputKey in touchInputs) touchInputs[inputKey] = true; el.classList.add('active'); });
+        el.addEventListener('mouseup', () => { if (inputKey in touchInputs) touchInputs[inputKey] = false; el.classList.remove('active'); });
+        el.addEventListener('mouseleave', () => { if (inputKey in touchInputs) touchInputs[inputKey] = false; el.classList.remove('active'); });
+      }
+
+      const touchInputs = { accel: false, brake: false, boost: false, hb: false };
+
+      setupTouchBtn('touch-btn-accelerate', 'accel');
+      setupTouchBtn('touch-btn-brake', 'brake');
+      setupTouchBtn('touch-btn-boost', 'boost');
+      setupTouchBtn('touch-btn-handbrake', 'hb');
+
+      // ---- 将触屏输入合并到游戏输入 ----
+      // 在每帧 update 前将触摸状态写入 input
+      const origUpdateUI = updateUI;
+      updateUI = function(dt) {
+        if (touchInputs.accel) input.accelerate = true;
+        if (touchInputs.brake) input.brake = true;
+        if (touchInputs.boost) input.boost = true;
+        if (touchInputs.hb) { input.handbrake = true; }
+        // 摇杆转向覆盖键盘
+        if (joyX < -0.2) { input.left = true; input.right = false; }
+        else if (joyX > 0.2) { input.right = true; input.left = false; }
+        origUpdateUI(dt);
+      };
+    })();
+  </script>
 </body>
 </html>
