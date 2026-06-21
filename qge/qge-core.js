@@ -218,7 +218,9 @@
             this.canvas.height = Math.floor(height * dpr);
             this.canvas.style.width = width + 'px';
             this.canvas.style.height = height + 'px';
-            this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            if (this.ctx) {
+                this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
 
             this.width = width;
             this.height = height;
