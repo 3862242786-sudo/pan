@@ -28,11 +28,140 @@
             display: block;
             touch-action: none;
         }
+        /* 开发者调试菜单 */
+        #dev-menu {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            color: #e2e8f0;
+            font-size: 13px;
+            z-index: 1000;
+            display: none;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #dev-menu h3 {
+            color: #22c55e;
+            font-size: 14px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid rgba(34, 197, 94, 0.2);
+            padding-bottom: 8px;
+        }
+        #dev-menu .dev-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            gap: 8px;
+        }
+        #dev-menu .dev-row label {
+            color: #94a3b8;
+            flex-shrink: 0;
+        }
+        #dev-menu input[type="number"] {
+            width: 70px;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+        #dev-menu input[type="range"] {
+            width: 100px;
+        }
+        #dev-menu button {
+            background: #22c55e;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 4px;
+        }
+        #dev-menu button.secondary {
+            background: #334155;
+            color: #94a3b8;
+        }
+        #dev-menu .dev-hint {
+            color: #64748b;
+            font-size: 11px;
+            margin-top: 12px;
+            text-align: center;
+        }
+        #dev-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 36px;
+            height: 36px;
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            border-radius: 8px;
+            color: #22c55e;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1001;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+    </div>
+    <div id="dev-toggle" title="开发者菜单 (按 ~ 键)">~</div>
+    <div id="dev-menu">
+        <h3>开发者调试菜单</h3>
+        <div class="dev-row">
+            <label>玩家生命</label>
+            <input type="number" id="dev-lives" min="1" max="99" value="3">
+        </div>
+        <div class="dev-row">
+            <label>玩家速度</label>
+            <input type="number" id="dev-speed" min="100" max="1000" value="350">
+        </div>
+        <div class="dev-row">
+            <label>射击冷却</label>
+            <input type="number" id="dev-cooldown" min="0.01" max="1" step="0.01" value="0.25">
+        </div>
+        <div class="dev-row">
+            <label>生成间隔</label>
+            <input type="number" id="dev-spawn" min="0.1" max="5" step="0.1" value="2.5">
+        </div>
+        <div class="dev-row">
+            <label>敌人速度</label>
+            <input type="number" id="dev-enemy-speed" min="10" max="300" value="50">
+        </div>
+        <div class="dev-row">
+            <label>敌人HP</label>
+            <input type="number" id="dev-enemy-hp" min="1" max="10" value="1">
+        </div>
+        <div class="dev-row">
+            <label>分数倍率</label>
+            <input type="number" id="dev-score" min="1" max="10" value="1">
+        </div>
+        <div class="dev-row">
+            <label>道具概率</label>
+            <input type="range" id="dev-drop" min="0" max="100" value="15">
+            <span id="dev-drop-val">15%</span>
+        </div>
+        <button id="dev-god">开启无敌模式</button>
+        <button id="dev-rapid" class="secondary">开启无限快速射击</button>
+        <button id="dev-kill">清除所有敌人</button>
+        <button id="dev-addscore">+1000 分数</button>
+        <button id="dev-reset" class="secondary">重置为默认值</button>
+        <div class="dev-hint">按 ~ 键快速开关</div>
     </div>
 
     <!-- QGE Core -->
@@ -381,14 +510,15 @@
             }
 
             canShoot() {
-                const cd = this.rapidFire ? 0.08 : 0.25;
+                if (this._rapidDev) return true;
                 return this.shootCooldown <= 0;
             }
 
             shoot() {
-                this.shootCooldown = this.rapidFire ? 0.08 : 0.25;
+                const baseCd = this._devCooldown !== null ? this._devCooldown : 0.25;
+                this.shootCooldown = this.rapidFire ? 0.08 : baseCd;
                 const bullets = [];
-                if (this.rapidFire) {
+                if (this.rapidFire || this._rapidDev) {
                     bullets.push(new Bullet(this.x, this.y - 24, -1));
                     bullets.push(new Bullet(this.x, this.y - 24, 1));
                 }
@@ -397,6 +527,7 @@
             }
 
             takeDamage() {
+                if (this._godMode) return false;
                 if (this.invincible > 0) return false;
                 this.lives--;
                 this.invincible = 2.0;
@@ -878,6 +1009,13 @@
                     const x = 30 + Math.random() * (this.engine.width - 60);
                     const type = Math.random() < 0.08 ? 'tank' : (Math.random() < 0.12 ? 'shooter' : 'basic');
                     const enemy = new Enemy(x, -40, type);
+                    // 应用开发者调试参数
+                    if (this._devEnemySpeed !== null) {
+                        enemy.speed = this._devEnemySpeed + Math.random() * 20;
+                    }
+                    if (this._devEnemyHP !== null) {
+                        enemy.hp = this._devEnemyHP;
+                    }
                     this.enemies.push(enemy);
                     this.addEntity(enemy);
                 }
@@ -951,11 +1089,13 @@
                             if (e.hp <= 0) {
                                 e.active = false;
                                 this.removeEntity(e);
-                                this.score += e.score;
+                                const scoreMult = this._devScoreMult !== null ? this._devScoreMult : 1;
+                                this.score += e.score * scoreMult;
                                 this._spawnExplosion(e.x, e.y);
                                 this.synth.playExplosion();
                                 // 掉落道具
-                                if (Math.random() < 0.15) {
+                                const dropRate = this._devDropRate !== null ? this._devDropRate : 0.15;
+                                if (Math.random() < dropRate) {
                                     const type = Math.random() < 0.5 ? 'health' : 'rapid';
                                     const pu = new Powerup(e.x, e.y, type);
                                     this.powerups.push(pu);
@@ -1224,6 +1364,179 @@
                 engine.scenes.switch('game');
             }
         }, { passive: true });
+
+        // ========================================================================
+        // 开发者调试菜单
+        // ========================================================================
+        const devMenu = document.getElementById('dev-menu');
+        const devToggle = document.getElementById('dev-toggle');
+        let devOpen = false;
+
+        function toggleDevMenu() {
+            devOpen = !devOpen;
+            devMenu.style.display = devOpen ? 'block' : 'none';
+            devToggle.style.display = devOpen ? 'none' : 'flex';
+        }
+
+        devToggle.addEventListener('click', toggleDevMenu);
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Backquote' || e.key === '`' || e.key === '~') {
+                e.preventDefault();
+                toggleDevMenu();
+            }
+        });
+
+        // 获取当前游戏场景
+        function getGameScene() {
+            const scene = engine.scenes.current();
+            return scene instanceof GameScene ? scene : null;
+        }
+
+        // 玩家生命
+        document.getElementById('dev-lives').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player.lives = parseInt(e.target.value);
+                scene.player.maxLives = Math.max(scene.player.maxLives, scene.player.lives);
+            }
+        });
+
+        // 玩家速度
+        document.getElementById('dev-speed').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player.speed = parseInt(e.target.value);
+            }
+        });
+
+        // 射击冷却
+        document.getElementById('dev-cooldown').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player._devCooldown = parseFloat(e.target.value);
+            }
+        });
+
+        // 生成间隔
+        document.getElementById('dev-spawn').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene) {
+                scene.spawnInterval = parseFloat(e.target.value);
+            }
+        });
+
+        // 敌人速度
+        document.getElementById('dev-enemy-speed').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene) {
+                scene._devEnemySpeed = parseInt(e.target.value);
+            }
+        });
+
+        // 敌人HP
+        document.getElementById('dev-enemy-hp').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene) {
+                scene._devEnemyHP = parseInt(e.target.value);
+            }
+        });
+
+        // 分数倍率
+        document.getElementById('dev-score').addEventListener('change', (e) => {
+            const scene = getGameScene();
+            if (scene) {
+                scene._devScoreMult = parseInt(e.target.value);
+            }
+        });
+
+        // 道具概率
+        document.getElementById('dev-drop').addEventListener('input', (e) => {
+            document.getElementById('dev-drop-val').textContent = e.target.value + '%';
+            const scene = getGameScene();
+            if (scene) {
+                scene._devDropRate = parseInt(e.target.value) / 100;
+            }
+        });
+
+        // 无敌模式
+        let godMode = false;
+        document.getElementById('dev-god').addEventListener('click', (e) => {
+            godMode = !godMode;
+            e.target.textContent = godMode ? '关闭无敌模式' : '开启无敌模式';
+            e.target.style.background = godMode ? '#ef4444' : '#22c55e';
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player._godMode = godMode;
+            }
+        });
+
+        // 无限快速射击
+        let rapidDev = false;
+        document.getElementById('dev-rapid').addEventListener('click', (e) => {
+            rapidDev = !rapidDev;
+            e.target.textContent = rapidDev ? '关闭无限快速射击' : '开启无限快速射击';
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player._rapidDev = rapidDev;
+            }
+        });
+
+        // 清除所有敌人
+        document.getElementById('dev-kill').addEventListener('click', () => {
+            const scene = getGameScene();
+            if (scene) {
+                for (let e of scene.enemies) {
+                    e.active = false;
+                    scene.removeEntity(e);
+                }
+                scene.enemies = [];
+                for (let b of scene.enemyBullets) {
+                    b.active = false;
+                    scene.removeEntity(b);
+                }
+                scene.enemyBullets = [];
+            }
+        });
+
+        // +1000 分数
+        document.getElementById('dev-addscore').addEventListener('click', () => {
+            const scene = getGameScene();
+            if (scene) {
+                scene.score += 1000;
+            }
+        });
+
+        // 重置默认值
+        document.getElementById('dev-reset').addEventListener('click', () => {
+            document.getElementById('dev-lives').value = 3;
+            document.getElementById('dev-speed').value = 350;
+            document.getElementById('dev-cooldown').value = 0.25;
+            document.getElementById('dev-spawn').value = 2.5;
+            document.getElementById('dev-enemy-speed').value = 50;
+            document.getElementById('dev-enemy-hp').value = 1;
+            document.getElementById('dev-score').value = 1;
+            document.getElementById('dev-drop').value = 15;
+            document.getElementById('dev-drop-val').textContent = '15%';
+            godMode = false;
+            rapidDev = false;
+            document.getElementById('dev-god').textContent = '开启无敌模式';
+            document.getElementById('dev-god').style.background = '#22c55e';
+            document.getElementById('dev-rapid').textContent = '开启无限快速射击';
+            const scene = getGameScene();
+            if (scene && scene.player) {
+                scene.player._godMode = false;
+                scene.player._rapidDev = false;
+                scene.player._devCooldown = null;
+            }
+            if (scene) {
+                scene._devEnemySpeed = null;
+                scene._devEnemyHP = null;
+                scene._devScoreMult = null;
+                scene._devDropRate = null;
+                scene.spawnInterval = 2.5;
+            }
+        });
 
     })();
     </script>
