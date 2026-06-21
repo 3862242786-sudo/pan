@@ -740,115 +740,354 @@
     function createCar() {
       if (car) {
         scene.remove(car);
-        // 清理旧车轮引用
         wheels = [];
       }
 
       car = new THREE.Group();
       const type = CAR_TYPES[currentCarIndex];
+      const idx = currentCarIndex;
 
-      // 车身底盘
-      const bodyGeo = new THREE.BoxGeometry(type.bodySize.w, type.bodySize.h, type.bodySize.l);
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: type.color,
-        roughness: 0.3,
-        metalness: 0.4,
-      });
-      carBody = new THREE.Mesh(bodyGeo, bodyMat);
-      carBody.position.y = type.bodySize.h / 2 + type.wheelRadius;
-      carBody.castShadow = true;
-      carBody.receiveShadow = true;
-      car.add(carBody);
+      // 通用材质
+      const bodyMat = new THREE.MeshStandardMaterial({ color: type.color, roughness: 0.25, metalness: 0.5 });
+      const glassMat = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.7 });
+      const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.15, metalness: 0.9 });
+      const redGlowMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
+      const yellowGlowMat = new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 1.0 });
 
-      // 车厢 (驾驶舱)
-      const cabinGeo = new THREE.BoxGeometry(type.cabinSize.w, type.cabinSize.h, type.cabinSize.l);
-      const cabinMat = new THREE.MeshStandardMaterial({
-        color: 0x1f2937,
-        roughness: 0.1,
-        metalness: 0.7,
-      });
-      const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-      cabin.position.set(0, type.bodySize.h + type.cabinSize.h / 2 + type.wheelRadius, -0.2);
-      cabin.castShadow = true;
-      car.add(cabin);
+      if (idx === 0) {
+        // ========== 跑车 (Sports Car) ==========
+        const bw = 1.9, bh = 0.55, bl = 4.2;
+        const wr = 0.35, wy = 0.35;
 
-      // 前大灯
-      const headlightGeo = new THREE.SphereGeometry(0.15 * type.scale.y, 16, 16);
-      const headlightMat = new THREE.MeshStandardMaterial({
-        color: 0xffffcc,
-        emissive: 0xffffaa,
-        emissiveIntensity: 0.8,
-      });
-      const hlLeft = new THREE.Mesh(headlightGeo, headlightMat);
-      hlLeft.position.set(-type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, type.bodySize.l * 0.45);
-      car.add(hlLeft);
-      const hlRight = new THREE.Mesh(headlightGeo, headlightMat);
-      hlRight.position.set(type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, type.bodySize.l * 0.45);
-      car.add(hlRight);
+        // 主车身 - 前低后高的楔形
+        const bodyShape = new THREE.Shape();
+        bodyShape.moveTo(0, 0);
+        bodyShape.lineTo(bl * 0.5, 0);
+        bodyShape.lineTo(bl * 0.5, bh * 0.3);
+        bodyShape.lineTo(bl * 0.35, bh);
+        bodyShape.lineTo(-bl * 0.4, bh);
+        bodyShape.lineTo(-bl * 0.45, bh * 0.4);
+        bodyShape.lineTo(-bl * 0.5, 0);
+        bodyShape.lineTo(0, 0);
+        const bodyExtrude = new THREE.ExtrudeGeometry(bodyShape, { depth: bw, bevelEnabled: false });
+        carBody = new THREE.Mesh(bodyExtrude, bodyMat);
+        carBody.rotation.y = Math.PI / 2;
+        carBody.position.set(0, wy, 0);
+        carBody.castShadow = true;
+        car.add(carBody);
 
-      // 前大灯聚光灯
-      const spotL = new THREE.SpotLight(0xffffcc, 2, 40, 0.5, 0.5, 1);
-      spotL.position.set(-type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, type.bodySize.l * 0.45);
-      spotL.target.position.set(-type.bodySize.w * 0.3, 0, 10);
-      car.add(spotL);
-      car.add(spotL.target);
-      const spotR = new THREE.SpotLight(0xffffcc, 2, 40, 0.5, 0.5, 1);
-      spotR.position.set(type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, type.bodySize.l * 0.45);
-      spotR.target.position.set(type.bodySize.w * 0.3, 0, 10);
-      car.add(spotR);
-      car.add(spotR.target);
+        // 引擎盖进气口线条
+        const intakeGeo = new THREE.BoxGeometry(0.08, 0.03, 1.2);
+        const intakeL = new THREE.Mesh(intakeGeo, blackMat);
+        intakeL.position.set(-0.35, wy + bh + 0.02, 1.2);
+        car.add(intakeL);
+        const intakeR = new THREE.Mesh(intakeGeo, blackMat);
+        intakeR.position.set(0.35, wy + bh + 0.02, 1.2);
+        car.add(intakeR);
 
-      // 尾灯
-      const taillightMat = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        emissive: 0xff0000,
-        emissiveIntensity: 0.6,
-      });
-      const tlLeft = new THREE.Mesh(new THREE.SphereGeometry(0.12 * type.scale.y, 16, 16), taillightMat);
-      tlLeft.position.set(-type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, -type.bodySize.l * 0.45);
-      car.add(tlLeft);
-      const tlRight = new THREE.Mesh(new THREE.SphereGeometry(0.12 * type.scale.y, 16, 16), taillightMat);
-      tlRight.position.set(type.bodySize.w * 0.3, type.wheelRadius + type.bodySize.h * 0.6, -type.bodySize.l * 0.45);
-      car.add(tlRight);
+        // 挡风玻璃 (倾斜平面)
+        const windshieldGeo = new THREE.PlaneGeometry(1.5, 1.0);
+        const windshield = new THREE.Mesh(windshieldGeo, glassMat);
+        windshield.position.set(0, wy + bh + 0.35, -0.3);
+        windshield.rotation.x = -0.5;
+        car.add(windshield);
 
-      // 车轮
-      const wheelGeo = new THREE.CylinderGeometry(type.wheelRadius, type.wheelRadius, type.wheelWidth, 24);
-      const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-      const wheelPositions = [
-        { x: -type.bodySize.w * 0.55, z: type.bodySize.l * 0.35 },  // 左前
-        { x: type.bodySize.w * 0.55, z: type.bodySize.l * 0.35 },   // 右前
-        { x: -type.bodySize.w * 0.55, z: -type.bodySize.l * 0.35 }, // 左后
-        { x: type.bodySize.w * 0.55, z: -type.bodySize.l * 0.35 },  // 右后
-      ];
-      wheelPositions.forEach((pos) => {
-        const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-        wheel.rotation.z = Math.PI / 2;
-        wheel.position.set(pos.x, type.wheelY, pos.z);
-        wheel.castShadow = true;
-        car.add(wheel);
-        wheels.push(wheel);
-      });
+        // 侧后视镜
+        const mirrorGeo = new THREE.BoxGeometry(0.15, 0.1, 0.08);
+        const mirrorL = new THREE.Mesh(mirrorGeo, bodyMat);
+        mirrorL.position.set(-1.05, wy + bh + 0.15, 0.6);
+        car.add(mirrorL);
+        const mirrorR = new THREE.Mesh(mirrorGeo, bodyMat);
+        mirrorR.position.set(1.05, wy + bh + 0.15, 0.6);
+        car.add(mirrorR);
 
-      // 尾翼（跑车和漂移车有）
-      if (type.hasSpoiler) {
-        const wingGeo = new THREE.BoxGeometry(type.bodySize.w * 0.85, 0.08, 0.4);
-        const wingMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.5, metalness: 0.5 });
-        const wing = new THREE.Mesh(wingGeo, wingMat);
-        wing.position.set(0, type.bodySize.h + type.wheelRadius + 0.5, -type.bodySize.l * 0.4);
+        // 前大灯 (扁平发光体)
+        const hlGeo = new THREE.BoxGeometry(0.35, 0.12, 0.08);
+        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlL.position.set(-0.5, wy + bh * 0.5, bl * 0.48);
+        car.add(hlL);
+        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlR.position.set(0.5, wy + bh * 0.5, bl * 0.48);
+        car.add(hlR);
+
+        // 聚光灯
+        const spotL = new THREE.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
+        spotL.position.set(-0.5, wy + bh * 0.5, bl * 0.5);
+        spotL.target.position.set(-0.5, 0, 15);
+        car.add(spotL); car.add(spotL.target);
+        const spotR = new THREE.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
+        spotR.position.set(0.5, wy + bh * 0.5, bl * 0.5);
+        spotR.target.position.set(0.5, 0, 15);
+        car.add(spotR); car.add(spotR.target);
+
+        // 尾灯 (红色条状)
+        const tlGeo = new THREE.BoxGeometry(0.4, 0.1, 0.06);
+        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
+        tlL.position.set(-0.55, wy + bh * 0.55, -bl * 0.48);
+        car.add(tlL);
+        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
+        tlR.position.set(0.55, wy + bh * 0.55, -bl * 0.48);
+        car.add(tlR);
+
+        // 排气管
+        const exhaustGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8);
+        const exhaustL = new THREE.Mesh(exhaustGeo, chromeMat);
+        exhaustL.rotation.x = Math.PI / 2;
+        exhaustL.position.set(-0.6, wy + 0.15, -bl * 0.52);
+        car.add(exhaustL);
+        const exhaustR = new THREE.Mesh(exhaustGeo, chromeMat);
+        exhaustR.rotation.x = Math.PI / 2;
+        exhaustR.position.set(0.6, wy + 0.15, -bl * 0.52);
+        car.add(exhaustR);
+
+        // 大尾翼
+        const wingGeo = new THREE.BoxGeometry(1.8, 0.06, 0.35);
+        const wing = new THREE.Mesh(wingGeo, blackMat);
+        wing.position.set(0, wy + bh + 0.55, -bl * 0.38);
         car.add(wing);
-        const strutGeo = new THREE.BoxGeometry(0.06, 0.3, 0.06);
-        const strutL = new THREE.Mesh(strutGeo, wingMat);
-        strutL.position.set(-type.bodySize.w * 0.25, type.bodySize.h + type.wheelRadius + 0.3, -type.bodySize.l * 0.4);
-        car.add(strutL);
-        const strutR = new THREE.Mesh(strutGeo, wingMat);
-        strutR.position.set(type.bodySize.w * 0.25, type.bodySize.h + type.wheelRadius + 0.3, -type.bodySize.l * 0.4);
-        car.add(strutR);
+        const strutGeo = new THREE.BoxGeometry(0.05, 0.35, 0.05);
+        [-0.5, 0.5].forEach(sx => {
+          const strut = new THREE.Mesh(strutGeo, blackMat);
+          strut.position.set(sx, wy + bh + 0.35, -bl * 0.38);
+          car.add(strut);
+        });
+
+        // 车轮 (带轮毂)
+        createWheels(wr, 0.25, wy, bw * 0.55, bl * 0.35, chromeMat);
+
+      } else if (idx === 1) {
+        // ========== 卡车 (Truck) ==========
+        const bw = 2.5, bh = 1.0, bl = 5.8;
+        const wr = 0.5, wy = 0.5;
+
+        // 底盘
+        const chassisGeo = new THREE.BoxGeometry(bw, bh * 0.4, bl);
+        carBody = new THREE.Mesh(chassisGeo, bodyMat);
+        carBody.position.set(0, wy + bh * 0.2, 0);
+        carBody.castShadow = true;
+        car.add(carBody);
+
+        // 驾驶室 (大方块)
+        const cabGeo = new THREE.BoxGeometry(bw * 0.85, bh * 0.7, bl * 0.45);
+        const cab = new THREE.Mesh(cabGeo, bodyMat);
+        cab.position.set(0, wy + bh * 0.75, bl * 0.22);
+        cab.castShadow = true;
+        car.add(cab);
+
+        // 挡风玻璃
+        const wsGeo = new THREE.PlaneGeometry(bw * 0.7, bh * 0.4);
+        const ws = new THREE.Mesh(wsGeo, glassMat);
+        ws.position.set(0, wy + bh * 0.9, bl * 0.45);
+        ws.rotation.x = -0.1;
+        car.add(ws);
+
+        // 货斗
+        const bedGeo = new THREE.BoxGeometry(bw * 0.9, bh * 0.5, bl * 0.45);
+        const bedMat = new THREE.MeshStandardMaterial({ color: 0x3d3d3d, roughness: 0.8 });
+        const bed = new THREE.Mesh(bedGeo, bedMat);
+        bed.position.set(0, wy + bh * 0.45, -bl * 0.22);
+        bed.castShadow = true;
+        car.add(bed);
+
+        // 保险杠/防撞栏
+        const bullGeo = new THREE.BoxGeometry(bw * 1.05, bh * 0.35, 0.15);
+        const bullMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.7 });
+        const bull = new THREE.Mesh(bullGeo, bullMat);
+        bull.position.set(0, wy + bh * 0.25, bl * 0.52);
+        car.add(bull);
+
+        // 车顶灯
+        const roofLightGeo = new THREE.SphereGeometry(0.08, 8, 8);
+        const roofLightMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.9 });
+        [-0.4, 0, 0.4].forEach(lx => {
+          const rl = new THREE.Mesh(roofLightGeo, roofLightMat);
+          rl.position.set(lx, wy + bh + 0.08, bl * 0.35);
+          car.add(rl);
+        });
+
+        // 前大灯
+        const hlGeo = new THREE.BoxGeometry(0.3, 0.18, 0.1);
+        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlL.position.set(-0.7, wy + bh * 0.45, bl * 0.52);
+        car.add(hlL);
+        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlR.position.set(0.7, wy + bh * 0.45, bl * 0.52);
+        car.add(hlR);
+
+        // 尾灯
+        const tlGeo = new THREE.BoxGeometry(0.25, 0.15, 0.08);
+        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
+        tlL.position.set(-0.8, wy + bh * 0.45, -bl * 0.52);
+        car.add(tlL);
+        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
+        tlR.position.set(0.8, wy + bh * 0.45, -bl * 0.52);
+        car.add(tlR);
+
+        // 侧踏板
+        const stepGeo = new THREE.BoxGeometry(0.15, 0.06, bl * 0.4);
+        const stepMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.5 });
+        const stepL = new THREE.Mesh(stepGeo, stepMat);
+        stepL.position.set(-bw * 0.52, wy + 0.1, 0);
+        car.add(stepL);
+        const stepR = new THREE.Mesh(stepGeo, stepMat);
+        stepR.position.set(bw * 0.52, wy + 0.1, 0);
+        car.add(stepR);
+
+        // 挡泥板
+        const mudGeo = new THREE.BoxGeometry(0.05, 0.25, 0.4);
+        const mudMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+        [-bl * 0.35, bl * 0.35].forEach(mz => {
+          const mudL = new THREE.Mesh(mudGeo, mudMat);
+          mudL.position.set(-bw * 0.55, wy + 0.2, mz);
+          car.add(mudL);
+          const mudR = new THREE.Mesh(mudGeo, mudMat);
+          mudR.position.set(bw * 0.55, wy + 0.2, mz);
+          car.add(mudR);
+        });
+
+        // 大车轮
+        createWheels(wr, 0.35, wy, bw * 0.55, bl * 0.32, chromeMat);
+
+      } else {
+        // ========== 漂移车 (Drift Car) ==========
+        const bw = 2.1, bh = 0.45, bl = 3.9;
+        const wr = 0.33, wy = 0.3;
+
+        // 宽体车身
+        const bodyGeo = new THREE.BoxGeometry(bw, bh, bl);
+        carBody = new THREE.Mesh(bodyGeo, bodyMat);
+        carBody.position.set(0, wy + bh / 2, 0);
+        carBody.castShadow = true;
+        car.add(carBody);
+
+        // 宽体轮眉 (前/后翼子板加宽)
+        const flareGeo = new THREE.BoxGeometry(0.15, 0.12, 0.6);
+        [-bl * 0.35, bl * 0.35].forEach(fz => {
+          const flareL = new THREE.Mesh(flareGeo, bodyMat);
+          flareL.position.set(-bw * 0.52, wy + bh * 0.7, fz);
+          car.add(flareL);
+          const flareR = new THREE.Mesh(flareGeo, bodyMat);
+          flareR.position.set(bw * 0.52, wy + bh * 0.7, fz);
+          car.add(flareR);
+        });
+
+        // 侧裙
+        const skirtGeo = new THREE.BoxGeometry(0.08, 0.1, bl * 0.6);
+        const skirtL = new THREE.Mesh(skirtGeo, blackMat);
+        skirtL.position.set(-bw * 0.52, wy + 0.1, 0);
+        car.add(skirtL);
+        const skirtR = new THREE.Mesh(skirtGeo, blackMat);
+        skirtR.position.set(bw * 0.52, wy + 0.1, 0);
+        car.add(skirtR);
+
+        // 驾驶舱
+        const cabinGeo = new THREE.BoxGeometry(bw * 0.7, bh * 0.7, bl * 0.45);
+        const cabin = new THREE.Mesh(cabinGeo, glassMat);
+        cabin.position.set(0, wy + bh + bh * 0.35, -0.15);
+        car.add(cabin);
+
+        // 防滚架 (可见框架)
+        const cageMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.8 });
+        const cageBarGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
+        [-0.35, 0.35].forEach(cx => {
+          const bar = new THREE.Mesh(cageBarGeo, cageMat);
+          bar.position.set(cx, wy + bh + 0.4, -0.15);
+          car.add(bar);
+        });
+        const cageCrossGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.7, 6);
+        const cageCross = new THREE.Mesh(cageCrossGeo, cageMat);
+        cageCross.rotation.z = Math.PI / 2;
+        cageCross.position.set(0, wy + bh + 0.65, -0.15);
+        car.add(cageCross);
+
+        // 引擎盖进气口
+        const scoopGeo = new THREE.BoxGeometry(0.5, 0.08, 0.7);
+        const scoop = new THREE.Mesh(scoopGeo, blackMat);
+        scoop.position.set(0, wy + bh + 0.05, 0.8);
+        car.add(scoop);
+
+        // 前大灯
+        const hlGeo = new THREE.BoxGeometry(0.3, 0.1, 0.06);
+        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlL.position.set(-0.55, wy + bh * 0.5, bl * 0.48);
+        car.add(hlL);
+        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
+        hlR.position.set(0.55, wy + bh * 0.5, bl * 0.48);
+        car.add(hlR);
+
+        // 尾灯
+        const tlGeo = new THREE.BoxGeometry(0.35, 0.08, 0.05);
+        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
+        tlL.position.set(-0.6, wy + bh * 0.55, -bl * 0.48);
+        car.add(tlL);
+        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
+        tlR.position.set(0.6, wy + bh * 0.55, -bl * 0.48);
+        car.add(tlR);
+
+        // 超大尾翼
+        const wingGeo = new THREE.BoxGeometry(2.0, 0.06, 0.4);
+        const wing = new THREE.Mesh(wingGeo, blackMat);
+        wing.position.set(0, wy + bh + 0.7, -bl * 0.38);
+        car.add(wing);
+        const wStrutGeo = new THREE.BoxGeometry(0.06, 0.5, 0.06);
+        [-0.6, 0.6].forEach(sx => {
+          const strut = new THREE.Mesh(wStrutGeo, blackMat);
+          strut.position.set(sx, wy + bh + 0.45, -bl * 0.38);
+          car.add(strut);
+        });
+
+        // 后扩散器
+        const diffGeo = new THREE.BoxGeometry(bw * 0.7, 0.08, 0.3);
+        const diff = new THREE.Mesh(diffGeo, blackMat);
+        diff.position.set(0, wy + 0.05, -bl * 0.48);
+        car.add(diff);
+
+        // 宽车轮
+        createWheels(wr, 0.32, wy, bw * 0.55, bl * 0.35, chromeMat);
       }
 
-      // 应用整体缩放
-      car.scale.set(type.scale.x, type.scale.y, type.scale.z);
-
       scene.add(car);
+    }
+
+    // 辅助函数：创建带轮毂的车轮
+    function createWheels(radius, width, y, sideOffset, frontBackOffset, rimMat) {
+      const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+      const rimGeo = new THREE.CylinderGeometry(radius * 0.6, radius * 0.6, width * 1.05, 12);
+      const tireGeo = new THREE.CylinderGeometry(radius, radius, width, 20);
+
+      const positions = [
+        { x: -sideOffset, z: frontBackOffset },   // 左前
+        { x: sideOffset, z: frontBackOffset },    // 右前
+        { x: -sideOffset, z: -frontBackOffset },  // 左后
+        { x: sideOffset, z: -frontBackOffset },   // 右后
+      ];
+
+      positions.forEach(pos => {
+        const wheelGroup = new THREE.Group();
+        // 轮胎
+        const tire = new THREE.Mesh(tireGeo, tireMat);
+        tire.rotation.z = Math.PI / 2;
+        tire.castShadow = true;
+        wheelGroup.add(tire);
+        // 轮毂
+        const rim = new THREE.Mesh(rimGeo, rimMat);
+        rim.rotation.z = Math.PI / 2;
+        wheelGroup.add(rim);
+        // 轮毂辐条 (简单十字)
+        const spokeGeo = new THREE.BoxGeometry(radius * 1.0, width * 1.1, 0.04);
+        const spoke1 = new THREE.Mesh(spokeGeo, rimMat);
+        spoke1.rotation.z = Math.PI / 2;
+        wheelGroup.add(spoke1);
+        const spoke2 = new THREE.Mesh(spokeGeo, rimMat);
+        spoke2.rotation.z = Math.PI / 2;
+        spoke2.rotation.x = Math.PI / 2;
+        wheelGroup.add(spoke2);
+
+        wheelGroup.position.set(pos.x, y, pos.z);
+        car.add(wheelGroup);
+        wheels.push(wheelGroup);
+      });
     }
 
     // 切换车辆
@@ -1249,12 +1488,16 @@
       car.rotation.z = -cs.driftFactor * cs.steerAngle * 0.3 + roll; // 侧倾
       car.rotation.x = cs.driftFactor * 0.1 + pitch; // 俯仰
 
-      // 前轮转向可视化
+      // 前轮转向可视化 (wheelGroup 的 Y 轴旋转)
       wheels[0].rotation.y = cs.steerAngle * 1.5;
       wheels[1].rotation.y = cs.steerAngle * 1.5;
-      // 车轮滚动
+      // 车轮滚动 (wheelGroup 内部的轮胎和轮毂绕 X 轴旋转)
       const wheelRoll = cs.speed * dt * 3;
-      wheels.forEach(w => { w.rotation.x += wheelRoll; });
+      wheels.forEach(wg => {
+        wg.children.forEach(child => {
+          child.rotation.x += wheelRoll;
+        });
+      });
 
       // 漂移效果
       if (cs.driftFactor > 0.3 && Math.abs(cs.speed) > 5) {
