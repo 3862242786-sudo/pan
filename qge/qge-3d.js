@@ -54,6 +54,7 @@
          * @param {Object} options 配置选项
          */
         constructor(canvas, options = {}) {
+            this.originalCanvas = canvas;
             this.canvas = canvas;
             this.options = Object.assign({
                 antialias: true,
@@ -81,11 +82,29 @@
             if (this._initialized) return this;
             const THREE = await loadThree();
 
-            this.renderer = new THREE.WebGLRenderer({
-                canvas: this.canvas,
-                antialias: this.options.antialias,
-                alpha: this.options.alpha
-            });
+            // 检查 canvas 是否已有其他 context（如 2D），如果有则创建新 canvas
+            try {
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas,
+                    antialias: this.options.antialias,
+                    alpha: this.options.alpha
+                });
+            } catch (e) {
+                // Canvas 已有其他 context，创建新的 canvas 替换
+                const newCanvas = document.createElement('canvas');
+                newCanvas.id = this.canvas.id;
+                newCanvas.style.cssText = this.canvas.style.cssText;
+                newCanvas.width = this.canvas.width;
+                newCanvas.height = this.canvas.height;
+                this.canvas.parentNode.replaceChild(newCanvas, this.canvas);
+                this.canvas = newCanvas;
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas,
+                    antialias: this.options.antialias,
+                    alpha: this.options.alpha
+                });
+            }
+
             this.renderer.setPixelRatio(this.options.pixelRatio);
             this.renderer.setSize(this.canvas.clientWidth || this.canvas.width, this.canvas.clientHeight || this.canvas.height);
 
