@@ -760,46 +760,54 @@
         const bw = 1.9, bh = 0.55, bl = 4.2;
         const wr = 0.35, wy = 0.35;
 
-        // 主车身 - 前低后高的楔形
-        const bodyShape = new THREE.Shape();
-        bodyShape.moveTo(0, 0);
-        bodyShape.lineTo(bl * 0.5, 0);
-        bodyShape.lineTo(bl * 0.5, bh * 0.3);
-        bodyShape.lineTo(bl * 0.35, bh);
-        bodyShape.lineTo(-bl * 0.4, bh);
-        bodyShape.lineTo(-bl * 0.45, bh * 0.4);
-        bodyShape.lineTo(-bl * 0.5, 0);
-        bodyShape.lineTo(0, 0);
-        const bodyExtrude = new THREE.ExtrudeGeometry(bodyShape, { depth: bw, bevelEnabled: false });
-        carBody = new THREE.Mesh(bodyExtrude, bodyMat);
-        carBody.rotation.y = Math.PI / 2;
-        carBody.position.set(0, wy, 0);
+        // 主车身底盘
+        const bodyGeo = new THREE.BoxGeometry(bw, bh, bl);
+        carBody = new THREE.Mesh(bodyGeo, bodyMat);
+        carBody.position.set(0, wy + bh / 2, 0);
         carBody.castShadow = true;
         car.add(carBody);
 
+        // 引擎盖 (前部稍低)
+        const hoodGeo = new THREE.BoxGeometry(bw * 0.92, 0.06, bl * 0.3);
+        const hood = new THREE.Mesh(hoodGeo, bodyMat);
+        hood.position.set(0, wy + bh + 0.03, bl * 0.1);
+        car.add(hood);
+
+        // 后备箱盖 (后部稍低)
+        const trunkGeo = new THREE.BoxGeometry(bw * 0.9, 0.06, bl * 0.2);
+        const trunk = new THREE.Mesh(trunkGeo, bodyMat);
+        trunk.position.set(0, wy + bh + 0.03, -bl * 0.25);
+        car.add(trunk);
+
         // 引擎盖进气口线条
-        const intakeGeo = new THREE.BoxGeometry(0.08, 0.03, 1.2);
+        const intakeGeo = new THREE.BoxGeometry(0.06, 0.03, 0.8);
         const intakeL = new THREE.Mesh(intakeGeo, blackMat);
-        intakeL.position.set(-0.35, wy + bh + 0.02, 1.2);
+        intakeL.position.set(-0.35, wy + bh + 0.07, bl * 0.1);
         car.add(intakeL);
         const intakeR = new THREE.Mesh(intakeGeo, blackMat);
-        intakeR.position.set(0.35, wy + bh + 0.02, 1.2);
+        intakeR.position.set(0.35, wy + bh + 0.07, bl * 0.1);
         car.add(intakeR);
 
+        // 驾驶舱 (挡风玻璃区域)
+        const cabinGeo = new THREE.BoxGeometry(bw * 0.75, 0.4, bl * 0.35);
+        const cabin = new THREE.Mesh(cabinGeo, glassMat);
+        cabin.position.set(0, wy + bh + 0.2, -0.1);
+        car.add(cabin);
+
         // 挡风玻璃 (倾斜平面)
-        const windshieldGeo = new THREE.PlaneGeometry(1.5, 1.0);
+        const windshieldGeo = new THREE.PlaneGeometry(bw * 0.72, 0.5);
         const windshield = new THREE.Mesh(windshieldGeo, glassMat);
-        windshield.position.set(0, wy + bh + 0.35, -0.3);
-        windshield.rotation.x = -0.5;
+        windshield.position.set(0, wy + bh + 0.35, bl * 0.12);
+        windshield.rotation.x = -0.6;
         car.add(windshield);
 
         // 侧后视镜
         const mirrorGeo = new THREE.BoxGeometry(0.15, 0.1, 0.08);
         const mirrorL = new THREE.Mesh(mirrorGeo, bodyMat);
-        mirrorL.position.set(-1.05, wy + bh + 0.15, 0.6);
+        mirrorL.position.set(-bw * 0.55, wy + bh + 0.1, bl * 0.1);
         car.add(mirrorL);
         const mirrorR = new THREE.Mesh(mirrorGeo, bodyMat);
-        mirrorR.position.set(1.05, wy + bh + 0.15, 0.6);
+        mirrorR.position.set(bw * 0.55, wy + bh + 0.1, bl * 0.1);
         car.add(mirrorR);
 
         // 前大灯 (扁平发光体)
