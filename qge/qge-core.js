@@ -318,8 +318,8 @@
             // WebGL 模式下跳过 2D 渲染（由外部渲染器处理）
             if (!ctx) {
                 // 如果场景有自己的渲染方法（如 3D 场景），调用它
-                if (scene && scene.render3D) {
-                    scene.render3D();
+                if (scene && scene.render) {
+                    scene.render(null);
                 }
                 return;
             }
