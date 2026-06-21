@@ -296,11 +296,69 @@
     let car, carBody, wheels = [];
     let ground, gridHelper;
     let cones = [];
+    let conePhysics = []; // 锥桶物理状态
     let skidMarks = [];
     let particles = [];
     let cameraMode = 0; // 0=跟随, 1=车头, 2=环绕
     let orbitAngle = 0;
     let orbitDistance = 12;
+
+    // ============================================
+    // 碰撞系统
+    // ============================================
+    const COLLISION = {
+      // 车辆碰撞箱（半长、半宽、半高）
+      carHalfW: 1.1,
+      carHalfL: 2.2,
+      carHalfH: 0.6,
+
+      // 锥桶碰撞半径
+      coneRadius: 0.5,
+
+      // 检测车辆与锥桶碰撞（AABB vs Circle）
+      checkCarCone(cs, conePos) {
+        // 将锥桶位置转换到车辆局部坐标
+        const dx = conePos.x - cs.x;
+        const dz = conePos.z - cs.z;
+        const cos = Math.cos(-cs.rotation);
+        const sin = Math.sin(-cs.rotation);
+        const localX = dx * cos - dz * sin;
+        const localZ = dx * sin + dz * cos;
+
+        // AABB vs Circle
+        const closestX = Math.max(-this.carHalfL, Math.min(this.carHalfL, localX));
+        const closestZ = Math.max(-this.carHalfW, Math.min(this.carHalfW, localZ));
+        const distX = localX - closestX;
+        const distZ = localZ - closestZ;
+        const distSq = distX * distX + distZ * distZ;
+        const r = this.coneRadius;
+
+        if (distSq < r * r) {
+          const dist = Math.sqrt(Math.max(distSq, 0.001));
+          return {
+            hit: true,
+            overlap: r - dist,
+            nx: distX / dist,  // 碰撞法线（局部坐标）
+            nz: distZ / dist,
+            localX, localZ,
+            conePos
+          };
+        }
+        return { hit: false };
+      },
+
+      // 检测车辆与车辆碰撞（AABB vs AABB，预留）
+      checkCarCar(a, b) {
+        const dx = a.x - b.x;
+        const dz = a.z - b.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const minDist = this.carHalfL * 2;
+        if (dist < minDist) {
+          return { hit: true, overlap: minDist - dist, nx: dx / Math.max(dist, 0.01), nz: dz / Math.max(dist, 0.01) };
+        }
+        return { hit: false };
+      }
+    };
 
     // 车辆物理状态
     const carState = {
@@ -564,8 +622,10 @@
         const cone = new THREE.Mesh(coneGeo, coneMat);
         cone.position.set(side * 4, 0.5, 30 + i * 8);
         cone.castShadow = true;
+        cone.receiveShadow = true;
         scene.add(cone);
         cones.push(cone);
+        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
 
       // 圆形漂移区锥桶
@@ -575,8 +635,10 @@
         const cone = new THREE.Mesh(coneGeo, coneMat);
         cone.position.set(Math.cos(angle) * r, 0.5, Math.sin(angle) * r);
         cone.castShadow = true;
+        cone.receiveShadow = true;
         scene.add(cone);
         cones.push(cone);
+        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
 
       // 随机散布的锥桶
@@ -587,9 +649,63 @@
         const cone = new THREE.Mesh(coneGeo, coneMat);
         cone.position.set(x, 0.5, z);
         cone.castShadow = true;
+        cone.receiveShadow = true;
         scene.add(cone);
         cones.push(cone);
+        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
+    }
+
+    // ============================================
+    // 创建障碍物（路障 + 油桶）
+    // ============================================
+    let obstacles = [];
+    let obstaclePhysics = [];
+
+    function createObstacles() {
+      // 路障（长条形）
+      const barrierGeo = new THREE.BoxGeometry(6, 0.8, 0.4);
+      const barrierMat = new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.6 });
+
+      const barrierPositions = [
+        { x: 0, z: -40, ry: 0 },
+        { x: 20, z: -20, ry: Math.PI / 4 },
+        { x: -25, z: 10, ry: -Math.PI / 6 },
+        { x: 40, z: 40, ry: Math.PI / 3 },
+        { x: -40, z: -50, ry: 0 },
+      ];
+
+      barrierPositions.forEach(pos => {
+        const barrier = new THREE.Mesh(barrierGeo, barrierMat);
+        barrier.position.set(pos.x, 0.4, pos.z);
+        barrier.rotation.y = pos.ry;
+        barrier.castShadow = true;
+        barrier.receiveShadow = true;
+        scene.add(barrier);
+        obstacles.push({ mesh: barrier, type: 'barrier', halfW: 3, halfL: 0.2, radius: 3.2 });
+        obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: false });
+      });
+
+      // 油桶（圆柱形）
+      const barrelGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.2, 12);
+      const barrelMat = new THREE.MeshStandardMaterial({ color: 0x336699, roughness: 0.4, metalness: 0.3 });
+
+      const barrelPositions = [
+        { x: 10, z: -10 }, { x: -12, z: -30 }, { x: 30, z: 15 },
+        { x: -35, z: 35 }, { x: 15, z: 50 }, { x: -8, z: -55 },
+        { x: 50, z: -15 }, { x: -50, z: 5 }, { x: 25, z: -45 },
+        { x: -20, z: 60 },
+      ];
+
+      barrelPositions.forEach(pos => {
+        const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+        barrel.position.set(pos.x, 0.6, pos.z);
+        barrel.castShadow = true;
+        barrel.receiveShadow = true;
+        scene.add(barrel);
+        obstacles.push({ mesh: barrel, type: 'barrel', radius: 0.6 });
+        obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: false });
+      });
     }
 
     // ============================================
@@ -899,6 +1015,216 @@
       if (input.boost && Math.abs(cs.speed) > 5) {
         spawnBoostParticles(cs.x, cs.z, cs.rotation);
       }
+
+      // ============================================
+      // 碰撞检测：车辆 vs 障碍物（路障/油桶）
+      // ============================================
+      for (let i = 0; i < obstacles.length; i++) {
+        const obs = obstacles[i];
+        const op = obstaclePhysics[i];
+        const mesh = obs.mesh;
+
+        let hit = false;
+        let pushForce = 0;
+        let worldNx = 0, worldNz = 0;
+
+        if (obs.type === 'barrel') {
+          // 圆形碰撞
+          const dx = mesh.position.x - cs.x;
+          const dz = mesh.position.z - cs.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          const minDist = COLLISION.carHalfL + obs.radius;
+          if (dist < minDist && dist > 0.01) {
+            hit = true;
+            pushForce = Math.abs(cs.speed) * 0.9 + 4;
+            worldNx = dx / dist;
+            worldNz = dz / dist;
+          }
+        } else if (obs.type === 'barrier') {
+          // 简化为圆形碰撞（路障较长，用较大半径）
+          const dx = mesh.position.x - cs.x;
+          const dz = mesh.position.z - cs.z;
+          const dist = Math.sqrt(dx * dx + dz * dz);
+          const minDist = COLLISION.carHalfL + obs.radius;
+          if (dist < minDist && dist > 0.01) {
+            hit = true;
+            pushForce = Math.abs(cs.speed) * 0.6 + 2;
+            worldNx = dx / dist;
+            worldNz = dz / dist;
+            op.immovable = true; // 路障较重，不容易推动
+          }
+        }
+
+        if (hit) {
+          if (op.immovable) {
+            // 路障：车反弹
+            cs.speed *= -0.3;
+            cs.x -= worldNx * 0.5;
+            cs.z -= worldNz * 0.5;
+          } else {
+            // 油桶：被撞飞
+            op.vx = worldNx * pushForce + cs.speed * Math.sin(cs.rotation) * 0.4;
+            op.vz = worldNz * pushForce + cs.speed * Math.cos(cs.rotation) * 0.4;
+            op.vy = pushForce * 0.5 + 3;
+            op.grounded = false;
+            op.avx = (Math.random() - 0.5) * 8;
+            op.avz = (Math.random() - 0.5) * 8;
+            cs.speed *= 0.75;
+          }
+
+          // 碰撞粒子
+          const pColor = obs.type === 'barrel' ? 0x6699cc : 0xff6600;
+          for (let j = 0; j < 4; j++) {
+            createParticle(
+              mesh.position.x, mesh.position.y, mesh.position.z,
+              (Math.random() - 0.5) * 6, Math.random() * 4, (Math.random() - 0.5) * 6,
+              0.2, pColor, 0.5
+            );
+          }
+        }
+      }
+
+      // ============================================
+      // 障碍物物理更新
+      // ============================================
+      for (let i = 0; i < obstacles.length; i++) {
+        const obs = obstacles[i];
+        const op = obstaclePhysics[i];
+        if (op.immovable || op.grounded) continue;
+
+        op.vy += gravity * dt;
+        op.vx *= (1 - 0.5 * dt);
+        op.vz *= (1 - 0.5 * dt);
+
+        obs.mesh.position.x += op.vx * dt;
+        obs.mesh.position.y += op.vy * dt;
+        obs.mesh.position.z += op.vz * dt;
+
+        op.rx += op.avx * dt;
+        op.rz += op.avz * dt;
+        obs.mesh.rotation.x = op.rx;
+        obs.mesh.rotation.z = op.rz;
+
+        const restY = obs.type === 'barrel' ? 0.6 : 0.4;
+        if (obs.mesh.position.y <= restY) {
+          obs.mesh.position.y = restY;
+          op.vy = -op.vy * 0.25;
+          op.vx *= 0.6;
+          op.vz *= 0.6;
+          op.avx *= 0.6;
+          op.avz *= 0.6;
+          if (Math.abs(op.vy) < 0.5) {
+            op.vy = 0;
+            op.grounded = true;
+            obs.mesh.rotation.x *= 0.5;
+            obs.mesh.rotation.z *= 0.5;
+          }
+        }
+
+        const b = WORLD_SIZE / 2;
+        if (Math.abs(obs.mesh.position.x) > b || Math.abs(obs.mesh.position.z) > b) {
+          op.grounded = true;
+          op.vx = 0; op.vy = 0; op.vz = 0;
+        }
+      }
+
+      // ============================================
+      // 碰撞检测：车辆 vs 锥桶
+      // ============================================
+      for (let i = 0; i < cones.length; i++) {
+        const cone = cones[i];
+        const cp = conePhysics[i];
+        if (!cp.active) continue;
+
+        const result = COLLISION.checkCarCone(cs, cone.position);
+        if (result.hit) {
+          // 计算碰撞冲量
+          const impactSpeed = Math.abs(cs.speed);
+          const pushForce = impactSpeed * 0.8 + 3;
+
+          // 将碰撞法线转回世界坐标
+          const cos = Math.cos(cs.rotation);
+          const sin = Math.sin(cs.rotation);
+          const worldNx = result.nx * cos - result.nz * sin;
+          const worldNz = result.nx * sin + result.nz * cos;
+
+          // 推开锥桶
+          cp.vx = worldNx * pushForce + cs.speed * sin * 0.3;
+          cp.vz = worldNz * pushForce + cs.speed * cos * 0.3;
+          cp.vy = pushForce * 0.4 + 2; // 弹起
+          cp.grounded = false;
+          cp.angularVx = (Math.random() - 0.5) * 10;
+          cp.angularVz = (Math.random() - 0.5) * 10;
+
+          // 车辆减速
+          cs.speed *= 0.7;
+
+          // 碰撞粒子（橙色碎片）
+          for (let j = 0; j < 5; j++) {
+            createParticle(
+              cone.position.x, cone.position.y, cone.position.z,
+              (Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5,
+              0.15, 0xff8800, 0.6
+            );
+          }
+        }
+      }
+
+      // ============================================
+      // 锥桶物理更新
+      // ============================================
+      const gravity = -15;
+      const groundY = 0.5;
+      for (let i = 0; i < cones.length; i++) {
+        const cone = cones[i];
+        const cp = conePhysics[i];
+        if (cp.active && !cp.grounded) {
+          // 重力
+          cp.vy += gravity * dt;
+          // 空气阻力
+          cp.vx *= (1 - 0.5 * dt);
+          cp.vz *= (1 - 0.5 * dt);
+
+          // 更新位置
+          cone.position.x += cp.vx * dt;
+          cone.position.y += cp.vy * dt;
+          cone.position.z += cp.vz * dt;
+
+          // 旋转
+          cp.rx += cp.angularVx * dt;
+          cp.rz += cp.angularVz * dt;
+          cone.rotation.x = cp.rx;
+          cone.rotation.z = cp.rz;
+
+          // 地面碰撞
+          if (cone.position.y <= groundY) {
+            cone.position.y = groundY;
+            cp.vy = -cp.vy * 0.3; // 弹跳衰减
+            cp.vx *= 0.7; // 地面摩擦
+            cp.vz *= 0.7;
+            cp.angularVx *= 0.7;
+            cp.angularVz *= 0.7;
+
+            if (Math.abs(cp.vy) < 0.5) {
+              cp.vy = 0;
+              cp.grounded = true;
+              // 恢复直立
+              cone.rotation.x *= 0.5;
+              cone.rotation.z *= 0.5;
+            }
+          }
+
+          // 超出边界重置
+          const b = WORLD_SIZE / 2;
+          if (Math.abs(cone.position.x) > b || Math.abs(cone.position.z) > b) {
+            cone.position.y = groundY;
+            cp.vx = 0; cp.vy = 0; cp.vz = 0;
+            cp.grounded = true;
+            cone.rotation.x = 0;
+            cone.rotation.z = 0;
+          }
+        }
+      }
     }
 
     // ============================================
@@ -1199,6 +1525,7 @@
     createGround();
     createCar();
     createCones();
+    createObstacles();
     initSpeedometer();
     setupInput();
 
