@@ -664,6 +664,7 @@
         class GameScene extends QGE.Scene {
             init() {
                 this.player = new Player(this.engine.width / 2, this.engine.height - 80);
+                this.player.engine = this.engine;
                 this.addEntity(this.player);
 
                 this.bullets = [];
