@@ -96,7 +96,9 @@
                 newCanvas.style.cssText = this.canvas.style.cssText;
                 newCanvas.width = this.canvas.width;
                 newCanvas.height = this.canvas.height;
-                this.canvas.parentNode.replaceChild(newCanvas, this.canvas);
+                if (this.canvas.parentNode) {
+                    this.canvas.parentNode.replaceChild(newCanvas, this.canvas);
+                }
                 this.canvas = newCanvas;
                 this.renderer = new THREE.WebGLRenderer({
                     canvas: this.canvas,
