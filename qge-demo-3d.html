@@ -1250,7 +1250,8 @@
         const engine = new QGE.Core(canvas, {
             autoResize: true,
             targetFPS: 60,
-            debug: false
+            debug: false,
+            renderer: 'webgl'
         });
 
         let scene = null;

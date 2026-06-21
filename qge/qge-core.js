@@ -150,15 +150,24 @@
          */
         constructor(canvas, options = {}) {
             this.canvas = canvas;
-            this.ctx = canvas.getContext('2d', { alpha: false });
             this.options = Object.assign({
                 width: 800,
                 height: 600,
                 autoResize: true,
                 pixelRatio: window.devicePixelRatio || 1,
                 targetFPS: 60,
-                debug: false
+                debug: false,
+                renderer: '2d' // '2d' | 'webgl' | 'none'
             }, options);
+
+            // 根据渲染模式创建上下文
+            if (this.options.renderer === '2d') {
+                this.ctx = canvas.getContext('2d', { alpha: false });
+            } else if (this.options.renderer === 'webgl') {
+                this.ctx = null; // WebGL 由外部（如 Three.js）管理
+            } else {
+                this.ctx = canvas.getContext('2d', { alpha: false });
+            }
 
             // 内部状态
             this._running = false;
@@ -303,6 +312,15 @@
          */
         _render(scene) {
             const ctx = this.ctx;
+
+            // WebGL 模式下跳过 2D 渲染（由外部渲染器处理）
+            if (!ctx) {
+                // 如果场景有自己的渲染方法（如 3D 场景），调用它
+                if (scene && scene.render3D) {
+                    scene.render3D();
+                }
+                return;
+            }
 
             // 清空画布
             ctx.clearRect(0, 0, this.width, this.height);
