@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>精灵架构 2.0 - 不畏艰难 | 青柠系全栈技术架构</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+        }
+        .nav-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+            color: #22c55e;
+            text-decoration: none;
+        }
+        .logo svg { width: 28px; height: 28px; }
+        .nav-links { display: flex; gap: 32px; list-style: none; }
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 15px;
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: #22c55e; }
+        .nav-btn {
+            background: #22c55e;
+            color: #fff;
+            padding: 10px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Hero */
+        .hero {
+            padding: 160px 0 100px;
+            text-align: center;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+        .hero h1 span { color: #22c55e; }
+        .hero-subtitle {
+            font-size: 20px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .hero-desc {
+            font-size: 18px;
+            color: #64748b;
+            max-width: 640px;
+            margin: 0 auto 40px;
+        }
+
+        /* Section common */
+        .section {
+            padding: 100px 0;
+        }
+        .section-title { text-align: center; font-size: 36px; font-weight: 700; margin-bottom: 16px; }
+        .section-subtitle { text-align: center; color: #64748b; font-size: 16px; margin-bottom: 60px; }
+
+        /* Architecture Diagram */
+        .arch-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .arch-layer {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 24px 32px;
+            border-radius: 16px;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            position: relative;
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .arch-layer:hover { transform: translateX(8px); }
+        .arch-layer-number {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .arch-layer-content { flex: 1; }
+        .arch-layer-content h3 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+        .arch-layer-content p { color: #94a3b8; font-size: 14px; }
+        .arch-layer-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .arch-tag {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .layer-browser { background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, transparent 100%); border-left: 4px solid #3b82f6; }
+        .layer-browser .arch-layer-number { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+        .layer-runtime { background: linear-gradient(90deg, rgba(34, 197, 94, 0.08) 0%, transparent 100%); border-left: 4px solid #22c55e; }
+        .layer-runtime .arch-layer-number { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .layer-service { background: linear-gradient(90deg, rgba(245, 158, 11, 0.08) 0%, transparent 100%); border-left: 4px solid #f59e0b; }
+        .layer-service .arch-layer-number { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+        .layer-data { background: linear-gradient(90deg, rgba(168, 85, 247, 0.08) 0%, transparent 100%); border-left: 4px solid #a855f7; }
+        .layer-data .arch-layer-number { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
+
+        .arch-connector {
+            width: 2px;
+            height: 24px;
+            background: linear-gradient(180deg, rgba(148, 163, 184, 0.3), rgba(148, 163, 184, 0.1));
+            margin: 0 auto;
+            position: relative;
+        }
+        .arch-connector::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: -3px;
+            width: 0; height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 6px solid rgba(148, 163, 184, 0.3);
+        }
+
+        /* Feature Grid */
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        .feature-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 32px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+        .feature-icon {
+            width: 48px; height: 48px;
+            background: rgba(34, 197, 94, 0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .feature-icon svg { width: 24px; height: 24px; stroke: #22c55e; }
+        .feature-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+        .feature-card p { color: #64748b; font-size: 14px; line-height: 1.7; }
+
+        /* Chrome Section */
+        .chrome-section { background: #0f172a; }
+        .chrome-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .chrome-card {
+            background: #1e293b;
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .chrome-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.4);
+        }
+        .chrome-card .feature-icon { background: rgba(59, 130, 246, 0.1); }
+        .chrome-card .feature-icon svg { stroke: #3b82f6; }
+        .chrome-card h3 { color: #60a5fa; }
+        .chrome-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-available { color: #22c55e; }
+        .status-polyfill { color: #f59e0b; }
+        .status-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+        }
+        .dot-available { background: #22c55e; }
+        .dot-polyfill { background: #f59e0b; }
+
+        /* QGE Section */
+        .qge-section { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+        .qge-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .qge-card {
+            background: #1e293b;
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .qge-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(34, 197, 94, 0.4);
+        }
+        .qge-card h3 { color: #22c55e; margin-bottom: 12px; font-size: 18px; }
+        .qge-card ul {
+            list-style: none;
+            padding: 0;
+        }
+        .qge-card li {
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 5px 0;
+            padding-left: 18px;
+            position: relative;
+        }
+        .qge-card li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 13px;
+            width: 6px;
+            height: 6px;
+            background: #22c55e;
+            border-radius: 50%;
+        }
+
+        /* QNA Section */
+        .qna-section { background: #0f172a; }
+        .qna-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .qna-card {
+            background: #1e293b;
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            border-radius: 16px;
+            padding: 28px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .qna-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(245, 158, 11, 0.4);
+        }
+        .qna-card .feature-icon { background: rgba(245, 158, 11, 0.1); }
+        .qna-card .feature-icon svg { stroke: #f59e0b; }
+        .qna-card h3 { color: #fbbf24; margin-bottom: 10px; font-size: 18px; }
+        .qna-card p { color: #94a3b8; font-size: 14px; line-height: 1.7; }
+
+        /* Performance Metrics */
+        .perf-section { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+        .perf-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .perf-card {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .perf-card:hover { transform: translateY(-4px); }
+        .perf-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 8px;
+        }
+        .perf-label {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .perf-target {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        /* Code Examples */
+        .code-section { background: #0f172a; }
+        .code-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .code-tab {
+            background: #1e293b;
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            color: #94a3b8;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .code-tab:hover { border-color: #22c55e; color: #e2e8f0; }
+        .code-tab.active {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+        .code-panel { display: none; }
+        .code-panel.active { display: block; }
+        .code-block {
+            background: #0b1120;
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            overflow-x: auto;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .code-block pre {
+            color: #e2e8f0;
+            font-family: 'Courier New', 'SF Mono', monospace;
+            font-size: 13px;
+            line-height: 1.8;
+            margin: 0;
+        }
+        .code-block .comment { color: #64748b; }
+        .code-block .keyword { color: #c084fc; }
+        .code-block .string { color: #22c55e; }
+        .code-block .func { color: #60a5fa; }
+        .code-block .number { color: #f59e0b; }
+        .code-block .tag { color: #f87171; }
+
+        /* Footer */
+        .footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid rgba(148, 163, 184, 0.1);
+            color: #475569;
+            font-size: 14px;
+        }
+        .footer a { color: #22c55e; text-decoration: none; }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 36px; }
+            .nav-links { display: none; }
+            .section { padding: 60px 0; }
+            .arch-layer { flex-direction: column; text-align: center; }
+            .arch-layer-tags { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M6 12h12M12 6v12"/></svg>
+                精灵架构 2.0
+            </a>
+            <ul class="nav-links">
+                <li><a href="#overview">架构概览</a></li>
+                <li><a href="#chrome">Chrome 优化</a></li>
+                <li><a href="#qge">QGE v2.0</a></li>
+                <li><a href="#qna">QNA v1.5</a></li>
+                <li><a href="#performance">性能指标</a></li>
+                <li><a href="#code">代码示例</a></li>
+            </ul>
+            <a href="qge.html" class="nav-btn">查看 QGE</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <div class="hero-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                v2.0.0 正式发布
+            </div>
+            <h1>精灵架构 <span>2.0</span></h1>
+            <p class="hero-subtitle">不畏艰难</p>
+            <p class="hero-desc">青柠系全栈技术架构，融合 QNA v1.5 服务层、QGE v2.0 游戏引擎与 Chrome 前沿优化，构建下一代 Web 应用与游戏的技术基石。</p>
+        </div>
+    </section>
+
+    <section class="section" id="overview" style="background:#0f172a;">
+        <div class="container">
+            <h2 class="section-title">架构概览</h2>
+            <p class="section-subtitle">四层架构设计，从浏览器到数据层的完整技术栈</p>
+            <div class="arch-diagram">
+                <div class="arch-layer layer-browser">
+                    <div class="arch-layer-number">L1</div>
+                    <div class="arch-layer-content">
+                        <h3>浏览器层 (Browser Layer)</h3>
+                        <p>Chrome 专属优化与前沿 Web API 集成</p>
+                    </div>
+                    <div class="arch-layer-tags">
+                        <span class="arch-tag">View Transitions</span>
+                        <span class="arch-tag">WebGPU</span>
+                        <span class="arch-tag">OPFS</span>
+                        <span class="arch-tag">Web Codecs</span>
+                    </div>
+                </div>
+                <div class="arch-connector"></div>
+                <div class="arch-layer layer-runtime">
+                    <div class="arch-layer-number">L2</div>
+                    <div class="arch-layer-content">
+                        <h3>运行时层 (Runtime Layer)</h3>
+                        <p>QGE 核心引擎与 3D 渲染系统</p>
+                    </div>
+                    <div class="arch-layer-tags">
+                        <span class="arch-tag">QGE Core</span>
+                        <span class="arch-tag">QGE 3D</span>
+                        <span class="arch-tag">Three.js</span>
+                        <span class="arch-tag">Physics</span>
+                    </div>
+                </div>
+                <div class="arch-connector"></div>
+                <div class="arch-layer layer-service">
+                    <div class="arch-layer-number">L3</div>
+                    <div class="arch-layer-content">
+                        <h3>服务层 (Service Layer)</h3>
+                        <p>QNA API 路由、认证与实时同步</p>
+                    </div>
+                    <div class="arch-layer-tags">
+                        <span class="arch-tag">API Routing</span>
+                        <span class="arch-tag">Auth</span>
+                        <span class="arch-tag">CDN</span>
+                        <span class="arch-tag">Sync</span>
+                    </div>
+                </div>
+                <div class="arch-connector"></div>
+                <div class="arch-layer layer-data">
+                    <div class="arch-layer-number">L4</div>
+                    <div class="arch-layer-content">
+                        <h3>数据层 (Data Layer)</h3>
+                        <p>持久化存储、缓存与文件系统</p>
+                    </div>
+                    <div class="arch-layer-tags">
+                        <span class="arch-tag">IndexedDB</span>
+                        <span class="arch-tag">Cache API</span>
+                        <span class="arch-tag">OPFS</span>
+                        <span class="arch-tag">LocalStorage</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section chrome-section" id="chrome">
+        <div class="container">
+            <h2 class="section-title">Chrome 专属优化</h2>
+            <p class="section-subtitle">充分利用 Chromium 内核的前沿能力，提升用户体验</p>
+            <div class="chrome-grid">
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    </div>
+                    <h3>View Transitions API</h3>
+                    <p>原生级页面切换动画，无需复杂 CSS 即可实现流畅的跨页面/跨视图过渡效果，提升应用质感。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 115+ 可用
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></svg>
+                    </div>
+                    <h3>scheduler.yield()</h3>
+                    <p>协作式调度 API，主动将主线程控制权交还给浏览器，避免长任务阻塞交互，提升 INP 指标。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 129+ 可用
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                    </div>
+                    <h3>Performance Observer</h3>
+                    <p>实时监控 Core Web Vitals (LCP, FID/INP, CLS)，精准定位性能瓶颈，数据驱动优化。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        全浏览器支持
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>
+                    </div>
+                    <h3>OffscreenCanvas</h3>
+                    <p>在 Web Worker 线程中执行 Canvas 渲染，彻底解放主线程，实现 60fps 稳定帧率。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 69+ 可用
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>WebGPU</h3>
+                    <p>下一代 Web 图形 API，提供接近原生的 GPU 访问能力，为 3D 渲染和计算着色器提供强大支持。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 113+ 可用
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    </div>
+                    <h3>OPFS (Origin Private File System)</h3>
+                    <p>高性能本地文件系统，支持同步读写访问，比 IndexedDB 更快的游戏存档与资源缓存方案。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 86+ 可用
+                    </div>
+                </div>
+                <div class="chrome-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </div>
+                    <h3>Web Codecs</h3>
+                    <p>硬件加速的音视频编解码能力，低延迟解码视频流，适用于游戏过场动画和实时流媒体。</p>
+                    <div class="chrome-status status-available">
+                        <span class="status-dot dot-available"></span>
+                        Chrome 94+ 可用
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section qge-section" id="qge">
+        <div class="container">
+            <h2 class="section-title">QGE v2.0 特性</h2>
+            <p class="section-subtitle">青柠游戏内核全面升级，2D/3D 双渲染管线</p>
+            <div class="qge-grid">
+                <div class="qge-card">
+                    <h3>2D/3D 双渲染</h3>
+                    <ul>
+                        <li>Canvas 2D 零依赖渲染</li>
+                        <li>WebGL / WebGPU 后端切换</li>
+                        <li>2D 场景与 3D 场景无缝叠加</li>
+                        <li>自动降级策略</li>
+                    </ul>
+                </div>
+                <div class="qge-card">
+                    <h3>Three.js 集成</h3>
+                    <ul>
+                        <li>按需加载 Three.js 模块</li>
+                        <li>内置模型/纹理加载器</li>
+                        <li>光照与阴影系统封装</li>
+                        <li>后处理效果管线</li>
+                    </ul>
+                </div>
+                <div class="qge-card">
+                    <h3>物理系统</h3>
+                    <ul>
+                        <li>AABB / OBB 碰撞检测</li>
+                        <li>刚体物理模拟</li>
+                        <li>射线检测与 3D 拾取</li>
+                        <li>车辆物理与漂移模型</li>
+                    </ul>
+                </div>
+                <div class="qge-card">
+                    <h3>粒子效果</h3>
+                    <ul>
+                        <li>GPU 加速粒子渲染</li>
+                        <li>重力、风力、涡流场</li>
+                        <li>颜色/大小/透明度渐变</li>
+                        <li>对象池复用机制</li>
+                    </ul>
+                </div>
+                <div class="qge-card">
+                    <h3>触控支持</h3>
+                    <ul>
+                        <li>多点触控事件封装</li>
+                        <li>虚拟摇杆组件</li>
+                        <li>手势识别 (滑动/捏合)</li>
+                        <li>触屏与键鼠输入统一</li>
+                    </ul>
+                </div>
+                <div class="qge-card">
+                    <h3>多载具系统</h3>
+                    <ul>
+                        <li>车辆基类与继承体系</li>
+                        <li>轮胎摩擦力模拟</li>
+                        <li>引擎扭矩曲线</li>
+                        <li>多车辆同屏竞技</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section qna-section" id="qna">
+        <div class="container">
+            <h2 class="section-title">QNA v1.5 集成</h2>
+            <p class="section-subtitle">青柠架构服务层，为应用提供完整的后端能力</p>
+            <div class="qna-grid">
+                <div class="qna-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>API 路由</h3>
+                    <p>RESTful API 设计与统一路由管理，支持版本控制、请求拦截、错误处理与自动重试机制。</p>
+                </div>
+                <div class="qna-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/></svg>
+                    </div>
+                    <h3>CDN 集成</h3>
+                    <p>静态资源自动分发，边缘节点缓存策略，全球加速，降低首屏加载时间。</p>
+                </div>
+                <div class="qna-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </div>
+                    <h3>用户认证</h3>
+                    <p>JWT Token 体系，支持多设备登录管理，OAuth2 第三方登录集成，安全会话控制。</p>
+                </div>
+                <div class="qna-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    </div>
+                    <h3>数据持久化</h3>
+                    <p>云端存档同步，离线优先策略，冲突自动合并，保障用户数据安全不丢失。</p>
+                </div>
+                <div class="qna-card">
+                    <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </div>
+                    <h3>实时同步</h3>
+                    <p>WebSocket 长连接，房间状态同步，延迟补偿与预测回滚，支持多人实时竞技。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section perf-section" id="performance">
+        <div class="container">
+            <h2 class="section-title">性能指标</h2>
+            <p class="section-subtitle">精灵架构 2.0 的目标性能标准</p>
+            <div class="perf-grid">
+                <div class="perf-card">
+                    <div class="perf-value">&lt;1.5s</div>
+                    <div class="perf-label">First Contentful Paint</div>
+                    <div class="perf-target">首次内容绘制</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-value">&lt;2.5s</div>
+                    <div class="perf-label">Largest Contentful Paint</div>
+                    <div class="perf-target">最大内容绘制</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-value">&lt;3.5s</div>
+                    <div class="perf-label">Time to Interactive</div>
+                    <div class="perf-target">可交互时间</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-value">60fps</div>
+                    <div class="perf-label">Frame Rate</div>
+                    <div class="perf-target">稳定帧率</div>
+                </div>
+                <div class="perf-card">
+                    <div class="perf-value">&lt;100KB</div>
+                    <div class="perf-label">Bundle Size</div>
+                    <div class="perf-target">核心包体积 (gzip)</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section code-section" id="code">
+        <div class="container">
+            <h2 class="section-title">代码示例</h2>
+            <p class="section-subtitle">实际代码展示如何集成精灵架构 2.0 的各项能力</p>
+            <div class="code-tabs">
+                <button class="code-tab active" onclick="switchTab(0)">ViewTransition</button>
+                <button class="code-tab" onclick="switchTab(1)">OffscreenCanvas</button>
+                <button class="code-tab" onclick="switchTab(2)">OPFS 存档</button>
+                <button class="code-tab" onclick="switchTab(3)">QNA API</button>
+            </div>
+
+            <div class="code-panel active" id="panel-0">
+                <div class="code-block">
+                    <pre><span class="comment">// View Transitions API - 平滑页面切换</span>
+<span class="keyword">async function</span> <span class="func">switchPage</span>(targetUrl) {
+    <span class="comment">// 检查浏览器支持</span>
+    <span class="keyword">if</span> (!document.startViewTransition) {
+        window.location.href = targetUrl;
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// 启动视图过渡</span>
+    <span class="keyword">const</span> transition = document.<span class="func">startViewTransition</span>(<span class="keyword">async</span> () => {
+        <span class="comment">// 更新 DOM 内容</span>
+        <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="func">fetch</span>(targetUrl);
+        <span class="keyword">const</span> html = <span class="keyword">await</span> response.<span class="func">text</span>();
+        <span class="keyword">const</span> parser = <span class="keyword">new</span> <span class="func">DOMParser</span>();
+        <span class="keyword">const</span> doc = parser.<span class="func">parseFromString</span>(html, <span class="string">'text/html'</span>);
+        document.body.innerHTML = doc.body.innerHTML;
+    });
+
+    <span class="comment">// 等待过渡完成</span>
+    <span class="keyword">await</span> transition.finished;
+}</n
+<span class="comment">// CSS 自定义过渡动画</span>
+::view-transition-old(root) {
+    <span class="func">animation</span>: fadeOut <span class="number">0.3s</span> ease;
+}
+::view-transition-new(root) {
+    <span class="func">animation</span>: fadeIn <span class="number">0.3s</span> ease;
+}</pre>
+                </div>
+            </div>
+
+            <div class="code-panel" id="panel-1">
+                <div class="code-block">
+                    <pre><span class="comment">// OffscreenCanvas + QGE - Worker 线程渲染</span>
+<span class="comment">// main.js</span>
+<span class="keyword">const</span> canvas = document.<span class="func">getElementById</span>(<span class="string">'game'</span>);
+<span class="keyword">const</span> offscreen = canvas.<span class="func">transferControlToOffscreen</span>();
+
+<span class="keyword">const</span> worker = <span class="keyword">new</span> <span class="func">Worker</span>(<span class="string">'qge-worker.js'</span>);
+worker.<span class="func">postMessage</span>({
+    type: <span class="string">'init'</span>,
+    canvas: offscreen,
+    width: <span class="number">800</span>,
+    height: <span class="number">600</span>
+}, [offscreen]);
+
+<span class="comment">// qge-worker.js</span>
+self.<span class="func">onmessage</span> = <span class="keyword">function</span>(e) {
+    <span class="keyword">const</span> { type, canvas, width, height } = e.data;
+    <span class="keyword">if</span> (type === <span class="string">'init'</span>) {
+        <span class="comment">// 在 Worker 中初始化 QGE</span>
+        <span class="keyword">const</span> game = <span class="keyword">new</span> QGE.<span class="func">Core</span>({
+            canvas: canvas,
+            width: width,
+            height: height,
+            offscreen: <span class="keyword">true</span>
+        });
+        game.<span class="func">start</span>();
+    }
+};
+
+<span class="comment">// 主线程发送输入事件到 Worker</span>
+canvas.<span class="func">addEventListener</span>(<span class="string">'touchstart'</span>, (e) => {
+    worker.<span class="func">postMessage</span>({
+        type: <span class="string">'input'</span>,
+        event: <span class="string">'touchstart'</span>,
+        touches: [...e.touches].map(t => ({ x: t.clientX, y: t.clientY }))
+    });
+});</pre>
+                </div>
+            </div>
+
+            <div class="code-panel" id="panel-2">
+                <div class="code-block">
+                    <pre><span class="comment">// OPFS - 高速游戏存档系统</span>
+<span class="keyword">class</span> <span class="func">GameSaveManager</span> {
+    <span class="keyword">constructor</span>() {
+        <span class="keyword">this</span>.root = <span class="keyword">null</span>;
+    }
+
+    <span class="keyword">async</span> <span class="func">init</span>() {
+        <span class="comment">// 获取 OPFS 根目录句柄</span>
+        <span class="keyword">this</span>.root = <span class="keyword">await</span> navigator.storage.<span class="func">getDirectory</span>();
+    }
+
+    <span class="keyword">async</span> <span class="func">saveGame</span>(slotId, data) {
+        <span class="comment">// 创建/打开存档文件</span>
+        <span class="keyword">const</span> fileHandle = <span class="keyword">await</span> <span class="keyword">this</span>.root.<span class="func">getFileHandle</span>(
+            <span class="string">`save_${slotId}.json`</span>,
+            { create: <span class="keyword">true</span> }
+        );
+
+        <span class="comment">// 同步写入 (性能更高)</span>
+        <span class="keyword">const</span> writable = <span class="keyword">await</span> fileHandle.<span class="func">createSyncAccessHandle</span>();
+        <span class="keyword">const</span> encoder = <span class="keyword">new</span> <span class="func">TextEncoder</span>();
+        <span class="keyword">const</span> buffer = encoder.<span class="func">encode</span>(JSON.<span class="func">stringify</span>(data));
+        writable.<span class="func">write</span>(buffer);
+        writable.<span class="func">close</span>();
+    }
+
+    <span class="keyword">async</span> <span class="func">loadGame</span>(slotId) {
+        <span class="keyword">try</span> {
+            <span class="keyword">const</span> fileHandle = <span class="keyword">await</span> <span class="keyword">this</span>.root.<span class="func">getFileHandle</span>(<span class="string">`save_${slotId}.json`</span>);
+            <span class="keyword">const</span> file = <span class="keyword">await</span> fileHandle.<span class="func">getFile</span>();
+            <span class="keyword">const</span> text = <span class="keyword">await</span> file.<span class="func">text</span>();
+            <span class="keyword">return</span> JSON.<span class="func">parse</span>(text);
+        } <span class="keyword">catch</span> (e) {
+            <span class="keyword">return</span> <span class="keyword">null</span>;
+        }
+    }
+
+    <span class="keyword">async</span> <span class="func">listSaves</span>() {
+        <span class="keyword">const</span> saves = [];
+        <span class="keyword">for</span> <span class="keyword">await</span> (<span class="keyword">const</span> [name, handle] <span class="keyword">of</span> <span class="keyword">this</span>.root.<span class="func">entries</span>()) {
+            <span class="keyword">if</span> (name.<span class="func">startsWith</span>(<span class="string">'save_'</span>)) {
+                saves.<span class="func">push</span>(name);
+            }
+        }
+        <span class="keyword">return</span> saves;
+    }
+}</pre>
+                </div>
+            </div>
+
+            <div class="code-panel" id="panel-3">
+                <div class="code-block">
+                    <pre><span class="comment">// QNA API 集成示例</span>
+<span class="keyword">class</span> <span class="func">QNAClient</span> {
+    <span class="keyword">constructor</span>(baseURL) {
+        <span class="keyword">this</span>.baseURL = baseURL;
+        <span class="keyword">this</span>.token = localStorage.<span class="func">getItem</span>(<span class="string">'qna_token'</span>);
+    }
+
+    <span class="keyword">async</span> <span class="func">request</span>(endpoint, options = {}) {
+        <span class="keyword">const</span> url = <span class="string">`${this.baseURL}/api/v1${endpoint}`</span>;
+        <span class="keyword">const</span> headers = {
+            <span class="string">'Content-Type'</span>: <span class="string">'application/json'</span>,
+            ...options.headers
+        };
+        <span class="keyword">if</span> (<span class="keyword">this</span>.token) {
+            headers[<span class="string">'Authorization'</span>] = <span class="string">`Bearer ${this.token}`</span>;
+        }
+
+        <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="func">fetch</span>(url, { ...options, headers });
+        <span class="keyword">if</span> (!response.ok) {
+            <span class="keyword">throw</span> <span class="keyword">new</span> <span class="func">Error</span>(<span class="string">`API Error: ${response.status}`</span>);
+        }
+        <span class="keyword">return</span> response.<span class="func">json</span>();
+    }
+
+    <span class="comment">// 用户认证</span>
+    <span class="keyword">async</span> <span class="func">login</span>(username, password) {
+        <span class="keyword">const</span> data = <span class="keyword">await</span> <span class="keyword">this</span>.<span class="func">request</span>(<span class="string">'/auth/login'</span>, {
+            method: <span class="string">'POST'</span>,
+            body: JSON.<span class="func">stringify</span>({ username, password })
+        });
+        <span class="keyword">this</span>.token = data.token;
+        localStorage.<span class="func">setItem</span>(<span class="string">'qna_token'</span>, data.token);
+        <span class="keyword">return</span> data;
+    }
+
+    <span class="comment">// 游戏数据同步</span>
+    <span class="keyword">async</span> <span class="func">syncGameData</span>(gameData) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.<span class="func">request</span>(<span class="string">'/game/sync'</span>, {
+            method: <span class="string">'POST'</span>,
+            body: JSON.<span class="func">stringify</span>({
+                timestamp: Date.<span class="func">now</span>(),
+                data: gameData,
+                checksum: <span class="keyword">await</span> <span class="keyword">this</span>.<span class="func">computeChecksum</span>(gameData)
+            })
+        });
+    }
+
+    <span class="comment">// 实时同步 - WebSocket</span>
+    <span class="func">connectRealtime</span>(roomId) {
+        <span class="keyword">const</span> ws = <span class="keyword">new</span> <span class="func">WebSocket</span>(
+            <span class="string">`wss://${this.baseURL}/ws/room/${roomId}?token=${this.token}`</span>
+        );
+        ws.<span class="func">onmessage</span> = (event) => {
+            <span class="keyword">const</span> msg = JSON.<span class="func">parse</span>(event.data);
+            <span class="keyword">this</span>.<span class="func">emit</span>(<span class="string">'sync'</span>, msg);
+        };
+        <span class="keyword">return</span> ws;
+    }
+}</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container">
+            <p>精灵架构 2.0 | 青柠系全栈技术架构 | 版本 v2.0.0</p>
+            <p style="margin-top:8px">
+                <a href="qge.html">QGE v2.0</a> |
+                <a href="qna-architecture.html">QNA v1.5</a> |
+                <a href="index.html">青柠首页</a>
+            </p>
+            <p style="margin-top:8px; color:#334155;">不畏艰难，持续进化</p>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching
+        function switchTab(index) {
+            document.querySelectorAll('.code-tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.code-panel').forEach((panel, i) => {
+                panel.classList.toggle('active', i === index);
+            });
+        }
+
+        // Scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.arch-layer, .chrome-card, .qge-card, .qna-card, .perf-card').forEach(el => {
+            el.style.opacity = '0';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
