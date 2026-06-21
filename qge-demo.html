@@ -463,7 +463,7 @@
                 this.type = type || 'basic';
                 this.baseY = y;
                 this.time = 0;
-                this.speed = 80 + Math.random() * 60;
+                this.speed = 50 + Math.random() * 40;
                 this.amplitude = 30 + Math.random() * 50;
                 this.frequency = 1.5 + Math.random() * 2;
                 this.hp = type === 'tank' ? 3 : 1;
@@ -679,8 +679,8 @@
 
                 this.score = 0;
                 this.highScore = parseInt(localStorage.getItem('qge_highscore') || '0');
-                this.spawnTimer = 1.5;
-                this.spawnInterval = 1.5;
+                this.spawnTimer = 2.5;
+                this.spawnInterval = 2.5;
                 this.difficultyTimer = 0;
                 this.gameTime = 0;
                 this.paused = false;
@@ -837,10 +837,10 @@
                 this.gameTime += dt;
                 this.difficultyTimer += dt;
 
-                // 难度递增
-                if (this.difficultyTimer > 10) {
+                // 难度递增（每15秒提升一次）
+                if (this.difficultyTimer > 15) {
                     this.difficultyTimer = 0;
-                    this.spawnInterval = Math.max(0.3, this.spawnInterval - 0.1);
+                    this.spawnInterval = Math.max(0.5, this.spawnInterval - 0.08);
                 }
 
                 // 星空
@@ -876,7 +876,7 @@
                 if (this.spawnTimer <= 0) {
                     this.spawnTimer = this.spawnInterval;
                     const x = 30 + Math.random() * (this.engine.width - 60);
-                    const type = Math.random() < 0.15 ? 'tank' : (Math.random() < 0.2 ? 'shooter' : 'basic');
+                    const type = Math.random() < 0.08 ? 'tank' : (Math.random() < 0.12 ? 'shooter' : 'basic');
                     const enemy = new Enemy(x, -40, type);
                     this.enemies.push(enemy);
                     this.addEntity(enemy);
