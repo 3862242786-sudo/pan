@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>青柠游戏内核 v1.0 - 轻量HTML5游戏引擎</title>
+    <title>青柠游戏内核 v2.0 - 2D/3D HTML5游戏引擎</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -295,10 +295,10 @@
         <div class="container">
             <div class="hero-badge">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                v1.0.0 发布
+                v2.0.0 发布 - 支持 3D
             </div>
-            <h1>轻量<span>游戏引擎</span><br>专为 HTML5 打造</h1>
-            <p class="hero-desc">青柠游戏内核 (QGE) 是一个专为 2D HTML5 游戏优化的轻量引擎。零依赖、高性能、易扩展，让你专注于游戏创意而不是底层代码。</p>
+            <h1>轻量<span>游戏引擎</span><br>2D / 3D 全能打造</h1>
+            <p class="hero-desc">青柠游戏内核 (QGE) 是一个专为 HTML5 游戏优化的轻量引擎。v2.0 新增 Three.js 3D 渲染支持，2D 零依赖、3D 集成化，让你专注于游戏创意。</p>
             <div class="hero-btns">
                 <a href="qge/qge-core.js" class="btn-primary" download>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -306,7 +306,11 @@
                 </a>
                 <a href="qge-demo.html" class="btn-secondary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    在线演示
+                    2D 演示
+                </a>
+                <a href="qge-demo-3d.html" class="btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    3D 演示
                 </a>
             </div>
         </div>
@@ -368,9 +372,16 @@
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3>3D 渲染</h3>
+                    <p>集成 Three.js，支持 3D 模型、光照、阴影、雾效、粒子。按需加载，2D 游戏不受影响。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </div>
-                    <h3>零依赖</h3>
+                    <h3>零依赖 (2D)</h3>
                     <p>纯原生 JavaScript，不依赖任何第三方库。单文件引入即可使用，gzip 后不到 30KB。</p>
                 </div>
             </div>
@@ -397,6 +408,18 @@
                         <li>InputManager - 输入管理</li>
                         <li>AudioManager - 音频管理</li>
                         <li>DebugOverlay - 调试面板</li>
+                    </ul>
+                </div>
+                <div class="module-item">
+                    <h4>qge-3d.js - 3D 渲染 (v2.0 新增)</h4>
+                    <ul>
+                        <li>Renderer3D - WebGL 渲染器</li>
+                        <li>Scene3D - 3D 场景管理</li>
+                        <li>Camera3D - 透视/正交相机</li>
+                        <li>Mesh3D - 3D 网格工厂</li>
+                        <li>Lights - 光照系统</li>
+                        <li>Loader3D - 模型/纹理加载</li>
+                        <li>Input3D - 3D 拾取</li>
                     </ul>
                 </div>
                 <div class="module-item">
@@ -439,17 +462,30 @@
     <section class="demo" id="demo">
         <div class="container">
             <h2 class="section-title">在线演示</h2>
-            <p class="section-subtitle">用青柠游戏内核制作的「青柠战机」太空射击游戏</p>
-            <div class="demo-card">
-                <div class="demo-preview">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <p class="section-subtitle">用青柠游戏内核制作的 2D / 3D 太空射击游戏</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:800px;margin:0 auto;">
+                <div class="demo-card">
+                    <div class="demo-preview">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </div>
+                    <h3 style="font-size:24px;font-weight:600;margin-bottom:8px">青柠战机 (2D)</h3>
+                    <p style="color:#64748b;margin-bottom:24px">展示游戏循环、精灵系统、碰撞检测、粒子效果、UI组件、场景切换等全部核心功能</p>
+                    <a href="qge-demo.html" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        立即试玩
+                    </a>
                 </div>
-                <h3 style="font-size:24px;font-weight:600;margin-bottom:8px">青柠战机</h3>
-                <p style="color:#64748b;margin-bottom:24px">展示游戏循环、精灵系统、碰撞检测、粒子效果、UI组件、场景切换等全部核心功能</p>
-                <a href="qge-demo.html" class="btn-primary">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    立即试玩
-                </a>
+                <div class="demo-card">
+                    <div class="demo-preview">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                    </div>
+                    <h3 style="font-size:24px;font-weight:600;margin-bottom:8px">青柠星际 (3D)</h3>
+                    <p style="color:#64748b;margin-bottom:24px">展示 Three.js 集成、3D 模型、光照阴影、第三人称相机、3D 碰撞等 v2.0 新功能</p>
+                    <a href="qge-demo-3d.html" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        立即试玩
+                    </a>
+                </div>
             </div>
         </div>
     </section>
@@ -490,8 +526,8 @@ game.<span class="func">start</span>();</pre>
 
     <footer class="footer">
         <div class="container">
-            <p>青柠游戏内核 v1.0.0 | 基于 <a href="qna-architecture.html">青柠架构 v1.5</a> 开发</p>
-            <p style="margin-top:8px">零依赖 | 纯原生 JavaScript | 完全开源</p>
+            <p>青柠游戏内核 v2.0.0 | 基于 <a href="qna-architecture.html">青柠架构 v1.5</a> 开发</p>
+            <p style="margin-top:8px">2D 零依赖 | 3D 集成 Three.js | 完全开源</p>
         </div>
     </footer>
 </body>
