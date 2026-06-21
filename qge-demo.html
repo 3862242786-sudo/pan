@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>青柠战机 - Qingning Game Engine v1.0 Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0a0a0a;
+            font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
+        }
+        #game-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+
+    <!-- QGE Core -->
+    <script src="qge/qge-core.js"></script>
+    <!-- QGE UI -->
+    <script src="qge/qge-ui.js"></script>
+
+    <script>
+    // ========================================================================
+    // 青柠战机 - QGE v1.0 完整演示
+    // ========================================================================
+
+    (function() {
+        'use strict';
+
+        // 常量
+        const COLOR_GREEN = '#22c55e';
+        const COLOR_GREEN_LIGHT = '#4ade80';
+        const COLOR_GREEN_DARK = '#15803d';
+        const COLOR_RED = '#ef4444';
+        const COLOR_RED_DARK = '#b91c1c';
+        const COLOR_YELLOW = '#facc15';
+        const COLOR_WHITE = '#ffffff';
+        const COLOR_BLACK = '#000000';
+        const COLOR_GRAY = '#6b7280';
+
+        // ========================================================================
+        // 音频合成器 (使用 Web Audio API 生成音效)
+        // ========================================================================
+        class SoundSynth {
+            constructor() {
+                this.ctx = null;
+                this._enabled = true;
+                this._masterGain = null;
+                this._bgmOsc = null;
+                this._bgmGain = null;
+                this._bgmInterval = null;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                this.ctx = new AudioContext();
+                this._masterGain = this.ctx.createGain();
+                this._masterGain.gain.value = 0.3;
+                this._masterGain.connect(this.ctx.destination);
+            }
+
+            _ensure() {
+                if (!this.ctx) this.init();
+                return this.ctx && this._enabled;
+            }
+
+            playShoot() {
+                if (!this._ensure()) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, t);
+                osc.frequency.exponentialRampToValueAtTime(220, t + 0.1);
+                gain.gain.setValueAtTime(0.15, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+                osc.connect(gain);
+                gain.connect(this._masterGain);
+                osc.start(t);
+                osc.stop(t + 0.1);
+            }
+
+            playExplosion() {
+                if (!this._ensure()) return;
+                const t = this.ctx.currentTime;
+                const bufferSize = this.ctx.sampleRate * 0.3;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+                }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                const gain = this.ctx.createGain();
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1000, t);
+                filter.frequency.exponentialRampToValueAtTime(100, t + 0.3);
+                gain.gain.setValueAtTime(0.3, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                source.connect(filter);
+                filter.connect(gain);
+                gain.connect(this._masterGain);
+                source.start(t);
+            }
+
+            playPowerup() {
+                if (!this._ensure()) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523, t);
+                osc.frequency.setValueAtTime(659, t + 0.1);
+                osc.frequency.setValueAtTime(784, t + 0.2);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+                osc.connect(gain);
+                gain.connect(this._masterGain);
+                osc.start(t);
+                osc.stop(t + 0.4);
+            }
+
+            playDamage() {
+                if (!this._ensure()) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, t);
+                osc.frequency.exponentialRampToValueAtTime(50, t + 0.2);
+                gain.gain.setValueAtTime(0.2, t);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+                osc.connect(gain);
+                gain.connect(this._masterGain);
+                osc.start(t);
+                osc.stop(t + 0.2);
+            }
+
+            startBGM() {
+                if (!this._ensure()) return;
+                this.stopBGM();
+                const playNote = (freq, dur, delay) => {
+                    const t = this.ctx.currentTime + delay;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.08, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                    osc.connect(gain);
+                    gain.connect(this._masterGain);
+                    osc.start(t);
+                    osc.stop(t + dur);
+                };
+
+                const notes = [110, 130.81, 164.81, 196, 220, 196, 164.81, 130.81];
+                let delay = 0;
+                const loop = () => {
+                    for (let i = 0; i < notes.length; i++) {
+                        playNote(notes[i], 0.4, delay);
+                        delay += 0.5;
+                    }
+                };
+                loop();
+                this._bgmInterval = setInterval(loop, notes.length * 500);
+            }
+
+            stopBGM() {
+                if (this._bgmInterval) {
+                    clearInterval(this._bgmInterval);
+                    this._bgmInterval = null;
+                }
+            }
+
+            mute(m) {
+                this._enabled = !m;
+                if (this._masterGain) {
+                    this._masterGain.gain.value = m ? 0 : 0.3;
+                }
+            }
+        }
+
+        // ========================================================================
+        // 程序化纹理生成
+        // ========================================================================
+        function createPlayerTexture() {
+            const c = document.createElement('canvas');
+            c.width = 40; c.height = 48;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_GREEN;
+            ctx.beginPath();
+            ctx.moveTo(20, 0);
+            ctx.lineTo(40, 48);
+            ctx.lineTo(20, 38);
+            ctx.lineTo(0, 48);
+            ctx.closePath();
+            ctx.fill();
+            // 驾驶舱
+            ctx.fillStyle = COLOR_GREEN_LIGHT;
+            ctx.beginPath();
+            ctx.moveTo(20, 8);
+            ctx.lineTo(26, 24);
+            ctx.lineTo(14, 24);
+            ctx.closePath();
+            ctx.fill();
+            // 引擎光晕
+            ctx.fillStyle = 'rgba(34,197,94,0.4)';
+            ctx.beginPath();
+            ctx.arc(20, 42, 8, 0, Math.PI * 2);
+            ctx.fill();
+            return c;
+        }
+
+        function createEnemyTexture() {
+            const c = document.createElement('canvas');
+            c.width = 36; c.height = 36;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_RED;
+            ctx.beginPath();
+            ctx.moveTo(18, 0);
+            ctx.lineTo(36, 18);
+            ctx.lineTo(18, 36);
+            ctx.lineTo(0, 18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = COLOR_RED_DARK;
+            ctx.beginPath();
+            ctx.moveTo(18, 6);
+            ctx.lineTo(30, 18);
+            ctx.lineTo(18, 30);
+            ctx.lineTo(6, 18);
+            ctx.closePath();
+            ctx.fill();
+            return c;
+        }
+
+        function createBulletTexture() {
+            const c = document.createElement('canvas');
+            c.width = 6; c.height = 16;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_GREEN_LIGHT;
+            ctx.fillRect(0, 0, 6, 16);
+            ctx.fillStyle = COLOR_WHITE;
+            ctx.fillRect(1, 1, 4, 6);
+            return c;
+        }
+
+        function createEnemyBulletTexture() {
+            const c = document.createElement('canvas');
+            c.width = 8; c.height = 8;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_RED;
+            ctx.beginPath();
+            ctx.arc(4, 4, 4, 0, Math.PI * 2);
+            ctx.fill();
+            return c;
+        }
+
+        function createPowerupTexture() {
+            const c = document.createElement('canvas');
+            c.width = 28; c.height = 28;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_GREEN;
+            ctx.beginPath();
+            ctx.arc(14, 14, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = COLOR_GREEN_LIGHT;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(14, 14, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = COLOR_WHITE;
+            ctx.font = 'bold 14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('+', 14, 14);
+            return c;
+        }
+
+        function createRapidFireTexture() {
+            const c = document.createElement('canvas');
+            c.width = 28; c.height = 28;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = COLOR_YELLOW;
+            ctx.beginPath();
+            ctx.arc(14, 14, 12, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = COLOR_WHITE;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(14, 14, 12, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.fillStyle = COLOR_BLACK;
+            ctx.font = 'bold 12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('R', 14, 14);
+            return c;
+        }
+
+        // ========================================================================
+        // 游戏实体
+        // ========================================================================
+        class Player extends QGE.Sprite {
+            constructor(x, y) {
+                super({ x, y, texture: createPlayerTexture(), anchorX: 0.5, anchorY: 0.5 });
+                this.width = 40;
+                this.height = 48;
+                this.speed = 350;
+                this.lives = 3;
+                this.maxLives = 5;
+                this.rapidFire = false;
+                this.rapidFireTimer = 0;
+                this.shootCooldown = 0;
+                this.invincible = 0;
+                this.zIndex = 10;
+            }
+
+            update(dt, input, bounds) {
+                super.update(dt);
+
+                let dx = 0, dy = 0;
+                if (input.isKeyDown('ArrowLeft') || input.isKeyDown('KeyA')) dx -= 1;
+                if (input.isKeyDown('ArrowRight') || input.isKeyDown('KeyD')) dx += 1;
+                if (input.isKeyDown('ArrowUp') || input.isKeyDown('KeyW')) dy -= 1;
+                if (input.isKeyDown('ArrowDown') || input.isKeyDown('KeyS')) dy += 1;
+
+                // 归一化
+                if (dx !== 0 || dy !== 0) {
+                    const len = Math.sqrt(dx * dx + dy * dy);
+                    dx /= len; dy /= len;
+                }
+
+                this.x += dx * this.speed * dt;
+                this.y += dy * this.speed * dt;
+
+                // 边界限制
+                this.x = QGE.Utils.clamp(this.x, 20, bounds.width - 20);
+                this.y = QGE.Utils.clamp(this.y, 24, bounds.height - 24);
+
+                // 射击冷却
+                if (this.shootCooldown > 0) this.shootCooldown -= dt;
+
+                // 无敌时间
+                if (this.invincible > 0) this.invincible -= dt;
+
+                // 快速射击计时
+                if (this.rapidFire) {
+                    this.rapidFireTimer -= dt;
+                    if (this.rapidFireTimer <= 0) {
+                        this.rapidFire = false;
+                    }
+                }
+            }
+
+            canShoot() {
+                const cd = this.rapidFire ? 0.08 : 0.25;
+                return this.shootCooldown <= 0;
+            }
+
+            shoot() {
+                this.shootCooldown = this.rapidFire ? 0.08 : 0.25;
+                const bullets = [];
+                if (this.rapidFire) {
+                    bullets.push(new Bullet(this.x, this.y - 24, -1));
+                    bullets.push(new Bullet(this.x, this.y - 24, 1));
+                }
+                bullets.push(new Bullet(this.x, this.y - 24, 0));
+                return bullets;
+            }
+
+            takeDamage() {
+                if (this.invincible > 0) return false;
+                this.lives--;
+                this.invincible = 2.0;
+                return true;
+            }
+
+            heal() {
+                this.lives = Math.min(this.lives + 1, this.maxLives);
+            }
+
+            activateRapidFire() {
+                this.rapidFire = true;
+                this.rapidFireTimer = 5.0;
+            }
+
+            render(ctx) {
+                if (this.invincible > 0 && Math.floor(this.invincible * 10) % 2 === 0) return;
+                super.render(ctx);
+            }
+
+            getBounds() {
+                const margin = 6;
+                return {
+                    x: this.x - this.width * this.anchorX + margin,
+                    y: this.y - this.height * this.anchorY + margin,
+                    w: this.width - margin * 2,
+                    h: this.height - margin * 2
+                };
+            }
+        }
+
+        class Bullet extends QGE.Sprite {
+            constructor(x, y, spread) {
+                super({ x, y, texture: createBulletTexture(), anchorX: 0.5, anchorY: 0.5 });
+                this.width = 6;
+                this.height = 16;
+                this.speed = 600;
+                this.vx = spread * 100;
+                this.vy = -this.speed;
+                this.zIndex = 5;
+                this.active = true;
+            }
+
+            update(dt) {
+                super.update(dt);
+                if (this.y < -20) this.active = false;
+            }
+
+            getBounds() {
+                return {
+                    x: this.x - 3,
+                    y: this.y - 8,
+                    w: 6,
+                    h: 16
+                };
+            }
+        }
+
+        class Enemy extends QGE.Sprite {
+            constructor(x, y, type) {
+                super({ x, y, texture: createEnemyTexture(), anchorX: 0.5, anchorY: 0.5 });
+                this.width = 36;
+                this.height = 36;
+                this.type = type || 'basic';
+                this.baseY = y;
+                this.time = 0;
+                this.speed = 80 + Math.random() * 60;
+                this.amplitude = 30 + Math.random() * 50;
+                this.frequency = 1.5 + Math.random() * 2;
+                this.hp = type === 'tank' ? 3 : 1;
+                this.score = type === 'tank' ? 30 : 10;
+                this.zIndex = 5;
+                this.active = true;
+                this.shootTimer = 1.5 + Math.random() * 2;
+                this.canShoot = type === 'shooter';
+            }
+
+            update(dt, playerX, playerY) {
+                super.update(dt);
+                this.time += dt;
+                this.y += this.speed * dt;
+                this.x += Math.sin(this.time * this.frequency) * this.amplitude * dt * 2;
+
+                if (this.y > 700) this.active = false;
+
+                if (this.canShoot) {
+                    this.shootTimer -= dt;
+                    if (this.shootTimer <= 0) {
+                        this.shootTimer = 2.0 + Math.random() * 2;
+                        return new EnemyBullet(this.x, this.y + 18);
+                    }
+                }
+                return null;
+            }
+
+            getBounds() {
+                const margin = 4;
+                return {
+                    x: this.x - this.width * this.anchorX + margin,
+                    y: this.y - this.height * this.anchorY + margin,
+                    w: this.width - margin * 2,
+                    h: this.height - margin * 2
+                };
+            }
+        }
+
+        class EnemyBullet extends QGE.Sprite {
+            constructor(x, y) {
+                super({ x, y, texture: createEnemyBulletTexture(), anchorX: 0.5, anchorY: 0.5 });
+                this.width = 8;
+                this.height = 8;
+                this.vy = 250;
+                this.zIndex = 4;
+                this.active = true;
+            }
+
+            update(dt) {
+                super.update(dt);
+                if (this.y > 700) this.active = false;
+            }
+
+            getBounds() {
+                return {
+                    x: this.x - 4,
+                    y: this.y - 4,
+                    w: 8,
+                    h: 8
+                };
+            }
+        }
+
+        class Powerup extends QGE.Sprite {
+            constructor(x, y, type) {
+                const tex = type === 'rapid' ? createRapidFireTexture() : createPowerupTexture();
+                super({ x, y, texture: tex, anchorX: 0.5, anchorY: 0.5 });
+                this.type = type || 'health';
+                this.width = 28;
+                this.height = 28;
+                this.vy = 100;
+                this.rotationSpeed = 2;
+                this.zIndex = 3;
+                this.active = true;
+            }
+
+            update(dt) {
+                super.update(dt);
+                this.rotation += this.rotationSpeed * dt;
+                if (this.y > 700) this.active = false;
+            }
+
+            getBounds() {
+                return {
+                    x: this.x - 12,
+                    y: this.y - 12,
+                    w: 24,
+                    h: 24
+                };
+            }
+        }
+
+        class Star {
+            constructor(w, h) {
+                this.x = Math.random() * w;
+                this.y = Math.random() * h;
+                this.size = Math.random() * 2 + 0.5;
+                this.speed = Math.random() * 40 + 10;
+                this.brightness = Math.random();
+                this.w = w;
+                this.h = h;
+            }
+
+            update(dt) {
+                this.y += this.speed * dt;
+                if (this.y > this.h) {
+                    this.y = 0;
+                    this.x = Math.random() * this.w;
+                }
+                this.brightness += dt * 2;
+            }
+
+            render(ctx) {
+                const alpha = 0.3 + Math.abs(Math.sin(this.brightness)) * 0.7;
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        // ========================================================================
+        // 场景
+        // ========================================================================
+        class StartScene extends QGE.Scene {
+            init() {
+                this.stars = [];
+                for (let i = 0; i < 100; i++) {
+                    this.stars.push(new Star(this.engine.width, this.engine.height));
+                }
+                this.titleAlpha = 0;
+                this.titleTween = new QGE.Tween(this, { titleAlpha: 1 }, 1.5, {
+                    easing: QGE.Easing.easeOutSine
+                });
+                this.time = 0;
+            }
+
+            update(dt) {
+                super.update(dt);
+                this.time += dt;
+                this.titleTween.update(dt);
+                for (let s of this.stars) s.update(dt);
+
+                if (this.engine.input.isKeyPressed('Space') || this.engine.input.isKeyPressed('Enter')) {
+                    this.engine.scenes.switch('game');
+                }
+            }
+
+            render(ctx) {
+                // 背景
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, this.engine.width, this.engine.height);
+
+                for (let s of this.stars) s.render(ctx);
+
+                const cx = this.engine.width / 2;
+                const cy = this.engine.height / 2;
+
+                // Logo
+                ctx.save();
+                ctx.globalAlpha = this.titleAlpha;
+
+                ctx.fillStyle = COLOR_GREEN;
+                ctx.font = 'bold 48px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('青柠战机', cx, cy - 80);
+
+                ctx.fillStyle = COLOR_GREEN_LIGHT;
+                ctx.font = '18px sans-serif';
+                ctx.fillText('Qingning Fighter - QGE v1.0 Demo', cx, cy - 40);
+
+                // 装饰线
+                ctx.strokeStyle = COLOR_GREEN;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(cx - 120, cy - 20);
+                ctx.lineTo(cx + 120, cy - 20);
+                ctx.stroke();
+
+                // 操作说明
+                ctx.fillStyle = COLOR_WHITE;
+                ctx.font = '16px sans-serif';
+                ctx.fillText('WASD / 方向键 移动', cx, cy + 20);
+                ctx.fillText('空格键 射击', cx, cy + 50);
+
+                // 闪烁提示
+                const blink = Math.abs(Math.sin(this.time * 2)) > 0.3;
+                if (blink) {
+                    ctx.fillStyle = COLOR_YELLOW;
+                    ctx.font = 'bold 20px sans-serif';
+                    ctx.fillText('按空格键或点击开始', cx, cy + 100);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        class GameScene extends QGE.Scene {
+            init() {
+                this.player = new Player(this.engine.width / 2, this.engine.height - 80);
+                this.addEntity(this.player);
+
+                this.bullets = [];
+                this.enemies = [];
+                this.enemyBullets = [];
+                this.powerups = [];
+
+                this.stars = [];
+                for (let i = 0; i < 120; i++) {
+                    this.stars.push(new Star(this.engine.width, this.engine.height));
+                }
+
+                this.score = 0;
+                this.highScore = parseInt(localStorage.getItem('qge_highscore') || '0');
+                this.spawnTimer = 1.5;
+                this.spawnInterval = 1.5;
+                this.difficultyTimer = 0;
+                this.gameTime = 0;
+                this.paused = false;
+                this.shakeTime = 0;
+
+                this.synth = new SoundSynth();
+                this.synth.startBGM();
+
+                // UI
+                this.ui = new QGE.UI.UIManager(this.engine);
+
+                // 暂停按钮
+                this.pauseBtn = new QGE.UI.Button({
+                    x: this.engine.width - 60,
+                    y: 10,
+                    width: 50,
+                    height: 30,
+                    text: '暂停',
+                    font: '14px sans-serif',
+                    bgColor: 'rgba(0,0,0,0.5)',
+                    hoverColor: 'rgba(34,197,94,0.5)',
+                    borderColor: COLOR_GREEN,
+                    borderWidth: 1,
+                    radius: 4,
+                    onClick: () => this.togglePause()
+                });
+                this.ui.add(this.pauseBtn);
+
+                // 虚拟摇杆 (移动端)
+                this.joystick = new QGE.UI.VirtualJoystick({
+                    x: 20,
+                    y: this.engine.height - 140,
+                    radius: 50,
+                    stickRadius: 20,
+                    baseColor: 'rgba(255,255,255,0.15)',
+                    stickColor: 'rgba(34,197,94,0.5)',
+                    maxDistance: 40,
+                    onChange: (dx, dy) => {
+                        this._joyX = dx;
+                        this._joyY = dy;
+                    },
+                    onEnd: () => {
+                        this._joyX = 0;
+                        this._joyY = 0;
+                    }
+                });
+                this._joyX = 0;
+                this._joyY = 0;
+                this.ui.add(this.joystick);
+
+                // 射击按钮 (移动端)
+                this.shootBtn = new QGE.UI.Button({
+                    x: this.engine.width - 90,
+                    y: this.engine.height - 90,
+                    width: 70,
+                    height: 70,
+                    text: '射击',
+                    font: 'bold 16px sans-serif',
+                    bgColor: 'rgba(34,197,94,0.3)',
+                    hoverColor: 'rgba(34,197,94,0.5)',
+                    pressColor: 'rgba(34,197,94,0.6)',
+                    borderColor: COLOR_GREEN,
+                    borderWidth: 2,
+                    radius: 35,
+                    onClick: () => {}
+                });
+                this.shootBtn._isShooting = false;
+                this.ui.add(this.shootBtn);
+
+                // 绑定移动端触摸
+                this._bindMobileInput();
+
+                // 暂停对话框
+                this.pauseDialog = new QGE.UI.Dialog({
+                    x: this.engine.width / 2 - 150,
+                    y: this.engine.height / 2 - 100,
+                    width: 300,
+                    height: 200,
+                    title: '游戏暂停',
+                    message: '点击继续返回游戏',
+                    bgColor: 'rgba(10,10,10,0.95)',
+                    borderColor: COLOR_GREEN,
+                    borderWidth: 2,
+                    radius: 8,
+                    padding: 20,
+                    buttons: [
+                        { text: '继续', onClick: () => this.togglePause() },
+                        { text: '返回主菜单', onClick: () => {
+                            this.synth.stopBGM();
+                            this.engine.scenes.switch('start');
+                        }}
+                    ]
+                });
+                this.pauseDialog.hide();
+                this.ui.add(this.pauseDialog);
+
+                // 绑定暂停键
+                this._pauseHandler = (e) => {
+                    if (e.code === 'Escape' || e.code === 'KeyP') {
+                        this.togglePause();
+                    }
+                };
+                window.addEventListener('keydown', this._pauseHandler);
+            }
+
+            _bindMobileInput() {
+                const canvas = this.engine.input.canvas;
+                const getPos = (clientX, clientY) => {
+                    const rect = canvas.getBoundingClientRect();
+                    return {
+                        x: (clientX - rect.left) * (canvas.width / rect.width),
+                        y: (clientY - rect.top) * (canvas.height / rect.height)
+                    };
+                };
+
+                canvas.addEventListener('touchstart', (e) => {
+                    for (let t of e.changedTouches) {
+                        const pos = getPos(t.clientX, t.clientY);
+                        if (this.shootBtn.hitTest(pos.x, pos.y)) {
+                            this.shootBtn._isShooting = true;
+                        }
+                    }
+                }, { passive: false });
+
+                window.addEventListener('touchend', (e) => {
+                    for (let t of e.changedTouches) {
+                        const pos = getPos(t.clientX, t.clientY);
+                        if (this.shootBtn.hitTest(pos.x, pos.y)) {
+                            this.shootBtn._isShooting = false;
+                        }
+                    }
+                }, { passive: false });
+            }
+
+            togglePause() {
+                this.paused = !this.paused;
+                if (this.paused) {
+                    this.pauseDialog.show();
+                    this.synth.stopBGM();
+                } else {
+                    this.pauseDialog.hide();
+                    this.synth.startBGM();
+                }
+            }
+
+            update(dt) {
+                if (this.paused) {
+                    this.ui.update(dt);
+                    return;
+                }
+
+                super.update(dt);
+                this.ui.update(dt);
+                this.gameTime += dt;
+                this.difficultyTimer += dt;
+
+                // 难度递增
+                if (this.difficultyTimer > 10) {
+                    this.difficultyTimer = 0;
+                    this.spawnInterval = Math.max(0.3, this.spawnInterval - 0.1);
+                }
+
+                // 星空
+                for (let s of this.stars) s.update(dt);
+
+                // 玩家移动 (虚拟摇杆)
+                if (this._joyX !== 0 || this._joyY !== 0) {
+                    const len = Math.sqrt(this._joyX * this._joyX + this._joyY * this._joyY);
+                    if (len > 0.1) {
+                        this.player.x += (this._joyX / len) * this.player.speed * dt;
+                        this.player.y += (this._joyY / len) * this.player.speed * dt;
+                        this.player.x = QGE.Utils.clamp(this.player.x, 20, this.engine.width - 20);
+                        this.player.y = QGE.Utils.clamp(this.player.y, 24, this.engine.height - 24);
+                    }
+                }
+
+                // 玩家更新
+                this.player.update(dt, this.engine.input, { width: this.engine.width, height: this.engine.height });
+
+                // 射击
+                const shootPressed = this.engine.input.isKeyDown('Space') || this.shootBtn._isShooting;
+                if (shootPressed && this.player.canShoot()) {
+                    const newBullets = this.player.shoot();
+                    for (let b of newBullets) {
+                        this.bullets.push(b);
+                        this.addEntity(b);
+                    }
+                    this.synth.playShoot();
+                }
+
+                // 生成敌人
+                this.spawnTimer -= dt;
+                if (this.spawnTimer <= 0) {
+                    this.spawnTimer = this.spawnInterval;
+                    const x = 30 + Math.random() * (this.engine.width - 60);
+                    const type = Math.random() < 0.15 ? 'tank' : (Math.random() < 0.2 ? 'shooter' : 'basic');
+                    const enemy = new Enemy(x, -40, type);
+                    this.enemies.push(enemy);
+                    this.addEntity(enemy);
+                }
+
+                // 更新子弹
+                for (let b of this.bullets) {
+                    b.update(dt);
+                    if (!b.active) this.removeEntity(b);
+                }
+                this.bullets = this.bullets.filter(b => b.active);
+
+                // 更新敌人
+                for (let e of this.enemies) {
+                    const eb = e.update(dt, this.player.x, this.player.y);
+                    if (eb) {
+                        this.enemyBullets.push(eb);
+                        this.addEntity(eb);
+                    }
+                    if (!e.active) this.removeEntity(e);
+                }
+                this.enemies = this.enemies.filter(e => e.active);
+
+                // 更新敌人子弹
+                for (let b of this.enemyBullets) {
+                    b.update(dt);
+                    if (!b.active) this.removeEntity(b);
+                }
+                this.enemyBullets = this.enemyBullets.filter(b => b.active);
+
+                // 更新道具
+                for (let p of this.powerups) {
+                    p.update(dt);
+                    if (!p.active) this.removeEntity(p);
+                }
+                this.powerups = this.powerups.filter(p => p.active);
+
+                // 碰撞检测
+                this._checkCollisions();
+
+                // 屏幕震动
+                if (this.shakeTime > 0) {
+                    this.shakeTime -= dt;
+                    this.engine.camera.shake(5, 0.2);
+                }
+
+                // 游戏结束
+                if (this.player.lives <= 0) {
+                    this._gameOver();
+                }
+
+                // 更新UI位置
+                this.pauseBtn.x = this.engine.width - 60;
+                this.joystick.y = this.engine.height - 140;
+                this.shootBtn.x = this.engine.width - 90;
+                this.shootBtn.y = this.engine.height - 90;
+            }
+
+            _checkCollisions() {
+                const pBounds = this.player.getBounds();
+
+                // 玩家子弹 vs 敌人
+                for (let b of this.bullets) {
+                    const bBounds = b.getBounds();
+                    for (let e of this.enemies) {
+                        if (!e.active) continue;
+                        const eBounds = e.getBounds();
+                        if (QGE.Collision.aabb(bBounds, eBounds)) {
+                            b.active = false;
+                            this.removeEntity(b);
+                            e.hp--;
+                            if (e.hp <= 0) {
+                                e.active = false;
+                                this.removeEntity(e);
+                                this.score += e.score;
+                                this._spawnExplosion(e.x, e.y);
+                                this.synth.playExplosion();
+                                // 掉落道具
+                                if (Math.random() < 0.15) {
+                                    const type = Math.random() < 0.5 ? 'health' : 'rapid';
+                                    const pu = new Powerup(e.x, e.y, type);
+                                    this.powerups.push(pu);
+                                    this.addEntity(pu);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                // 敌人 vs 玩家
+                for (let e of this.enemies) {
+                    if (!e.active) continue;
+                    if (QGE.Collision.aabb(pBounds, e.getBounds())) {
+                        e.active = false;
+                        this.removeEntity(e);
+                        this._spawnExplosion(e.x, e.y);
+                        this.synth.playExplosion();
+                        if (this.player.takeDamage()) {
+                            this.shakeTime = 0.3;
+                            this.synth.playDamage();
+                        }
+                    }
+                }
+
+                // 敌人子弹 vs 玩家
+                for (let b of this.enemyBullets) {
+                    if (!b.active) continue;
+                    if (QGE.Collision.aabb(pBounds, b.getBounds())) {
+                        b.active = false;
+                        this.removeEntity(b);
+                        if (this.player.takeDamage()) {
+                            this.shakeTime = 0.3;
+                            this.synth.playDamage();
+                        }
+                    }
+                }
+
+                // 道具 vs 玩家
+                for (let p of this.powerups) {
+                    if (!p.active) continue;
+                    if (QGE.Collision.aabb(pBounds, p.getBounds())) {
+                        p.active = false;
+                        this.removeEntity(p);
+                        if (p.type === 'health') {
+                            this.player.heal();
+                            this.score += 50;
+                        } else {
+                            this.player.activateRapidFire();
+                            this.score += 50;
+                        }
+                        this.synth.playPowerup();
+                    }
+                }
+            }
+
+            _spawnExplosion(x, y) {
+                const emitter = new QGE.ParticleEmitter({
+                    x, y,
+                    burst: 20,
+                    lifeMin: 0.3,
+                    lifeMax: 0.8,
+                    speedMin: 50,
+                    speedMax: 200,
+                    gravity: 100,
+                    sizeMin: 2,
+                    sizeMax: 6,
+                    colors: [COLOR_GREEN, COLOR_YELLOW, COLOR_GREEN_LIGHT, COLOR_WHITE]
+                });
+                this.engine.particles.addEmitter(emitter);
+                // 一次性发射后自动移除
+                setTimeout(() => {
+                    this.engine.particles.removeEmitter(emitter);
+                }, 100);
+            }
+
+            _gameOver() {
+                if (this.score > this.highScore) {
+                    localStorage.setItem('qge_highscore', String(this.score));
+                    this.highScore = this.score;
+                }
+                this.synth.stopBGM();
+                this.engine.scenes.switch('gameover', {
+                    score: this.score,
+                    highScore: this.highScore
+                });
+            }
+
+            render(ctx) {
+                // 背景
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, this.engine.width, this.engine.height);
+
+                for (let s of this.stars) s.render(ctx);
+
+                super.render(ctx);
+
+                // UI 覆盖层
+                this._renderHUD(ctx);
+
+                // UI 管理器渲染
+                this.ui.render(ctx);
+            }
+
+            _renderHUD(ctx) {
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+
+                // 分数
+                ctx.fillStyle = COLOR_WHITE;
+                ctx.font = 'bold 20px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                ctx.fillText(`分数: ${this.score}`, 15, 15);
+
+                // 最高分
+                ctx.fillStyle = COLOR_GRAY;
+                ctx.font = '14px sans-serif';
+                ctx.fillText(`最高分: ${this.highScore}`, 15, 42);
+
+                // 生命值
+                ctx.fillStyle = COLOR_WHITE;
+                ctx.font = '16px sans-serif';
+                ctx.fillText('生命:', 15, 68);
+                for (let i = 0; i < this.player.maxLives; i++) {
+                    ctx.fillStyle = i < this.player.lives ? COLOR_GREEN : 'rgba(255,255,255,0.2)';
+                    ctx.beginPath();
+                    ctx.moveTo(65 + i * 22, 72);
+                    ctx.lineTo(75 + i * 22, 82);
+                    ctx.lineTo(55 + i * 22, 82);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+
+                // 快速射击状态
+                if (this.player.rapidFire) {
+                    const barW = 120;
+                    const pct = this.player.rapidFireTimer / 5;
+                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                    ctx.fillRect(15, 92, barW, 12);
+                    ctx.fillStyle = COLOR_YELLOW;
+                    ctx.fillRect(15, 92, barW * pct, 12);
+                    ctx.strokeStyle = COLOR_WHITE;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(15, 92, barW, 12);
+                    ctx.fillStyle = COLOR_WHITE;
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('快速射击', 15 + barW / 2, 100);
+                }
+
+                ctx.restore();
+            }
+
+            destroy() {
+                window.removeEventListener('keydown', this._pauseHandler);
+                this.synth.stopBGM();
+                this.engine.particles.clear();
+                super.destroy();
+            }
+        }
+
+        class GameOverScene extends QGE.Scene {
+            init(data) {
+                this.score = data?.score || 0;
+                this.highScore = data?.highScore || 0;
+                this.stars = [];
+                for (let i = 0; i < 100; i++) {
+                    this.stars.push(new Star(this.engine.width, this.engine.height));
+                }
+                this.time = 0;
+                this.isNewRecord = this.score > 0 && this.score >= this.highScore;
+            }
+
+            update(dt) {
+                super.update(dt);
+                this.time += dt;
+                for (let s of this.stars) s.update(dt);
+
+                if (this.engine.input.isKeyPressed('Space') || this.engine.input.isKeyPressed('Enter')) {
+                    this.engine.scenes.switch('game');
+                }
+            }
+
+            render(ctx) {
+                ctx.fillStyle = '#0a0a0a';
+                ctx.fillRect(0, 0, this.engine.width, this.engine.height);
+
+                for (let s of this.stars) s.render(ctx);
+
+                const cx = this.engine.width / 2;
+                const cy = this.engine.height / 2;
+
+                ctx.fillStyle = COLOR_RED;
+                ctx.font = 'bold 42px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('游戏结束', cx, cy - 100);
+
+                ctx.fillStyle = COLOR_WHITE;
+                ctx.font = '24px sans-serif';
+                ctx.fillText(`本局分数: ${this.score}`, cx, cy - 30);
+
+                if (this.isNewRecord) {
+                    const blink = Math.abs(Math.sin(this.time * 3)) > 0.3;
+                    if (blink) {
+                        ctx.fillStyle = COLOR_YELLOW;
+                        ctx.font = 'bold 20px sans-serif';
+                        ctx.fillText('新纪录!', cx, cy + 10);
+                    }
+                }
+
+                ctx.fillStyle = COLOR_GRAY;
+                ctx.font = '18px sans-serif';
+                ctx.fillText(`最高分: ${this.highScore}`, cx, cy + 45);
+
+                ctx.fillStyle = COLOR_GREEN;
+                ctx.font = '16px sans-serif';
+                ctx.fillText('按空格键重新开始', cx, cy + 90);
+                ctx.fillText('按 ESC 返回主菜单', cx, cy + 115);
+            }
+        }
+
+        // ========================================================================
+        // 初始化引擎与场景
+        // ========================================================================
+        const canvas = document.getElementById('game-canvas');
+        const engine = new QGE.Core(canvas, {
+            autoResize: true,
+            targetFPS: 60,
+            debug: false
+        });
+
+        engine.scenes.register('start', StartScene);
+        engine.scenes.register('game', GameScene);
+        engine.scenes.register('gameover', GameOverScene);
+
+        // 启动
+        engine.scenes.switch('start');
+        engine.start();
+
+        // 处理键盘全局事件 - 返回主菜单
+        window.addEventListener('keydown', (e) => {
+            const scene = engine.scenes.current();
+            if (e.code === 'Escape' && scene instanceof GameOverScene) {
+                engine.scenes.switch('start');
+            }
+        });
+
+        // 点击/触摸开始画面
+        canvas.addEventListener('mousedown', () => {
+            const scene = engine.scenes.current();
+            if (scene instanceof StartScene) {
+                engine.scenes.switch('game');
+            } else if (scene instanceof GameOverScene) {
+                engine.scenes.switch('game');
+            }
+        });
+
+        canvas.addEventListener('touchstart', () => {
+            const scene = engine.scenes.current();
+            if (scene instanceof StartScene) {
+                engine.scenes.switch('game');
+            } else if (scene instanceof GameOverScene) {
+                engine.scenes.switch('game');
+            }
+        }, { passive: true });
+
+    })();
+    </script>
+</body>
+</html>
