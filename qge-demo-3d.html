@@ -683,7 +683,7 @@
         barrier.receiveShadow = true;
         scene.add(barrier);
         obstacles.push({ mesh: barrier, type: 'barrier', halfW: 3, halfL: 0.2, radius: 3.2 });
-        obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: false });
+        obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: true });
       });
 
       // 油桶（圆柱形）
@@ -879,6 +879,11 @@
     function updatePhysics(dt) {
       const cs = carState;
 
+      // 碰撞冷却倒计时
+      if (cs.collisionCooldown > 0) {
+        cs.collisionCooldown -= dt;
+      }
+
       // 转向输入
       let steerInput = 0;
       if (input.left) steerInput -= 1;
@@ -1057,10 +1062,13 @@
 
         if (hit) {
           if (op.immovable) {
-            // 路障：车反弹
-            cs.speed *= -0.3;
-            cs.x -= worldNx * 0.5;
-            cs.z -= worldNz * 0.5;
+            // 路障：车反弹，添加碰撞冷却避免卡死
+            if (!cs.collisionCooldown || cs.collisionCooldown <= 0) {
+              cs.speed *= -0.3;
+              cs.x -= worldNx * 1.0;
+              cs.z -= worldNz * 1.0;
+              cs.collisionCooldown = 0.3; // 0.3秒冷却
+            }
           } else {
             // 油桶：被撞飞
             op.vx = worldNx * pushForce + cs.speed * Math.sin(cs.rotation) * 0.4;
@@ -1129,43 +1137,48 @@
       }
 
       // ============================================
-      // 碰撞检测：车辆 vs 锥桶
+      // 碰撞检测：车辆 vs 锥桶（有冷却期）
       // ============================================
-      for (let i = 0; i < cones.length; i++) {
-        const cone = cones[i];
-        const cp = conePhysics[i];
-        if (!cp.active) continue;
+      if (!cs.collisionCooldown || cs.collisionCooldown <= 0) {
+        for (let i = 0; i < cones.length; i++) {
+          const cone = cones[i];
+          const cp = conePhysics[i];
+          if (!cp.active) continue;
 
-        const result = COLLISION.checkCarCone(cs, cone.position);
-        if (result.hit) {
-          // 计算碰撞冲量
-          const impactSpeed = Math.abs(cs.speed);
-          const pushForce = impactSpeed * 0.8 + 3;
+          const result = COLLISION.checkCarCone(cs, cone.position);
+          if (result.hit) {
+            // 计算碰撞冲量
+            const impactSpeed = Math.abs(cs.speed);
+            const pushForce = impactSpeed * 0.8 + 3;
 
-          // 将碰撞法线转回世界坐标
-          const cos = Math.cos(cs.rotation);
-          const sin = Math.sin(cs.rotation);
-          const worldNx = result.nx * cos - result.nz * sin;
-          const worldNz = result.nx * sin + result.nz * cos;
+            // 将碰撞法线转回世界坐标
+            const cos = Math.cos(cs.rotation);
+            const sin = Math.sin(cs.rotation);
+            const worldNx = result.nx * cos - result.nz * sin;
+            const worldNz = result.nx * sin + result.nz * cos;
 
-          // 推开锥桶
-          cp.vx = worldNx * pushForce + cs.speed * sin * 0.3;
-          cp.vz = worldNz * pushForce + cs.speed * cos * 0.3;
-          cp.vy = pushForce * 0.4 + 2; // 弹起
-          cp.grounded = false;
-          cp.angularVx = (Math.random() - 0.5) * 10;
-          cp.angularVz = (Math.random() - 0.5) * 10;
+            // 推开锥桶
+            cp.vx = worldNx * pushForce + cs.speed * sin * 0.3;
+            cp.vz = worldNz * pushForce + cs.speed * cos * 0.3;
+            cp.vy = pushForce * 0.4 + 2; // 弹起
+            cp.grounded = false;
+            cp.angularVx = (Math.random() - 0.5) * 10;
+            cp.angularVz = (Math.random() - 0.5) * 10;
 
-          // 车辆减速
-          cs.speed *= 0.7;
+            // 车辆减速并推开
+            cs.speed *= 0.7;
+            cs.x -= worldNx * 0.8;
+            cs.z -= worldNz * 0.8;
+            cs.collisionCooldown = 0.15; // 0.15秒冷却
 
-          // 碰撞粒子（橙色碎片）
-          for (let j = 0; j < 5; j++) {
-            createParticle(
-              cone.position.x, cone.position.y, cone.position.z,
-              (Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5,
-              0.15, 0xff8800, 0.6
-            );
+            // 碰撞粒子（橙色碎片）
+            for (let j = 0; j < 5; j++) {
+              createParticle(
+                cone.position.x, cone.position.y, cone.position.z,
+                (Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5,
+                0.15, 0xff8800, 0.6
+              );
+            }
           }
         }
       }
