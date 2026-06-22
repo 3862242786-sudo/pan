@@ -303,235 +303,32 @@
     </div>
   </div>
 
-  <!-- 游戏脚本 -->
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+  <!-- 游戏画布 -->
+  <canvas id="game-canvas"></canvas>
 
-    // ============================================
-    // 全局变量
-    // ============================================
-    let scene, camera, renderer;
-    let car, carBody, wheels = [];
-    let terrainMesh;
-    let cones = [];
-    let conePhysics = []; // 锥桶物理状态
-    let skidMarks = [];
-    let particles = [];
-    let cameraMode = 0; // 0=跟随, 1=车头, 2=环绕
-    let orbitAngle = 0;
-    let orbitDistance = 12;
+  <!-- QGE 框架 -->
+  <script src="qge/qge-core.js?v=3"></script>
+  <script src="qge/qge-3d.js?v=3"></script>
 
-    // ============================================
-    // 地形系统
-    // ============================================
-    const TERRAIN_SEGMENTS = 120;
-    const TERRAIN_MAX_HEIGHT = 35;
+  <!-- 游戏主逻辑 -->
+  <script>
+  // ============================================
+  // DriftScene3D - 继承 QGE.Scene3D
+  // ============================================
+  class DriftScene3D extends QGE.Scene3D {
+    constructor(engine) {
+      super(engine);
+      this._ready = false;
+      this._started = false;
 
-    // 简单的伪随机噪声函数（无需外部库）
-    function hash(x, z) {
-      let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
-      return n - Math.floor(n);
-    }
-
-    function noise2D(x, z) {
-      const ix = Math.floor(x);
-      const iz = Math.floor(z);
-      const fx = x - ix;
-      const fz = z - iz;
-      const u = fx * fx * (3 - 2 * fx);
-      const v = fz * fz * (3 - 2 * fz);
-      const a = hash(ix, iz);
-      const b = hash(ix + 1, iz);
-      const c = hash(ix, iz + 1);
-      const d = hash(ix + 1, iz + 1);
-      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-    }
-
-    function fbm(x, z, octaves) {
-      let val = 0;
-      let amp = 1;
-      let freq = 1;
-      let maxVal = 0;
-      for (let i = 0; i < octaves; i++) {
-        val += noise2D(x * freq, z * freq) * amp;
-        maxVal += amp;
-        amp *= 0.5;
-        freq *= 2.1;
-      }
-      return val / maxVal;
-    }
-
-    // 道路中心线函数：蜿蜒的道路
-    function roadCenterZ(x) {
-      return Math.sin(x * 0.015) * 40 + Math.sin(x * 0.035) * 15;
-    }
-
-    function roadCenterX(z) {
-      // 逆函数近似，用于距离计算
-      return 0;
-    }
-
-    // 计算地形高度（每帧调用，需高效）
-    function getTerrainHeight(x, z) {
-      const wx = x / WORLD_SIZE;
-      const wz = z / WORLD_SIZE;
-
-      // 基础噪声层：大范围丘陵
-      let h = fbm(x * 0.008, z * 0.008, 4) * TERRAIN_MAX_HEIGHT;
-
-      // 细节噪声
-      h += fbm(x * 0.03, z * 0.03, 2) * 3;
-
-      // 区域控制：中心起始区平坦
-      const distFromCenter = Math.sqrt(x * x + z * z);
-      const flatRadius = 35;
-      if (distFromCenter < flatRadius) {
-        h *= (distFromCenter / flatRadius);
-      }
-
-      // 陡峭山区（远离中心的某些区域）
-      const mountainX = 120, mountainZ = -100;
-      const distMountain = Math.sqrt((x - mountainX) ** 2 + (z - mountainZ) ** 2);
-      if (distMountain < 150) {
-        const mFactor = Math.max(0, 1 - distMountain / 150);
-        h += mFactor * mFactor * 25;
-      }
-
-      const mountain2X = -100, mountain2Z = 120;
-      const distMountain2 = Math.sqrt((x - mountain2X) ** 2 + (z - mountain2Z) ** 2);
-      if (distMountain2 < 120) {
-        const mFactor = Math.max(0, 1 - distMountain2 / 120);
-        h += mFactor * mFactor * 20;
-      }
-
-      // 道路平坦化：沿蜿蜒道路降低高度
-      const roadZ = roadCenterZ(x);
-      const roadDist = Math.abs(z - roadZ);
-      const roadWidth = 10;
-      if (roadDist < roadWidth) {
-        const smoothFactor = roadDist / roadWidth;
-        // 道路中心高度取附近地形平均，避免突兀
-        const roadH = getRawTerrainHeight(x, roadZ);
-        h = roadH + (h - roadH) * (smoothFactor * smoothFactor);
-      }
-
-      return Math.max(0, h);
-    }
-
-    // 用于道路计算的原始高度（不带道路平坦化，避免递归）
-    function getRawTerrainHeight(x, z) {
-      let h = fbm(x * 0.008, z * 0.008, 4) * TERRAIN_MAX_HEIGHT;
-      h += fbm(x * 0.03, z * 0.03, 2) * 3;
-      const distFromCenter = Math.sqrt(x * x + z * z);
-      const flatRadius = 35;
-      if (distFromCenter < flatRadius) {
-        h *= (distFromCenter / flatRadius);
-      }
-      const mountainX = 120, mountainZ = -100;
-      const distMountain = Math.sqrt((x - mountainX) ** 2 + (z - mountainZ) ** 2);
-      if (distMountain < 150) {
-        const mFactor = Math.max(0, 1 - distMountain / 150);
-        h += mFactor * mFactor * 25;
-      }
-      const mountain2X = -100, mountain2Z = 120;
-      const distMountain2 = Math.sqrt((x - mountain2X) ** 2 + (z - mountain2Z) ** 2);
-      if (distMountain2 < 120) {
-        const mFactor = Math.max(0, 1 - distMountain2 / 120);
-        h += mFactor * mFactor * 20;
-      }
-      return Math.max(0, h);
-    }
-
-    // 根据高度获取颜色
-    function getTerrainColor(height) {
-      const lowH = 2;
-      const midH = 12;
-      const highH = 25;
-      if (height < lowH) {
-        return new THREE.Color(0.25, 0.55, 0.18); // 绿色草地
-      } else if (height < midH) {
-        const t = (height - lowH) / (midH - lowH);
-        return new THREE.Color().lerpColors(
-          new THREE.Color(0.25, 0.55, 0.18),
-          new THREE.Color(0.55, 0.40, 0.22),
-          t
-        );
-      } else if (height < highH) {
-        const t = (height - midH) / (highH - midH);
-        return new THREE.Color().lerpColors(
-          new THREE.Color(0.55, 0.40, 0.22),
-          new THREE.Color(0.50, 0.48, 0.45),
-          t
-        );
-      } else {
-        return new THREE.Color(0.55, 0.53, 0.50); // 灰色岩石
-      }
-    }
-
-    // ============================================
-    // 碰撞系统
-    // ============================================
-    const COLLISION = {
-      // 车辆碰撞箱（半长、半宽、半高）
-      carHalfW: 1.1,
-      carHalfL: 2.2,
-      carHalfH: 0.6,
-
-      // 锥桶碰撞半径
-      coneRadius: 0.5,
-
-      // 检测车辆与锥桶碰撞（AABB vs Circle）
-      checkCarCone(cs, conePos) {
-        // 将锥桶位置转换到车辆局部坐标
-        const dx = conePos.x - cs.x;
-        const dz = conePos.z - cs.z;
-        const cos = Math.cos(-cs.rotation);
-        const sin = Math.sin(-cs.rotation);
-        const localX = dx * cos - dz * sin;
-        const localZ = dx * sin + dz * cos;
-
-        // AABB vs Circle
-        const closestX = Math.max(-this.carHalfL, Math.min(this.carHalfL, localX));
-        const closestZ = Math.max(-this.carHalfW, Math.min(this.carHalfW, localZ));
-        const distX = localX - closestX;
-        const distZ = localZ - closestZ;
-        const distSq = distX * distX + distZ * distZ;
-        const r = this.coneRadius;
-
-        if (distSq < r * r) {
-          const dist = Math.sqrt(Math.max(distSq, 0.001));
-          return {
-            hit: true,
-            overlap: r - dist,
-            nx: distX / dist,  // 碰撞法线（局部坐标）
-            nz: distZ / dist,
-            localX, localZ,
-            conePos
-          };
-        }
-        return { hit: false };
-      },
-
-      // 检测车辆与车辆碰撞（AABB vs AABB，预留）
-      checkCarCar(a, b) {
-        const dx = a.x - b.x;
-        const dz = a.z - b.z;
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        const minDist = this.carHalfL * 2;
-        if (dist < minDist) {
-          return { hit: true, overlap: minDist - dist, nx: dx / Math.max(dist, 0.01), nz: dz / Math.max(dist, 0.01) };
-        }
-        return { hit: false };
-      }
-    };
-
-    // ============================================
-    // 车辆定义
-    // ============================================
-    const CAR_TYPES = [
-      {
-        name: '跑车',
-        color: 0x22c55e,
+      // 车辆物理状态
+      this.carState = {
+        x: 0, z: 0,
+        rotation: 0,
+        speed: 0,
+        steerAngle: 0,
+        driftFactor: 0,
+        lateralVelocity: 0,
         maxSpeed: 35,
         accel: 25,
         brakeForce: 25,
@@ -541,131 +338,257 @@
         grip: 0.9,
         driftGrip: 0.15,
         boostMultiplier: 1.5,
-        scale: { x: 1, y: 1, z: 1 },
-        bodySize: { w: 1.8, h: 0.5, l: 4.0 },
-        cabinSize: { w: 1.4, h: 0.45, l: 2.0 },
-        wheelRadius: 0.35,
-        wheelWidth: 0.25,
-        wheelY: 0.35,
-        hasSpoiler: true,
-      },
-      {
-        name: '卡车',
-        color: 0xef4444,
-        maxSpeed: 22,
-        accel: 12,
-        brakeForce: 25,
-        friction: 1.4,
-        maxSteer: 0.45,
-        driftThreshold: 10,
-        grip: 0.95,
-        driftGrip: 0.3,
-        boostMultiplier: 1.3,
-        scale: { x: 1.3, y: 1.2, z: 1.4 },
-        bodySize: { w: 2.4, h: 0.9, l: 5.5 },
-        cabinSize: { w: 2.0, h: 0.7, l: 2.5 },
-        wheelRadius: 0.55,
-        wheelWidth: 0.4,
-        wheelY: 0.55,
-        hasSpoiler: false,
-      },
-      {
-        name: '漂移车',
-        color: 0xa855f7,
-        maxSpeed: 30,
-        accel: 20,
-        brakeForce: 25,
-        friction: 1.0,
-        maxSteer: 0.7,
-        driftThreshold: 8,
-        grip: 0.6,
-        driftGrip: 0.05,
-        boostMultiplier: 1.5,
-        scale: { x: 1.15, y: 0.75, z: 1.05 },
-        bodySize: { w: 2.0, h: 0.4, l: 3.8 },
-        cabinSize: { w: 1.6, h: 0.35, l: 1.8 },
-        wheelRadius: 0.32,
-        wheelWidth: 0.3,
-        wheelY: 0.32,
-        hasSpoiler: true,
-      },
-    ];
+        collisionCooldown: 0,
+      };
 
-    let currentCarIndex = 0;
+      // 游戏状态
+      this.gameState = {
+        startTime: 0,
+        totalDriftScore: 0,
+        currentDriftScore: 0,
+        driftCombo: 1,
+        isDrifting: false,
+        driftTimer: 0,
+        lastSkidTime: 0,
+        cameraHintTimer: 0,
+        debugVisible: false,
+        fps: 0,
+        frameCount: 0,
+        lastFpsTime: 0,
+        carInfoTimer: 0,
+      };
 
-    // 车辆物理状态
-    const carState = {
-      x: 0, z: 0,
-      rotation: 0,        // 车身朝向 (弧度)
-      speed: 0,           // 前进速度
-      steerAngle: 0,      // 转向输入 (-1 ~ 1)
-      driftFactor: 0,     // 漂移因子 (0 ~ 1)
-      lateralVelocity: 0, // 横向滑动速度
-      maxSpeed: 35,
-      accel: 25,
-      brakeForce: 25,
-      friction: 1.2,
-      maxSteer: 0.6,
-      driftThreshold: 12,
-      grip: 0.9,
-      driftGrip: 0.15,
-      boostMultiplier: 1.5,
-      collisionCooldown: 0,
-    };
-
-    // 输入状态
-    const input = {
-      accelerate: false,
-      brake: false,
-      left: false,
-      right: false,
-      handbrake: false,
-      boost: false,
-    };
-
-    // 游戏状态
-    const gameState = {
-      startTime: 0,
-      totalDriftScore: 0,
-      currentDriftScore: 0,
-      driftCombo: 1,
-      isDrifting: false,
-      driftTimer: 0,
-      lastSkidTime: 0,
-      cameraHintTimer: 0,
-      debugVisible: false,
-      fps: 0,
-      frameCount: 0,
-      lastFpsTime: 0,
-      carInfoTimer: 0,
-    };
-
-    const WORLD_SIZE = 500;
-    const SKID_MAX = 200;
-    const PARTICLE_MAX = 300;
+      // Three.js 对象引用
+      this.car = null;
+      this.carBody = null;
+      this.wheels = [];
+      this.terrainMesh = null;
+      this.cones = [];
+      this.conePhysics = [];
+      this.obstacles = [];
+      this.obstaclePhysics = [];
+      this.skidMarks = [];
+      this.particles = [];
+      this.currentCarIndex = 0;
+      this.cameraMode = 0;
+      this.orbitAngle = 0;
+      this.orbitDistance = 12;
+      this.THREE = null;
+    }
 
     // ============================================
-    // 初始化 Three.js
+    // 地形系统
     // ============================================
-    function initThree() {
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x87ceeb);
-      scene.fog = new THREE.Fog(0x87ceeb, 80, 350);
+    get TERRAIN_SEGMENTS() { return 120; }
+    get TERRAIN_MAX_HEIGHT() { return 35; }
+    get WORLD_SIZE() { return 500; }
+    get SKID_MAX() { return 200; }
+    get PARTICLE_MAX() { return 300; }
 
-      camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    hash(x, z) {
+      let n = Math.sin(x * 12.9898 + z * 78.233) * 43758.5453;
+      return n - Math.floor(n);
+    }
 
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      document.body.appendChild(renderer.domElement);
+    noise2D(x, z) {
+      const ix = Math.floor(x);
+      const iz = Math.floor(z);
+      const fx = x - ix;
+      const fz = z - iz;
+      const u = fx * fx * (3 - 2 * fx);
+      const v = fz * fz * (3 - 2 * fz);
+      const a = this.hash(ix, iz);
+      const b = this.hash(ix + 1, iz);
+      const c = this.hash(ix, iz + 1);
+      const d = this.hash(ix + 1, iz + 1);
+      return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+    }
+
+    fbm(x, z, octaves) {
+      let val = 0;
+      let amp = 1;
+      let freq = 1;
+      let maxVal = 0;
+      for (let i = 0; i < octaves; i++) {
+        val += this.noise2D(x * freq, z * freq) * amp;
+        maxVal += amp;
+        amp *= 0.5;
+        freq *= 2.1;
+      }
+      return val / maxVal;
+    }
+
+    roadCenterZ(x) {
+      return Math.sin(x * 0.015) * 40 + Math.sin(x * 0.035) * 15;
+    }
+
+    getTerrainHeight(x, z) {
+      let h = this.fbm(x * 0.008, z * 0.008, 4) * this.TERRAIN_MAX_HEIGHT;
+      h += this.fbm(x * 0.03, z * 0.03, 2) * 3;
+      const distFromCenter = Math.sqrt(x * x + z * z);
+      const flatRadius = 35;
+      if (distFromCenter < flatRadius) {
+        h *= (distFromCenter / flatRadius);
+      }
+      const mountainX = 120, mountainZ = -100;
+      const distMountain = Math.sqrt((x - mountainX) ** 2 + (z - mountainZ) ** 2);
+      if (distMountain < 150) {
+        const mFactor = Math.max(0, 1 - distMountain / 150);
+        h += mFactor * mFactor * 25;
+      }
+      const mountain2X = -100, mountain2Z = 120;
+      const distMountain2 = Math.sqrt((x - mountain2X) ** 2 + (z - mountain2Z) ** 2);
+      if (distMountain2 < 120) {
+        const mFactor = Math.max(0, 1 - distMountain2 / 120);
+        h += mFactor * mFactor * 20;
+      }
+      const roadZ = this.roadCenterZ(x);
+      const roadDist = Math.abs(z - roadZ);
+      const roadWidth = 10;
+      if (roadDist < roadWidth) {
+        const smoothFactor = roadDist / roadWidth;
+        const roadH = this.getRawTerrainHeight(x, roadZ);
+        h = roadH + (h - roadH) * (smoothFactor * smoothFactor);
+      }
+      return Math.max(0, h);
+    }
+
+    getRawTerrainHeight(x, z) {
+      let h = this.fbm(x * 0.008, z * 0.008, 4) * this.TERRAIN_MAX_HEIGHT;
+      h += this.fbm(x * 0.03, z * 0.03, 2) * 3;
+      const distFromCenter = Math.sqrt(x * x + z * z);
+      const flatRadius = 35;
+      if (distFromCenter < flatRadius) {
+        h *= (distFromCenter / flatRadius);
+      }
+      const mountainX = 120, mountainZ = -100;
+      const distMountain = Math.sqrt((x - mountainX) ** 2 + (z - mountainZ) ** 2);
+      if (distMountain < 150) {
+        const mFactor = Math.max(0, 1 - distMountain / 150);
+        h += mFactor * mFactor * 25;
+      }
+      const mountain2X = -100, mountain2Z = 120;
+      const distMountain2 = Math.sqrt((x - mountain2X) ** 2 + (z - mountain2Z) ** 2);
+      if (distMountain2 < 120) {
+        const mFactor = Math.max(0, 1 - distMountain2 / 120);
+        h += mFactor * mFactor * 20;
+      }
+      return Math.max(0, h);
+    }
+
+    getTerrainColor(height) {
+      const T = this.THREE;
+      const lowH = 2;
+      const midH = 12;
+      const highH = 25;
+      if (height < lowH) {
+        return new T.Color(0.25, 0.55, 0.18);
+      } else if (height < midH) {
+        const t = (height - lowH) / (midH - lowH);
+        return new T.Color().lerpColors(
+          new T.Color(0.25, 0.55, 0.18),
+          new T.Color(0.55, 0.40, 0.22), t
+        );
+      } else if (height < highH) {
+        const t = (height - midH) / (highH - midH);
+        return new T.Color().lerpColors(
+          new T.Color(0.55, 0.40, 0.22),
+          new T.Color(0.50, 0.48, 0.45), t
+        );
+      } else {
+        return new T.Color(0.55, 0.53, 0.50);
+      }
+    }
+
+    // ============================================
+    // 碰撞系统
+    // ============================================
+    get COLLISION() {
+      return {
+        carHalfW: 1.1,
+        carHalfL: 2.2,
+        carHalfH: 0.6,
+        coneRadius: 0.5,
+        checkCarCone: (cs, conePos) => {
+          const dx = conePos.x - cs.x;
+          const dz = conePos.z - cs.z;
+          const cos = Math.cos(-cs.rotation);
+          const sin = Math.sin(-cs.rotation);
+          const localX = dx * cos - dz * sin;
+          const localZ = dx * sin + dz * cos;
+          const closestX = Math.max(-this.COLLISION.carHalfL, Math.min(this.COLLISION.carHalfL, localX));
+          const closestZ = Math.max(-this.COLLISION.carHalfW, Math.min(this.COLLISION.carHalfW, localZ));
+          const distX = localX - closestX;
+          const distZ = localZ - closestZ;
+          const distSq = distX * distX + distZ * distZ;
+          const r = this.COLLISION.coneRadius;
+          if (distSq < r * r) {
+            const dist = Math.sqrt(Math.max(distSq, 0.001));
+            return { hit: true, overlap: r - dist, nx: distX / dist, nz: distZ / dist, localX, localZ, conePos };
+          }
+          return { hit: false };
+        }
+      };
+    }
+
+    // ============================================
+    // 车辆定义
+    // ============================================
+    get CAR_TYPES() {
+      return [
+        {
+          name: '跑车', color: 0x22c55e, maxSpeed: 35, accel: 25, brakeForce: 25,
+          friction: 1.2, maxSteer: 0.6, driftThreshold: 12, grip: 0.9, driftGrip: 0.15,
+          boostMultiplier: 1.5, scale: { x: 1, y: 1, z: 1 },
+          bodySize: { w: 1.8, h: 0.5, l: 4.0 }, cabinSize: { w: 1.4, h: 0.45, l: 2.0 },
+          wheelRadius: 0.35, wheelWidth: 0.25, wheelY: 0.35, hasSpoiler: true,
+        },
+        {
+          name: '卡车', color: 0xef4444, maxSpeed: 22, accel: 12, brakeForce: 25,
+          friction: 1.4, maxSteer: 0.45, driftThreshold: 10, grip: 0.95, driftGrip: 0.3,
+          boostMultiplier: 1.3, scale: { x: 1.3, y: 1.2, z: 1.4 },
+          bodySize: { w: 2.4, h: 0.9, l: 5.5 }, cabinSize: { w: 2.0, h: 0.7, l: 2.5 },
+          wheelRadius: 0.55, wheelWidth: 0.4, wheelY: 0.55, hasSpoiler: false,
+        },
+        {
+          name: '漂移车', color: 0xa855f7, maxSpeed: 30, accel: 20, brakeForce: 25,
+          friction: 1.0, maxSteer: 0.7, driftThreshold: 8, grip: 0.6, driftGrip: 0.05,
+          boostMultiplier: 1.5, scale: { x: 1.15, y: 0.75, z: 1.05 },
+          bodySize: { w: 2.0, h: 0.4, l: 3.8 }, cabinSize: { w: 1.6, h: 0.35, l: 1.8 },
+          wheelRadius: 0.32, wheelWidth: 0.3, wheelY: 0.32, hasSpoiler: true,
+        },
+      ];
+    }
+
+    // ============================================
+    // init - 异步初始化场景 (QGE.Scene3D 入口)
+    // ============================================
+    async init() {
+      // 调用 Scene3D.init3D，初始化 threeScene, renderer3D, camera3D
+      await this.init3D({
+        antialias: true,
+        shadowMapEnabled: true,
+        shadowMapType: 'PCFSoftShadowMap',
+        pixelRatio: Math.min(window.devicePixelRatio, 2),
+      });
+
+      // 获取 THREE 引用
+      this.THREE = await QGE.loadThree();
+      const T = this.THREE;
+
+      // 设置场景背景和雾
+      this.setBackground(0x87ceeb);
+      this.setFog(80, 350, 0x87ceeb);
+
+      // 设置摄像机
+      this.camera3D.camera.position.set(0, 4, 8);
+      this.camera3D.camera.lookAt(0, 0, 0);
 
       // 灯光
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-      scene.add(ambientLight);
+      const ambientLight = new T.AmbientLight(0xffffff, 0.5);
+      this.add(ambientLight);
 
-      const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+      const dirLight = new T.DirectionalLight(0xffffff, 1.0);
       dirLight.position.set(50, 80, 30);
       dirLight.castShadow = true;
       dirLight.shadow.mapSize.width = 2048;
@@ -676,538 +599,403 @@
       dirLight.shadow.camera.right = 150;
       dirLight.shadow.camera.top = 150;
       dirLight.shadow.camera.bottom = -150;
-      scene.add(dirLight);
+      this.add(dirLight);
 
-      // 半球光
-      const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x444444, 0.4);
-      scene.add(hemiLight);
+      const hemiLight = new T.HemisphereLight(0x87ceeb, 0x444444, 0.4);
+      this.add(hemiLight);
+
+      // 创建游戏世界
+      this.createTerrain();
+      this.createCar();
+      this.createCones();
+      this.createObstacles();
+      this.initSpeedometer();
+      this.setupInput();
+
+      // 暴露到全局供触屏控制使用
+      window._gameScene = this;
+
+      // 标记就绪
+      this._ready = true;
+      super.init();
+      document.getElementById('loadingText').textContent = '点击开始按钮进入游戏';
+    }
+
+    startGame() {
+      this.gameState.startTime = performance.now();
+      this._started = true;
+      document.getElementById('splash').classList.add('hidden');
     }
 
     // ============================================
     // 创建地形
     // ============================================
-    function createTerrain() {
-      const geo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
+    createTerrain() {
+      const T = this.THREE;
+      const geo = new T.PlaneGeometry(this.WORLD_SIZE, this.WORLD_SIZE, this.TERRAIN_SEGMENTS, this.TERRAIN_SEGMENTS);
       geo.rotateX(-Math.PI / 2);
-
       const positions = geo.attributes.position;
       const colors = new Float32Array(positions.count * 3);
-
       for (let i = 0; i < positions.count; i++) {
         const x = positions.getX(i);
         const z = positions.getZ(i);
-        const h = getTerrainHeight(x, z);
+        const h = this.getTerrainHeight(x, z);
         positions.setY(i, h);
-
-        const col = getTerrainColor(h);
+        const col = this.getTerrainColor(h);
         colors[i * 3] = col.r;
         colors[i * 3 + 1] = col.g;
         colors[i * 3 + 2] = col.b;
       }
-
-      geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geo.setAttribute('color', new T.BufferAttribute(colors, 3));
       geo.computeVertexNormals();
-
-      const mat = new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.9,
-        metalness: 0.05,
-        flatShading: true,
+      const mat = new T.MeshStandardMaterial({
+        vertexColors: true, roughness: 0.9, metalness: 0.05, flatShading: true,
       });
+      this.terrainMesh = new T.Mesh(geo, mat);
+      this.terrainMesh.receiveShadow = true;
+      this.terrainMesh.castShadow = true;
+      this.add(this.terrainMesh);
 
-      terrainMesh = new THREE.Mesh(geo, mat);
-      terrainMesh.receiveShadow = true;
-      terrainMesh.castShadow = true;
-      scene.add(terrainMesh);
-
-      // 中心圆环标记（漂移区域）
-      const ringGeo = new THREE.RingGeometry(18, 20, 64);
-      const ringMat = new THREE.MeshBasicMaterial({ color: 0x22c55e, opacity: 0.3, transparent: true, side: THREE.DoubleSide });
-      const ring = new THREE.Mesh(ringGeo, ringMat);
+      // 中心圆环标记
+      const ringGeo = new T.RingGeometry(18, 20, 64);
+      const ringMat = new T.MeshBasicMaterial({ color: 0x22c55e, opacity: 0.3, transparent: true, side: T.DoubleSide });
+      const ring = new T.Mesh(ringGeo, ringMat);
       ring.rotation.x = -Math.PI / 2;
       ring.position.y = 0.5;
-      scene.add(ring);
-
-      const ring2 = new THREE.Mesh(new THREE.RingGeometry(38, 40, 64), ringMat.clone());
+      this.add(ring);
+      const ring2 = new T.Mesh(new T.RingGeometry(38, 40, 64), ringMat.clone());
       ring2.rotation.x = -Math.PI / 2;
       ring2.position.y = 0.5;
-      scene.add(ring2);
+      this.add(ring2);
     }
 
     // ============================================
     // 创建车辆
     // ============================================
-    function createCar() {
-      if (car) {
-        scene.remove(car);
-        wheels = [];
+    createCar() {
+      const T = this.THREE;
+      if (this.car) {
+        this.remove(this.car);
+        this.wheels = [];
       }
+      this.car = new T.Group();
+      const type = this.CAR_TYPES[this.currentCarIndex];
+      const idx = this.currentCarIndex;
 
-      car = new THREE.Group();
-      const type = CAR_TYPES[currentCarIndex];
-      const idx = currentCarIndex;
-
-      // 通用材质
-      const bodyMat = new THREE.MeshStandardMaterial({ color: type.color, roughness: 0.25, metalness: 0.5 });
-      const glassMat = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.7 });
-      const blackMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
-      const chromeMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.15, metalness: 0.9 });
-      const redGlowMat = new THREE.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
-      const yellowGlowMat = new THREE.MeshStandardMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 1.0 });
+      const bodyMat = new T.MeshStandardMaterial({ color: type.color, roughness: 0.25, metalness: 0.5 });
+      const glassMat = new T.MeshStandardMaterial({ color: 0x223344, roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.7 });
+      const blackMat = new T.MeshStandardMaterial({ color: 0x111111, roughness: 0.7 });
+      const chromeMat = new T.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.15, metalness: 0.9 });
+      const redGlowMat = new T.MeshStandardMaterial({ color: 0xff0000, emissive: 0xff0000, emissiveIntensity: 0.8 });
+      const yellowGlowMat = new T.MeshStandardMaterial({ color: 0xffffaa, emissive: 0xffffaa, emissiveIntensity: 1.0 });
 
       if (idx === 0) {
-        // ========== 跑车 (Sports Car) ==========
+        // ====== 跑车 ======
         const bw = 1.9, bh = 0.55, bl = 4.2;
         const wr = 0.35, wy = 0.35;
+        const bodyGeo = new T.BoxGeometry(bw, bh, bl);
+        this.carBody = new T.Mesh(bodyGeo, bodyMat);
+        this.carBody.position.set(0, wy + bh / 2, 0);
+        this.carBody.castShadow = true;
+        this.car.add(this.carBody);
 
-        // 主车身底盘
-        const bodyGeo = new THREE.BoxGeometry(bw, bh, bl);
-        carBody = new THREE.Mesh(bodyGeo, bodyMat);
-        carBody.position.set(0, wy + bh / 2, 0);
-        carBody.castShadow = true;
-        car.add(carBody);
-
-        // 引擎盖 (前部稍低)
-        const hoodGeo = new THREE.BoxGeometry(bw * 0.92, 0.06, bl * 0.3);
-        const hood = new THREE.Mesh(hoodGeo, bodyMat);
+        const hood = new T.Mesh(new T.BoxGeometry(bw * 0.92, 0.06, bl * 0.3), bodyMat);
         hood.position.set(0, wy + bh + 0.03, bl * 0.1);
-        car.add(hood);
-
-        // 后备箱盖 (后部稍低)
-        const trunkGeo = new THREE.BoxGeometry(bw * 0.9, 0.06, bl * 0.2);
-        const trunk = new THREE.Mesh(trunkGeo, bodyMat);
+        this.car.add(hood);
+        const trunk = new T.Mesh(new T.BoxGeometry(bw * 0.9, 0.06, bl * 0.2), bodyMat);
         trunk.position.set(0, wy + bh + 0.03, -bl * 0.25);
-        car.add(trunk);
+        this.car.add(trunk);
 
-        // 引擎盖进气口线条
-        const intakeGeo = new THREE.BoxGeometry(0.06, 0.03, 0.8);
-        const intakeL = new THREE.Mesh(intakeGeo, blackMat);
+        const intakeGeo = new T.BoxGeometry(0.06, 0.03, 0.8);
+        const intakeL = new T.Mesh(intakeGeo, blackMat);
         intakeL.position.set(-0.35, wy + bh + 0.07, bl * 0.1);
-        car.add(intakeL);
-        const intakeR = new THREE.Mesh(intakeGeo, blackMat);
+        this.car.add(intakeL);
+        const intakeR = new T.Mesh(intakeGeo, blackMat);
         intakeR.position.set(0.35, wy + bh + 0.07, bl * 0.1);
-        car.add(intakeR);
+        this.car.add(intakeR);
 
-        // 驾驶舱 (挡风玻璃区域)
-        const cabinGeo = new THREE.BoxGeometry(bw * 0.75, 0.4, bl * 0.35);
-        const cabin = new THREE.Mesh(cabinGeo, glassMat);
+        const cabin = new T.Mesh(new T.BoxGeometry(bw * 0.75, 0.4, bl * 0.35), glassMat);
         cabin.position.set(0, wy + bh + 0.2, -0.1);
-        car.add(cabin);
-
-        // 挡风玻璃 (倾斜平面)
-        const windshieldGeo = new THREE.PlaneGeometry(bw * 0.72, 0.5);
-        const windshield = new THREE.Mesh(windshieldGeo, glassMat);
+        this.car.add(cabin);
+        const windshield = new T.Mesh(new T.PlaneGeometry(bw * 0.72, 0.5), glassMat);
         windshield.position.set(0, wy + bh + 0.35, bl * 0.12);
         windshield.rotation.x = -0.6;
-        car.add(windshield);
+        this.car.add(windshield);
 
-        // 侧后视镜
-        const mirrorGeo = new THREE.BoxGeometry(0.15, 0.1, 0.08);
-        const mirrorL = new THREE.Mesh(mirrorGeo, bodyMat);
-        mirrorL.position.set(-bw * 0.55, wy + bh + 0.1, bl * 0.1);
-        car.add(mirrorL);
-        const mirrorR = new THREE.Mesh(mirrorGeo, bodyMat);
-        mirrorR.position.set(bw * 0.55, wy + bh + 0.1, bl * 0.1);
-        car.add(mirrorR);
-
-        // 前大灯 (扁平发光体)
-        const hlGeo = new THREE.BoxGeometry(0.35, 0.12, 0.08);
-        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlL.position.set(-0.5, wy + bh * 0.5, bl * 0.48);
-        car.add(hlL);
-        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlR.position.set(0.5, wy + bh * 0.5, bl * 0.48);
-        car.add(hlR);
-
-        // 聚光灯
-        const spotL = new THREE.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
+        [-0.55, 0.55].forEach((sx, i) => {
+          const mirror = new T.Mesh(new T.BoxGeometry(0.15, 0.1, 0.08), bodyMat);
+          mirror.position.set(sx * bw, wy + bh + 0.1, bl * 0.1);
+          this.car.add(mirror);
+        });
+        [-0.5, 0.5].forEach((sx, i) => {
+          const hl = new T.Mesh(new T.BoxGeometry(0.35, 0.12, 0.08), yellowGlowMat);
+          hl.position.set(sx, wy + bh * 0.5, bl * 0.48);
+          this.car.add(hl);
+        });
+        const spotL = new T.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
         spotL.position.set(-0.5, wy + bh * 0.5, bl * 0.5);
         spotL.target.position.set(-0.5, 0, 15);
-        car.add(spotL); car.add(spotL.target);
-        const spotR = new THREE.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
+        this.car.add(spotL); this.car.add(spotL.target);
+        const spotR = new T.SpotLight(0xffffcc, 3, 50, 0.4, 0.5, 1);
         spotR.position.set(0.5, wy + bh * 0.5, bl * 0.5);
         spotR.target.position.set(0.5, 0, 15);
-        car.add(spotR); car.add(spotR.target);
-
-        // 尾灯 (红色条状)
-        const tlGeo = new THREE.BoxGeometry(0.4, 0.1, 0.06);
-        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
-        tlL.position.set(-0.55, wy + bh * 0.55, -bl * 0.48);
-        car.add(tlL);
-        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
-        tlR.position.set(0.55, wy + bh * 0.55, -bl * 0.48);
-        car.add(tlR);
-
-        // 排气管
-        const exhaustGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8);
-        const exhaustL = new THREE.Mesh(exhaustGeo, chromeMat);
-        exhaustL.rotation.x = Math.PI / 2;
-        exhaustL.position.set(-0.6, wy + 0.15, -bl * 0.52);
-        car.add(exhaustL);
-        const exhaustR = new THREE.Mesh(exhaustGeo, chromeMat);
-        exhaustR.rotation.x = Math.PI / 2;
-        exhaustR.position.set(0.6, wy + 0.15, -bl * 0.52);
-        car.add(exhaustR);
-
-        // 大尾翼
-        const wingGeo = new THREE.BoxGeometry(1.8, 0.06, 0.35);
-        const wing = new THREE.Mesh(wingGeo, blackMat);
-        wing.position.set(0, wy + bh + 0.55, -bl * 0.38);
-        car.add(wing);
-        const strutGeo = new THREE.BoxGeometry(0.05, 0.35, 0.05);
-        [-0.5, 0.5].forEach(sx => {
-          const strut = new THREE.Mesh(strutGeo, blackMat);
-          strut.position.set(sx, wy + bh + 0.35, -bl * 0.38);
-          car.add(strut);
+        this.car.add(spotR); this.car.add(spotR.target);
+        [-0.55, 0.55].forEach((sx, i) => {
+          const tl = new T.Mesh(new T.BoxGeometry(0.4, 0.1, 0.06), redGlowMat);
+          tl.position.set(sx, wy + bh * 0.55, -bl * 0.48);
+          this.car.add(tl);
         });
-
-        // 车轮 (带轮毂)
-        createWheels(wr, 0.25, wy, bw * 0.55, bl * 0.35, chromeMat);
+        [-0.6, 0.6].forEach((sx) => {
+          const ex = new T.Mesh(new T.CylinderGeometry(0.06, 0.06, 0.3, 8), chromeMat);
+          ex.rotation.x = Math.PI / 2;
+          ex.position.set(sx, wy + 0.15, -bl * 0.52);
+          this.car.add(ex);
+        });
+        const wing = new T.Mesh(new T.BoxGeometry(1.8, 0.06, 0.35), blackMat);
+        wing.position.set(0, wy + bh + 0.55, -bl * 0.38);
+        this.car.add(wing);
+        [-0.5, 0.5].forEach(sx => {
+          const strut = new T.Mesh(new T.BoxGeometry(0.05, 0.35, 0.05), blackMat);
+          strut.position.set(sx, wy + bh + 0.35, -bl * 0.38);
+          this.car.add(strut);
+        });
+        this.createWheels(wr, 0.25, wy, bw * 0.55, bl * 0.35, chromeMat);
 
       } else if (idx === 1) {
-        // ========== 卡车 (Truck) ==========
+        // ====== 卡车 ======
         const bw = 2.5, bh = 1.0, bl = 5.8;
         const wr = 0.5, wy = 0.5;
+        const chassis = new T.Mesh(new T.BoxGeometry(bw, bh * 0.4, bl), bodyMat);
+        chassis.position.set(0, wy + bh * 0.2, 0);
+        chassis.castShadow = true;
+        this.carBody = chassis;
+        this.car.add(chassis);
 
-        // 底盘
-        const chassisGeo = new THREE.BoxGeometry(bw, bh * 0.4, bl);
-        carBody = new THREE.Mesh(chassisGeo, bodyMat);
-        carBody.position.set(0, wy + bh * 0.2, 0);
-        carBody.castShadow = true;
-        car.add(carBody);
-
-        // 驾驶室 (大方块)
-        const cabGeo = new THREE.BoxGeometry(bw * 0.85, bh * 0.7, bl * 0.45);
-        const cab = new THREE.Mesh(cabGeo, bodyMat);
+        const cab = new T.Mesh(new T.BoxGeometry(bw * 0.85, bh * 0.7, bl * 0.45), bodyMat);
         cab.position.set(0, wy + bh * 0.75, bl * 0.22);
         cab.castShadow = true;
-        car.add(cab);
-
-        // 挡风玻璃
-        const wsGeo = new THREE.PlaneGeometry(bw * 0.7, bh * 0.4);
-        const ws = new THREE.Mesh(wsGeo, glassMat);
+        this.car.add(cab);
+        const ws = new T.Mesh(new T.PlaneGeometry(bw * 0.7, bh * 0.4), glassMat);
         ws.position.set(0, wy + bh * 0.9, bl * 0.45);
         ws.rotation.x = -0.1;
-        car.add(ws);
-
-        // 货斗
-        const bedGeo = new THREE.BoxGeometry(bw * 0.9, bh * 0.5, bl * 0.45);
-        const bedMat = new THREE.MeshStandardMaterial({ color: 0x3d3d3d, roughness: 0.8 });
-        const bed = new THREE.Mesh(bedGeo, bedMat);
+        this.car.add(ws);
+        const bedMat = new T.MeshStandardMaterial({ color: 0x3d3d3d, roughness: 0.8 });
+        const bed = new T.Mesh(new T.BoxGeometry(bw * 0.9, bh * 0.5, bl * 0.45), bedMat);
         bed.position.set(0, wy + bh * 0.45, -bl * 0.22);
         bed.castShadow = true;
-        car.add(bed);
-
-        // 保险杠/防撞栏
-        const bullGeo = new THREE.BoxGeometry(bw * 1.05, bh * 0.35, 0.15);
-        const bullMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.7 });
-        const bull = new THREE.Mesh(bullGeo, bullMat);
+        this.car.add(bed);
+        const bullMat = new T.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.7 });
+        const bull = new T.Mesh(new T.BoxGeometry(bw * 1.05, bh * 0.35, 0.15), bullMat);
         bull.position.set(0, wy + bh * 0.25, bl * 0.52);
-        car.add(bull);
-
-        // 车顶灯
-        const roofLightGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const roofLightMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.9 });
+        this.car.add(bull);
+        const roofLightMat = new T.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xffaa00, emissiveIntensity: 0.9 });
         [-0.4, 0, 0.4].forEach(lx => {
-          const rl = new THREE.Mesh(roofLightGeo, roofLightMat);
+          const rl = new T.Mesh(new T.SphereGeometry(0.08, 8, 8), roofLightMat);
           rl.position.set(lx, wy + bh + 0.08, bl * 0.35);
-          car.add(rl);
+          this.car.add(rl);
         });
-
-        // 前大灯
-        const hlGeo = new THREE.BoxGeometry(0.3, 0.18, 0.1);
-        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlL.position.set(-0.7, wy + bh * 0.45, bl * 0.52);
-        car.add(hlL);
-        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlR.position.set(0.7, wy + bh * 0.45, bl * 0.52);
-        car.add(hlR);
-
-        // 尾灯
-        const tlGeo = new THREE.BoxGeometry(0.25, 0.15, 0.08);
-        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
-        tlL.position.set(-0.8, wy + bh * 0.45, -bl * 0.52);
-        car.add(tlL);
-        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
-        tlR.position.set(0.8, wy + bh * 0.45, -bl * 0.52);
-        car.add(tlR);
-
-        // 侧踏板
-        const stepGeo = new THREE.BoxGeometry(0.15, 0.06, bl * 0.4);
-        const stepMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.5 });
-        const stepL = new THREE.Mesh(stepGeo, stepMat);
-        stepL.position.set(-bw * 0.52, wy + 0.1, 0);
-        car.add(stepL);
-        const stepR = new THREE.Mesh(stepGeo, stepMat);
-        stepR.position.set(bw * 0.52, wy + 0.1, 0);
-        car.add(stepR);
-
-        // 挡泥板
-        const mudGeo = new THREE.BoxGeometry(0.05, 0.25, 0.4);
-        const mudMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+        [-0.7, 0.7].forEach((sx, i) => {
+          const hl = new T.Mesh(new T.BoxGeometry(0.3, 0.18, 0.1), yellowGlowMat);
+          hl.position.set(sx, wy + bh * 0.45, bl * 0.52);
+          this.car.add(hl);
+        });
+        [-0.8, 0.8].forEach((sx, i) => {
+          const tl = new T.Mesh(new T.BoxGeometry(0.25, 0.15, 0.08), redGlowMat);
+          tl.position.set(sx, wy + bh * 0.45, -bl * 0.52);
+          this.car.add(tl);
+        });
+        const stepMat = new T.MeshStandardMaterial({ color: 0x444444, roughness: 0.6, metalness: 0.5 });
+        [-0.52, 0.52].forEach(sx => {
+          const step = new T.Mesh(new T.BoxGeometry(0.15, 0.06, bl * 0.4), stepMat);
+          step.position.set(sx * bw, wy + 0.1, 0);
+          this.car.add(step);
+        });
         [-bl * 0.35, bl * 0.35].forEach(mz => {
-          const mudL = new THREE.Mesh(mudGeo, mudMat);
+          const mudMat2 = new T.MeshStandardMaterial({ color: 0x222222, roughness: 0.9 });
+          const mudL = new T.Mesh(new T.BoxGeometry(0.05, 0.25, 0.4), mudMat2);
           mudL.position.set(-bw * 0.55, wy + 0.2, mz);
-          car.add(mudL);
-          const mudR = new THREE.Mesh(mudGeo, mudMat);
+          this.car.add(mudL);
+          const mudR = new T.Mesh(new T.BoxGeometry(0.05, 0.25, 0.4), mudMat2);
           mudR.position.set(bw * 0.55, wy + 0.2, mz);
-          car.add(mudR);
+          this.car.add(mudR);
         });
-
-        // 大车轮
-        createWheels(wr, 0.35, wy, bw * 0.55, bl * 0.32, chromeMat);
+        this.createWheels(wr, 0.35, wy, bw * 0.55, bl * 0.32, chromeMat);
 
       } else {
-        // ========== 漂移车 (Drift Car) ==========
+        // ====== 漂移车 ======
         const bw = 2.1, bh = 0.45, bl = 3.9;
         const wr = 0.33, wy = 0.3;
+        const bodyGeo2 = new T.BoxGeometry(bw, bh, bl);
+        this.carBody = new T.Mesh(bodyGeo2, bodyMat);
+        this.carBody.position.set(0, wy + bh / 2, 0);
+        this.carBody.castShadow = true;
+        this.car.add(this.carBody);
 
-        // 宽体车身
-        const bodyGeo = new THREE.BoxGeometry(bw, bh, bl);
-        carBody = new THREE.Mesh(bodyGeo, bodyMat);
-        carBody.position.set(0, wy + bh / 2, 0);
-        carBody.castShadow = true;
-        car.add(carBody);
-
-        // 宽体轮眉 (前/后翼子板加宽)
-        const flareGeo = new THREE.BoxGeometry(0.15, 0.12, 0.6);
         [-bl * 0.35, bl * 0.35].forEach(fz => {
-          const flareL = new THREE.Mesh(flareGeo, bodyMat);
-          flareL.position.set(-bw * 0.52, wy + bh * 0.7, fz);
-          car.add(flareL);
-          const flareR = new THREE.Mesh(flareGeo, bodyMat);
-          flareR.position.set(bw * 0.52, wy + bh * 0.7, fz);
-          car.add(flareR);
+          const flare = new T.Mesh(new T.BoxGeometry(0.15, 0.12, 0.6), bodyMat);
+          flare.position.set(-bw * 0.52, wy + bh * 0.7, fz);
+          this.car.add(flare);
+          const flare2 = new T.Mesh(new T.BoxGeometry(0.15, 0.12, 0.6), bodyMat);
+          flare2.position.set(bw * 0.52, wy + bh * 0.7, fz);
+          this.car.add(flare2);
         });
-
-        // 侧裙
-        const skirtGeo = new THREE.BoxGeometry(0.08, 0.1, bl * 0.6);
-        const skirtL = new THREE.Mesh(skirtGeo, blackMat);
-        skirtL.position.set(-bw * 0.52, wy + 0.1, 0);
-        car.add(skirtL);
-        const skirtR = new THREE.Mesh(skirtGeo, blackMat);
-        skirtR.position.set(bw * 0.52, wy + 0.1, 0);
-        car.add(skirtR);
-
-        // 驾驶舱
-        const cabinGeo = new THREE.BoxGeometry(bw * 0.7, bh * 0.7, bl * 0.45);
-        const cabin = new THREE.Mesh(cabinGeo, glassMat);
-        cabin.position.set(0, wy + bh + bh * 0.35, -0.15);
-        car.add(cabin);
-
-        // 防滚架 (可见框架)
-        const cageMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.8 });
-        const cageBarGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.8, 6);
+        [-bw * 0.52, bw * 0.52].forEach(sx => {
+          const skirt = new T.Mesh(new T.BoxGeometry(0.08, 0.1, bl * 0.6), blackMat);
+          skirt.position.set(sx, wy + 0.1, 0);
+          this.car.add(skirt);
+        });
+        const cabin2 = new T.Mesh(new T.BoxGeometry(bw * 0.7, bh * 0.7, bl * 0.45), glassMat);
+        cabin2.position.set(0, wy + bh + bh * 0.35, -0.15);
+        this.car.add(cabin2);
+        const cageMat = new T.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3, metalness: 0.8 });
         [-0.35, 0.35].forEach(cx => {
-          const bar = new THREE.Mesh(cageBarGeo, cageMat);
+          const bar = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.8, 6), cageMat);
           bar.position.set(cx, wy + bh + 0.4, -0.15);
-          car.add(bar);
+          this.car.add(bar);
         });
-        const cageCrossGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.7, 6);
-        const cageCross = new THREE.Mesh(cageCrossGeo, cageMat);
+        const cageCross = new T.Mesh(new T.CylinderGeometry(0.03, 0.03, 0.7, 6), cageMat);
         cageCross.rotation.z = Math.PI / 2;
         cageCross.position.set(0, wy + bh + 0.65, -0.15);
-        car.add(cageCross);
-
-        // 引擎盖进气口
-        const scoopGeo = new THREE.BoxGeometry(0.5, 0.08, 0.7);
-        const scoop = new THREE.Mesh(scoopGeo, blackMat);
+        this.car.add(cageCross);
+        const scoop = new T.Mesh(new T.BoxGeometry(0.5, 0.08, 0.7), blackMat);
         scoop.position.set(0, wy + bh + 0.05, 0.8);
-        car.add(scoop);
-
-        // 前大灯
-        const hlGeo = new THREE.BoxGeometry(0.3, 0.1, 0.06);
-        const hlL = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlL.position.set(-0.55, wy + bh * 0.5, bl * 0.48);
-        car.add(hlL);
-        const hlR = new THREE.Mesh(hlGeo, yellowGlowMat);
-        hlR.position.set(0.55, wy + bh * 0.5, bl * 0.48);
-        car.add(hlR);
-
-        // 尾灯
-        const tlGeo = new THREE.BoxGeometry(0.35, 0.08, 0.05);
-        const tlL = new THREE.Mesh(tlGeo, redGlowMat);
-        tlL.position.set(-0.6, wy + bh * 0.55, -bl * 0.48);
-        car.add(tlL);
-        const tlR = new THREE.Mesh(tlGeo, redGlowMat);
-        tlR.position.set(0.6, wy + bh * 0.55, -bl * 0.48);
-        car.add(tlR);
-
-        // 超大尾翼
-        const wingGeo = new THREE.BoxGeometry(2.0, 0.06, 0.4);
-        const wing = new THREE.Mesh(wingGeo, blackMat);
-        wing.position.set(0, wy + bh + 0.7, -bl * 0.38);
-        car.add(wing);
-        const wStrutGeo = new THREE.BoxGeometry(0.06, 0.5, 0.06);
-        [-0.6, 0.6].forEach(sx => {
-          const strut = new THREE.Mesh(wStrutGeo, blackMat);
-          strut.position.set(sx, wy + bh + 0.45, -bl * 0.38);
-          car.add(strut);
+        this.car.add(scoop);
+        [-0.55, 0.55].forEach((sx, i) => {
+          const hl = new T.Mesh(new T.BoxGeometry(0.3, 0.1, 0.06), yellowGlowMat);
+          hl.position.set(sx, wy + bh * 0.5, bl * 0.48);
+          this.car.add(hl);
+          const tl = new T.Mesh(new T.BoxGeometry(0.35, 0.08, 0.05), redGlowMat);
+          tl.position.set(sx, wy + bh * 0.55, -bl * 0.48);
+          this.car.add(tl);
         });
-
-        // 后扩散器
-        const diffGeo = new THREE.BoxGeometry(bw * 0.7, 0.08, 0.3);
-        const diff = new THREE.Mesh(diffGeo, blackMat);
+        const wing2 = new T.Mesh(new T.BoxGeometry(2.0, 0.06, 0.4), blackMat);
+        wing2.position.set(0, wy + bh + 0.7, -bl * 0.38);
+        this.car.add(wing2);
+        [-0.6, 0.6].forEach(sx => {
+          const strut2 = new T.Mesh(new T.BoxGeometry(0.06, 0.5, 0.06), blackMat);
+          strut2.position.set(sx, wy + bh + 0.45, -bl * 0.38);
+          this.car.add(strut2);
+        });
+        const diff = new T.Mesh(new T.BoxGeometry(bw * 0.7, 0.08, 0.3), blackMat);
         diff.position.set(0, wy + 0.05, -bl * 0.48);
-        car.add(diff);
-
-        // 宽车轮
-        createWheels(wr, 0.32, wy, bw * 0.55, bl * 0.35, chromeMat);
+        this.car.add(diff);
+        this.createWheels(wr, 0.32, wy, bw * 0.55, bl * 0.35, chromeMat);
       }
 
-      scene.add(car);
+      this.add(this.car);
     }
 
-    // 辅助函数：创建带轮毂的车轮
-    function createWheels(radius, width, y, sideOffset, frontBackOffset, rimMat) {
-      const tireMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
-      const rimGeo = new THREE.CylinderGeometry(radius * 0.6, radius * 0.6, width * 1.05, 12);
-      const tireGeo = new THREE.CylinderGeometry(radius, radius, width, 20);
-
+    createWheels(radius, width, y, sideOffset, frontBackOffset, rimMat) {
+      const T = this.THREE;
+      const tireMat = new T.MeshStandardMaterial({ color: 0x111111, roughness: 0.9 });
+      const rimGeo = new T.CylinderGeometry(radius * 0.6, radius * 0.6, width * 1.05, 12);
+      const tireGeo = new T.CylinderGeometry(radius, radius, width, 20);
       const positions = [
-        { x: -sideOffset, z: frontBackOffset },   // 左前
-        { x: sideOffset, z: frontBackOffset },    // 右前
-        { x: -sideOffset, z: -frontBackOffset },  // 左后
-        { x: sideOffset, z: -frontBackOffset },   // 右后
+        { x: -sideOffset, z: frontBackOffset },
+        { x: sideOffset, z: frontBackOffset },
+        { x: -sideOffset, z: -frontBackOffset },
+        { x: sideOffset, z: -frontBackOffset },
       ];
-
       positions.forEach(pos => {
-        const wheelGroup = new THREE.Group();
-        // 轮胎
-        const tire = new THREE.Mesh(tireGeo, tireMat);
+        const wg = new T.Group();
+        const tire = new T.Mesh(tireGeo, tireMat);
         tire.rotation.z = Math.PI / 2;
         tire.castShadow = true;
-        wheelGroup.add(tire);
-        // 轮毂
-        const rim = new THREE.Mesh(rimGeo, rimMat);
+        wg.add(tire);
+        const rim = new T.Mesh(rimGeo, rimMat);
         rim.rotation.z = Math.PI / 2;
-        wheelGroup.add(rim);
-        // 轮毂辐条 (简单十字)
-        const spokeGeo = new THREE.BoxGeometry(radius * 1.0, width * 1.1, 0.04);
-        const spoke1 = new THREE.Mesh(spokeGeo, rimMat);
+        wg.add(rim);
+        const spokeGeo = new T.BoxGeometry(radius * 1.0, width * 1.1, 0.04);
+        const spoke1 = new T.Mesh(spokeGeo, rimMat);
         spoke1.rotation.z = Math.PI / 2;
-        wheelGroup.add(spoke1);
-        const spoke2 = new THREE.Mesh(spokeGeo, rimMat);
+        wg.add(spoke1);
+        const spoke2 = new T.Mesh(spokeGeo, rimMat);
         spoke2.rotation.z = Math.PI / 2;
         spoke2.rotation.x = Math.PI / 2;
-        wheelGroup.add(spoke2);
-
-        wheelGroup.position.set(pos.x, y, pos.z);
-        car.add(wheelGroup);
-        wheels.push(wheelGroup);
+        wg.add(spoke2);
+        wg.position.set(pos.x, y, pos.z);
+        this.car.add(wg);
+        this.wheels.push(wg);
       });
     }
 
-    // 切换车辆
-    function switchCar() {
-      const oldX = carState.x;
-      const oldZ = carState.z;
-      const oldRot = carState.rotation;
-
-      currentCarIndex = (currentCarIndex + 1) % CAR_TYPES.length;
-      const type = CAR_TYPES[currentCarIndex];
-
-      // 重置物理状态
-      carState.speed = 0;
-      carState.steerAngle = 0;
-      carState.driftFactor = 0;
-      carState.lateralVelocity = 0;
-      carState.maxSpeed = type.maxSpeed;
-      carState.accel = type.accel;
-      carState.friction = type.friction;
-      carState.maxSteer = type.maxSteer;
-      carState.driftThreshold = type.driftThreshold;
-      carState.grip = type.grip;
-      carState.driftGrip = type.driftGrip;
-      carState.boostMultiplier = type.boostMultiplier;
-      carState.collisionCooldown = 0;
-
-      // 重新创建车辆模型
-      createCar();
-
-      // 恢复位置
-      carState.x = oldX;
-      carState.z = oldZ;
-      carState.rotation = oldRot;
-
-      // 更新UI
+    switchCar() {
+      const oldX = this.carState.x;
+      const oldZ = this.carState.z;
+      const oldRot = this.carState.rotation;
+      this.currentCarIndex = (this.currentCarIndex + 1) % this.CAR_TYPES.length;
+      const type = this.CAR_TYPES[this.currentCarIndex];
+      const cs = this.carState;
+      cs.speed = 0; cs.steerAngle = 0; cs.driftFactor = 0; cs.lateralVelocity = 0;
+      cs.maxSpeed = type.maxSpeed; cs.accel = type.accel; cs.friction = type.friction;
+      cs.maxSteer = type.maxSteer; cs.driftThreshold = type.driftThreshold;
+      cs.grip = type.grip; cs.driftGrip = type.driftGrip;
+      cs.boostMultiplier = type.boostMultiplier; cs.collisionCooldown = 0;
+      this.createCar();
+      cs.x = oldX; cs.z = oldZ; cs.rotation = oldRot;
       const infoEl = document.getElementById('car-info');
       infoEl.textContent = type.name;
       infoEl.classList.add('show');
-      gameState.carInfoTimer = 2.0;
-
-      // 更新速度表刻度
-      initSpeedometer();
+      this.gameState.carInfoTimer = 2.0;
+      this.initSpeedometer();
     }
 
     // ============================================
-    // 创建锥桶障碍物
+    // 创建锥桶
     // ============================================
-    function createCones() {
-      const coneGeo = new THREE.ConeGeometry(0.4, 1.0, 16);
-      const coneMat = new THREE.MeshStandardMaterial({
-        color: 0xff6600,
-        roughness: 0.7,
-      });
-
-      // 直线绕桩赛道（沿道路放置）
+    createCones() {
+      const T = this.THREE;
+      const coneGeo = new T.ConeGeometry(0.4, 1.0, 16);
+      const coneMat = new T.MeshStandardMaterial({ color: 0xff6600, roughness: 0.7 });
       for (let i = 0; i < 10; i++) {
         const side = i % 2 === 0 ? -1 : 1;
         const x = side * 4;
         const z = 30 + i * 8;
-        const cone = new THREE.Mesh(coneGeo, coneMat);
-        const h = getTerrainHeight(x, z);
+        const cone = new T.Mesh(coneGeo, coneMat);
+        const h = this.getTerrainHeight(x, z);
         cone.position.set(x, h + 0.5, z);
         cone.castShadow = true;
         cone.receiveShadow = true;
-        scene.add(cone);
-        cones.push(cone);
-        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
+        this.add(cone);
+        this.cones.push(cone);
+        this.conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
-
-      // 圆形漂移区锥桶
       for (let i = 0; i < 12; i++) {
         const angle = (i / 12) * Math.PI * 2;
         const r = 30;
         const x = Math.cos(angle) * r;
         const z = Math.sin(angle) * r;
-        const cone = new THREE.Mesh(coneGeo, coneMat);
-        const h = getTerrainHeight(x, z);
+        const cone = new T.Mesh(coneGeo, coneMat);
+        const h = this.getTerrainHeight(x, z);
         cone.position.set(x, h + 0.5, z);
         cone.castShadow = true;
         cone.receiveShadow = true;
-        scene.add(cone);
-        cones.push(cone);
-        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
+        this.add(cone);
+        this.cones.push(cone);
+        this.conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
-
-      // 随机散布的锥桶（在道路上或附近）
       for (let i = 0; i < 20; i++) {
         const x = (Math.random() - 0.5) * 200;
         const z = (Math.random() - 0.5) * 200;
-        if (Math.abs(x) < 10 && Math.abs(z) < 10) continue; // 避开出生点
-        const cone = new THREE.Mesh(coneGeo, coneMat);
-        const h = getTerrainHeight(x, z);
+        if (Math.abs(x) < 10 && Math.abs(z) < 10) continue;
+        const cone = new T.Mesh(coneGeo, coneMat);
+        const h = this.getTerrainHeight(x, z);
         cone.position.set(x, h + 0.5, z);
         cone.castShadow = true;
         cone.receiveShadow = true;
-        scene.add(cone);
-        cones.push(cone);
-        conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
+        this.add(cone);
+        this.cones.push(cone);
+        this.conePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, angularVx: 0, angularVz: 0, grounded: true, active: true });
       }
     }
 
     // ============================================
-    // 创建障碍物（路障 + 油桶）
+    // 创建障碍物
     // ============================================
-    let obstacles = [];
-    let obstaclePhysics = [];
-
-    function createObstacles() {
-      // 路障（长条形）
-      const barrierGeo = new THREE.BoxGeometry(6, 0.8, 0.4);
-      const barrierMat = new THREE.MeshStandardMaterial({ color: 0xff4400, roughness: 0.6 });
-
+    createObstacles() {
+      const T = this.THREE;
+      const barrierGeo = new T.BoxGeometry(6, 0.8, 0.4);
+      const barrierMat = new T.MeshStandardMaterial({ color: 0xff4400, roughness: 0.6 });
       const barrierPositions = [
         { x: 0, z: -40, ry: 0 },
         { x: 20, z: -20, ry: Math.PI / 4 },
@@ -1215,86 +1003,62 @@
         { x: 40, z: 40, ry: Math.PI / 3 },
         { x: -40, z: -50, ry: 0 },
       ];
-
       barrierPositions.forEach(pos => {
-        const barrier = new THREE.Mesh(barrierGeo, barrierMat);
-        const h = getTerrainHeight(pos.x, pos.z);
+        const barrier = new T.Mesh(barrierGeo, barrierMat);
+        const h = this.getTerrainHeight(pos.x, pos.z);
         barrier.position.set(pos.x, h + 0.4, pos.z);
         barrier.rotation.y = pos.ry;
         barrier.castShadow = true;
         barrier.receiveShadow = true;
-        scene.add(barrier);
-        obstacles.push({ mesh: barrier, type: 'barrier', halfW: 3, halfL: 0.2, radius: 3.2 });
-        obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: true });
+        this.add(barrier);
+        this.obstacles.push({ mesh: barrier, type: 'barrier', halfW: 3, halfL: 0.2, radius: 3.2 });
+        this.obstaclePhysics.push({ vx: 0, vy: 0, vz: 0, rx: 0, rz: 0, avx: 0, avz: 0, grounded: true, immovable: true });
       });
-
     }
 
     // ============================================
-    // 创建 skid mark (轮胎印)
+    // Skid marks / 粒子
     // ============================================
-    function createSkidMark(x, z, rotation, width) {
-      if (skidMarks.length >= SKID_MAX) {
-        const old = skidMarks.shift();
-        scene.remove(old);
+    createSkidMark(x, z, rotation, width) {
+      const T = this.THREE;
+      if (this.skidMarks.length >= this.SKID_MAX) {
+        const old = this.skidMarks.shift();
+        this.remove(old);
         old.geometry.dispose();
         old.material.dispose();
       }
-
-      const geo = new THREE.PlaneGeometry(width, 1.2);
-      const mat = new THREE.MeshBasicMaterial({
-        color: 0x111111,
-        transparent: true,
-        opacity: 0.5,
-        depthWrite: false,
-      });
-      const mark = new THREE.Mesh(geo, mat);
+      const geo = new T.PlaneGeometry(width, 1.2);
+      const mat = new T.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.5, depthWrite: false });
+      const mark = new T.Mesh(geo, mat);
       mark.rotation.x = -Math.PI / 2;
       mark.rotation.z = rotation;
-      const h = getTerrainHeight(x, z);
+      const h = this.getTerrainHeight(x, z);
       mark.position.set(x, h + 0.08, z);
-      scene.add(mark);
-      skidMarks.push(mark);
-
-      // 渐隐效果
+      this.add(mark);
+      this.skidMarks.push(mark);
       mark.userData.life = 1.0;
       mark.userData.fadeRate = 0.002 + Math.random() * 0.003;
     }
 
-    // ============================================
-    // 创建粒子 (烟雾/尘土)
-    // ============================================
-    function createParticle(x, y, z, vx, vy, vz, size, color, life) {
-      if (particles.length >= PARTICLE_MAX) {
-        const old = particles.shift();
-        scene.remove(old);
+    createParticle(x, y, z, vx, vy, vz, size, color, life) {
+      const T = this.THREE;
+      if (this.particles.length >= this.PARTICLE_MAX) {
+        const old = this.particles.shift();
+        this.remove(old);
         old.geometry.dispose();
         old.material.dispose();
       }
-
-      const geo = new THREE.PlaneGeometry(size, size);
-      const mat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.6,
-        depthWrite: false,
-        side: THREE.DoubleSide,
-      });
-      const p = new THREE.Mesh(geo, mat);
+      const geo = new T.PlaneGeometry(size, size);
+      const mat = new T.MeshBasicMaterial({ color, transparent: true, opacity: 0.6, depthWrite: false, side: T.DoubleSide });
+      const p = new T.Mesh(geo, mat);
       p.position.set(x, y, z);
-      p.lookAt(camera.position);
-      scene.add(p);
-
-      p.userData = {
-        vx, vy, vz,
-        life: life || 1.0,
-        maxLife: life || 1.0,
-        rotSpeed: (Math.random() - 0.5) * 4,
-      };
-      particles.push(p);
+      p.lookAt(this.camera3D.camera.position);
+      this.add(p);
+      p.userData = { vx, vy, vz, life: life || 1.0, maxLife: life || 1.0, rotSpeed: (Math.random() - 0.5) * 4 };
+      this.particles.push(p);
     }
 
-    function spawnDriftParticles(x, z, rotation, intensity) {
+    spawnDriftParticles(x, z, rotation, intensity) {
       const count = Math.floor(intensity * 3) + 1;
       for (let i = 0; i < count; i++) {
         const offsetAngle = rotation + Math.PI + (Math.random() - 0.5) * 0.8;
@@ -1303,206 +1067,210 @@
         const vz = Math.cos(offsetAngle) * speed;
         const size = 0.3 + Math.random() * 0.8;
         const gray = 0.6 + Math.random() * 0.3;
-        const color = new THREE.Color(gray, gray, gray);
-        const h = getTerrainHeight(x, z);
-        createParticle(
-          x + (Math.random() - 0.5) * 1.5,
-          h + 0.2 + Math.random() * 0.5,
-          z + (Math.random() - 0.5) * 1.5,
-          vx, 1 + Math.random() * 2, vz,
-          size, color, 0.8 + Math.random() * 0.5
+        const color = new this.THREE.Color(gray, gray, gray);
+        const h = this.getTerrainHeight(x, z);
+        this.createParticle(
+          x + (Math.random() - 0.5) * 1.5, h + 0.2 + Math.random() * 0.5, z + (Math.random() - 0.5) * 1.5,
+          vx, 1 + Math.random() * 2, vz, size, color, 0.8 + Math.random() * 0.5
         );
       }
     }
 
-    function spawnBoostParticles(x, z, rotation) {
-      const h = getTerrainHeight(x, z);
+    spawnBoostParticles(x, z, rotation) {
+      const T = this.THREE;
+      const h = this.getTerrainHeight(x, z);
       for (let i = 0; i < 2; i++) {
         const offsetAngle = rotation + Math.PI + (Math.random() - 0.5) * 0.3;
         const vx = Math.sin(offsetAngle) * (3 + Math.random() * 3);
         const vz = Math.cos(offsetAngle) * (3 + Math.random() * 3);
         const size = 0.2 + Math.random() * 0.4;
-        const color = new THREE.Color(0.2, 0.8, 1.0);
-        createParticle(
-          x + (Math.random() - 0.5),
-          h + 0.3,
-          z + (Math.random() - 0.5),
-          vx, 0.5, vz,
-          size, color, 0.4
+        const color2 = new T.Color(0.2, 0.8, 1.0);
+        this.createParticle(
+          x + (Math.random() - 0.5), h + 0.3, z + (Math.random() - 0.5),
+          vx, 0.5, vz, size, color2, 0.4
         );
       }
     }
 
     // ============================================
-    // 输入处理
+    // 输入处理 (使用 QGE.InputManager)
     // ============================================
-    function setupInput() {
-      window.addEventListener('keydown', (e) => {
-        switch (e.code) {
-          case 'KeyW': case 'ArrowUp': input.accelerate = true; break;
-          case 'KeyS': case 'ArrowDown': input.brake = true; break;
-          case 'KeyA': case 'ArrowLeft': input.left = true; break;
-          case 'KeyD': case 'ArrowRight': input.right = true; break;
-          case 'Space': input.handbrake = true; e.preventDefault(); break;
-          case 'ShiftLeft': case 'ShiftRight': input.boost = true; break;
-          case 'KeyC': cycleCamera(); break;
-          case 'KeyV': switchCar(); break;
-          case 'Backquote': case 'IntlBackslash': toggleDebug(); break;
-        }
-      });
-
-      window.addEventListener('keyup', (e) => {
-        switch (e.code) {
-          case 'KeyW': case 'ArrowUp': input.accelerate = false; break;
-          case 'KeyS': case 'ArrowDown': input.brake = false; break;
-          case 'KeyA': case 'ArrowLeft': input.left = false; break;
-          case 'KeyD': case 'ArrowRight': input.right = false; break;
-          case 'Space': input.handbrake = false; break;
-          case 'ShiftLeft': case 'ShiftRight': input.boost = false; break;
-        }
-      });
+    setupInput() {
+      // 使用 QGE.Core.input (InputManager) 处理按键
+      // isKeyDown 用于持续按键，isKeyPressed 用于单次触发
+      const T = this.THREE;
 
       // 鼠标控制环绕视角
       let mouseDown = false;
-      renderer.domElement.addEventListener('mousedown', () => { mouseDown = true; });
-      renderer.domElement.addEventListener('mouseup', () => { mouseDown = false; });
-      renderer.domElement.addEventListener('mousemove', (e) => {
-        if (cameraMode === 2 && mouseDown) {
-          orbitAngle -= e.movementX * 0.01;
-          orbitDistance = Math.max(5, Math.min(30, orbitDistance - e.movementY * 0.05));
+      const canvas = this.engine.canvas;
+      canvas.addEventListener('mousedown', () => { mouseDown = true; });
+      canvas.addEventListener('mouseup', () => { mouseDown = false; });
+      const self = this;
+      canvas.addEventListener('mousemove', (e) => {
+        if (self.cameraMode === 2 && mouseDown) {
+          self.orbitAngle -= e.movementX * 0.01;
+          self.orbitDistance = Math.max(5, Math.min(30, self.orbitDistance - e.movementY * 0.05));
         }
       });
-      renderer.domElement.addEventListener('wheel', (e) => {
-        if (cameraMode === 2) {
-          orbitDistance = Math.max(5, Math.min(30, orbitDistance + e.deltaY * 0.01));
+      canvas.addEventListener('wheel', (e) => {
+        if (self.cameraMode === 2) {
+          self.orbitDistance = Math.max(5, Math.min(30, self.orbitDistance + e.deltaY * 0.01));
         }
       });
 
+      // 窗口 resize
       window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
+        if (self.camera3D) {
+          self.camera3D.resize(window.innerWidth, window.innerHeight);
+          self.renderer3D.setSize(window.innerWidth, window.innerHeight);
+        }
       });
     }
 
-    function cycleCamera() {
-      cameraMode = (cameraMode + 1) % 3;
-      window._gameCameraMode = cameraMode;
+    // 单次按键检测 (在 update 中调用)
+    checkKeyPresses() {
+      const input = this.engine.input;
+      if (input.isKeyPressed('KeyC')) this.cycleCamera();
+      if (input.isKeyPressed('KeyV')) this.switchCar();
+      if (input.isKeyPressed('Backquote') || input.isKeyPressed('IntlBackslash')) this.toggleDebug();
+    }
+
+    cycleCamera() {
+      this.cameraMode = (this.cameraMode + 1) % 3;
       const names = ['跟随视角', '车头视角', '环绕视角'];
       const hint = document.getElementById('camera-hint');
-      hint.textContent = names[cameraMode];
+      hint.textContent = names[this.cameraMode];
       hint.classList.add('show');
-      gameState.cameraHintTimer = 2.0;
+      this.gameState.cameraHintTimer = 2.0;
     }
 
-    function toggleDebug() {
-      gameState.debugVisible = !gameState.debugVisible;
-      document.getElementById('debug-panel').classList.toggle('active', gameState.debugVisible);
+    toggleDebug() {
+      this.gameState.debugVisible = !this.gameState.debugVisible;
+      document.getElementById('debug-panel').classList.toggle('active', this.gameState.debugVisible);
+    }
+
+    // ============================================
+    // update - 每帧更新 (QGE.Scene3D 覆盖)
+    // ============================================
+    update(dt) {
+      if (!this._ready || !this._started) return;
+
+      // 调用父类更新
+      super.update(dt);
+
+      // FPS 计算
+      this.gameState.frameCount++;
+      if (performance.now() - this.gameState.lastFpsTime >= 1000) {
+        this.gameState.fps = this.gameState.frameCount;
+        this.gameState.frameCount = 0;
+        this.gameState.lastFpsTime = performance.now();
+      }
+
+      // 检测按键（单次触发）
+      this.checkKeyPresses();
+
+      // 游戏更新
+      this.updatePhysics(dt);
+      this.updateParticles(dt);
+      this.updateSkidMarks(dt);
+      this.updateCamera(dt);
+      this.updateUI(dt);
+    }
+
+    // ============================================
+    // render - 每帧渲染 (QGE.Scene3D 覆盖)
+    // ============================================
+    render(ctx) {
+      if (!this._ready) return;
+      // Scene3D.render 会调用 renderer3D.render(threeScene, camera3D.camera)
+      super.render(ctx);
     }
 
     // ============================================
     // 物理更新
     // ============================================
-    function updatePhysics(dt) {
-      const cs = carState;
+    updatePhysics(dt) {
+      const cs = this.carState;
+      const input = this.engine.input;
 
-      // 碰撞冷却倒计时
-      if (cs.collisionCooldown > 0) {
-        cs.collisionCooldown -= dt;
-      }
+      // 碰撞冷却
+      if (cs.collisionCooldown > 0) cs.collisionCooldown -= dt;
 
       // 转向输入
       let steerInput = 0;
-      if (input.left) steerInput -= 1;
-      if (input.right) steerInput += 1;
+      if (input.isKeyDown('KeyA') || input.isKeyDown('ArrowLeft')) steerInput -= 1;
+      if (input.isKeyDown('KeyD') || input.isKeyDown('ArrowRight')) steerInput += 1;
 
       // 加速/刹车
-      const boostMult = input.boost ? cs.boostMultiplier : 1.0;
-      if (input.accelerate) {
+      const boost = input.isKeyDown('ShiftLeft') || input.isKeyDown('ShiftRight');
+      const boostMult = boost ? cs.boostMultiplier : 1.0;
+      if (input.isKeyDown('KeyW') || input.isKeyDown('ArrowUp')) {
         cs.speed += cs.accel * boostMult * dt;
       }
-      if (input.brake) {
+      if (input.isKeyDown('KeyS') || input.isKeyDown('ArrowDown')) {
         cs.speed -= cs.brakeForce * dt;
       }
 
-      // 自然摩擦减速
       cs.speed *= (1 - cs.friction * dt);
-
-      // 速度限制
       const maxSpd = cs.maxSpeed * boostMult;
       cs.speed = Math.max(-maxSpd * 0.3, Math.min(maxSpd, cs.speed));
 
-      // 转向角 (低速更灵敏, 高速降低响应)
+      // 转向
       const speedFactor = Math.abs(cs.speed) / cs.maxSpeed;
       const steerResponse = cs.maxSteer * (1 - speedFactor * 0.5);
       const targetSteer = steerInput * steerResponse;
       cs.steerAngle += (targetSteer - cs.steerAngle) * Math.min(1, 8 * dt);
 
-      // 漂移判定
-      const isDrifting = input.handbrake ||
-        (Math.abs(cs.speed) > cs.driftThreshold && Math.abs(cs.steerAngle) > 0.25 && speedFactor > 0.3);
-
+      // 漂移
+      const handbrake = input.isKeyDown('Space');
+      const isDrifting = handbrake || (Math.abs(cs.speed) > cs.driftThreshold && Math.abs(cs.steerAngle) > 0.25 && speedFactor > 0.3);
       if (isDrifting) {
         cs.driftFactor = Math.min(cs.driftFactor + dt * 2, 1);
       } else {
         cs.driftFactor = Math.max(cs.driftFactor - dt * 3, 0);
       }
 
-      // 抓地力计算
-      const currentGrip = THREE.MathUtils.lerp(cs.grip, cs.driftGrip, cs.driftFactor);
-
-      // 横向滑动速度
+      const T = this.THREE;
+      const currentGrip = T.MathUtils.lerp(cs.grip, cs.driftGrip, cs.driftFactor);
       const targetLateral = cs.driftFactor * cs.speed * Math.sin(cs.steerAngle) * 0.5;
       cs.lateralVelocity += (targetLateral - cs.lateralVelocity) * (1 - currentGrip) * dt * 5;
-      cs.lateralVelocity *= (1 - 0.5 * dt); // 横向衰减
+      cs.lateralVelocity *= (1 - 0.5 * dt);
 
-      // 车身旋转 (转向影响) - 注意：Three.js 坐标系 Y 轴向上，rotation.y 逆时针为正
-      // 所以 steerAngle 为正（右转）时，turnRate 应该使车向右转（rotation 减小）
       const turnRate = -cs.steerAngle * cs.speed * dt * 0.15;
       cs.rotation += turnRate;
 
-      // 速度方向 (考虑漂移时的侧滑)
       const forwardAngle = cs.rotation;
       const driftAngle = cs.driftFactor * cs.steerAngle * 0.8;
       const moveAngle = forwardAngle + driftAngle;
-
       const vx = Math.sin(moveAngle) * cs.speed + Math.cos(forwardAngle) * cs.lateralVelocity;
       const vz = Math.cos(moveAngle) * cs.speed - Math.sin(forwardAngle) * cs.lateralVelocity;
-
       cs.x += vx * dt;
       cs.z += vz * dt;
 
-      // 世界边界限制
-      const bound = WORLD_SIZE / 2 - 2;
+      const bound = this.WORLD_SIZE / 2 - 2;
       if (cs.x < -bound) { cs.x = -bound; cs.speed *= 0.5; }
       if (cs.x > bound) { cs.x = bound; cs.speed *= 0.5; }
       if (cs.z < -bound) { cs.z = -bound; cs.speed *= 0.5; }
       if (cs.z > bound) { cs.z = bound; cs.speed *= 0.5; }
 
-      // 地形高度采样与贴合
-      const carH = getTerrainHeight(cs.x, cs.z);
-      // 计算前方和侧方高度以确定车身俯仰和侧倾
+      const carH = this.getTerrainHeight(cs.x, cs.z);
       const lookAheadDist = 2.0;
-      const hForward = getTerrainHeight(cs.x + Math.sin(cs.rotation) * lookAheadDist, cs.z + Math.cos(cs.rotation) * lookAheadDist);
-      const hRight = getTerrainHeight(cs.x + Math.cos(cs.rotation) * lookAheadDist, cs.z - Math.sin(cs.rotation) * lookAheadDist);
-      const hLeft = getTerrainHeight(cs.x - Math.cos(cs.rotation) * lookAheadDist, cs.z + Math.sin(cs.rotation) * lookAheadDist);
-
+      const hForward = this.getTerrainHeight(cs.x + Math.sin(cs.rotation) * lookAheadDist, cs.z + Math.cos(cs.rotation) * lookAheadDist);
+      const hRight = this.getTerrainHeight(cs.x + Math.cos(cs.rotation) * lookAheadDist, cs.z - Math.sin(cs.rotation) * lookAheadDist);
+      const hLeft = this.getTerrainHeight(cs.x - Math.cos(cs.rotation) * lookAheadDist, cs.z + Math.sin(cs.rotation) * lookAheadDist);
       const pitch = Math.atan2(hForward - carH, lookAheadDist);
       const roll = Math.atan2(hRight - hLeft, lookAheadDist * 2);
 
-      // 更新车辆显示
-      car.position.set(cs.x, carH, cs.z);
-      // 车身朝向 + 漂移时的侧倾 + 地形适应
-      car.rotation.y = cs.rotation;
-      car.rotation.z = -cs.driftFactor * cs.steerAngle * 0.3 + roll; // 侧倾
-      car.rotation.x = cs.driftFactor * 0.1 + pitch; // 俯仰
+      this.car.position.set(cs.x, carH, cs.z);
+      this.car.rotation.y = cs.rotation;
+      this.car.rotation.z = -cs.driftFactor * cs.steerAngle * 0.3 + roll;
+      this.car.rotation.x = cs.driftFactor * 0.1 + pitch;
 
-      // 前轮转向可视化 (wheelGroup 的 Y 轴旋转)
-      wheels[0].rotation.y = cs.steerAngle * 1.5;
-      wheels[1].rotation.y = cs.steerAngle * 1.5;
-      // 车轮滚动 (wheelGroup 内部的轮胎和轮毂绕 X 轴旋转)
+      // 前轮转向
+      this.wheels[0].rotation.y = cs.steerAngle * 1.5;
+      this.wheels[1].rotation.y = cs.steerAngle * 1.5;
       const wheelRoll = cs.speed * dt * 3;
-      wheels.forEach(wg => {
+      this.wheels.forEach(wg => {
         wg.children.forEach(child => {
           child.rotation.x += wheelRoll;
         });
@@ -1511,109 +1279,78 @@
       // 漂移效果
       if (cs.driftFactor > 0.3 && Math.abs(cs.speed) > 5) {
         const now = performance.now();
-        if (now - gameState.lastSkidTime > 50) {
-          // 后轮轮胎印
-          const rearOffset = 1.3 * CAR_TYPES[currentCarIndex].scale.z;
-          const sideOffset = 0.9 * CAR_TYPES[currentCarIndex].scale.x;
+        if (now - this.gameState.lastSkidTime > 50) {
+          const rearOffset = 1.3 * this.CAR_TYPES[this.currentCarIndex].scale.z;
+          const sideOffset = 0.9 * this.CAR_TYPES[this.currentCarIndex].scale.x;
           const sin = Math.sin(cs.rotation);
           const cos = Math.cos(cs.rotation);
-          createSkidMark(
-            cs.x + (-sideOffset * cos - rearOffset * sin),
-            cs.z + (-sideOffset * sin + rearOffset * cos),
-            cs.rotation, 0.3
-          );
-          createSkidMark(
-            cs.x + (sideOffset * cos - rearOffset * sin),
-            cs.z + (sideOffset * sin + rearOffset * cos),
-            cs.rotation, 0.3
-          );
-          gameState.lastSkidTime = now;
+          this.createSkidMark(cs.x + (-sideOffset * cos - rearOffset * sin), cs.z + (-sideOffset * sin + rearOffset * cos), cs.rotation, 0.3);
+          this.createSkidMark(cs.x + (sideOffset * cos - rearOffset * sin), cs.z + (sideOffset * sin + rearOffset * cos), cs.rotation, 0.3);
+          this.gameState.lastSkidTime = now;
         }
+        this.spawnDriftParticles(cs.x, cs.z, cs.rotation, cs.driftFactor);
 
-        // 烟雾粒子
-        spawnDriftParticles(cs.x, cs.z, cs.rotation, cs.driftFactor);
-
-        // 漂移得分
-        if (!gameState.isDrifting) {
-          gameState.isDrifting = true;
-          gameState.driftTimer = 0;
-          gameState.currentDriftScore = 0;
+        if (!this.gameState.isDrifting) {
+          this.gameState.isDrifting = true;
+          this.gameState.driftTimer = 0;
+          this.gameState.currentDriftScore = 0;
         }
-        gameState.driftTimer += dt;
+        this.gameState.driftTimer += dt;
         const speedBonus = Math.abs(cs.speed) * 0.5;
         const driftBonus = cs.driftFactor * 20;
-        gameState.currentDriftScore += (speedBonus + driftBonus) * dt;
-
-        // 连击倍率
-        if (gameState.driftTimer > 2) gameState.driftCombo = 2;
-        if (gameState.driftTimer > 5) gameState.driftCombo = 3;
-        if (gameState.driftTimer > 10) gameState.driftCombo = 5;
+        this.gameState.currentDriftScore += (speedBonus + driftBonus) * dt;
+        if (this.gameState.driftTimer > 2) this.gameState.driftCombo = 2;
+        if (this.gameState.driftTimer > 5) this.gameState.driftCombo = 3;
+        if (this.gameState.driftTimer > 10) this.gameState.driftCombo = 5;
       } else {
-        if (gameState.isDrifting) {
-          // 漂移结束,结算得分
-          gameState.totalDriftScore += Math.floor(gameState.currentDriftScore * gameState.driftCombo);
-          gameState.isDrifting = false;
-          gameState.driftTimer = 0;
-          gameState.driftCombo = 1;
-          gameState.currentDriftScore = 0;
+        if (this.gameState.isDrifting) {
+          this.gameState.totalDriftScore += Math.floor(this.gameState.currentDriftScore * this.gameState.driftCombo);
+          this.gameState.isDrifting = false;
+          this.gameState.driftTimer = 0;
+          this.gameState.driftCombo = 1;
+          this.gameState.currentDriftScore = 0;
         }
       }
 
-      // 氮气加速粒子
-      if (input.boost && Math.abs(cs.speed) > 5) {
-        spawnBoostParticles(cs.x, cs.z, cs.rotation);
+      // 氮气粒子
+      if (boost && Math.abs(cs.speed) > 5) {
+        this.spawnBoostParticles(cs.x, cs.z, cs.rotation);
       }
 
-      // ============================================
-      // 碰撞检测：车辆 vs 障碍物（路障/油桶）
-      // ============================================
-      for (let i = 0; i < obstacles.length; i++) {
-        const obs = obstacles[i];
-        const op = obstaclePhysics[i];
+      // 碰撞检测: 障碍物
+      for (let i = 0; i < this.obstacles.length; i++) {
+        const obs = this.obstacles[i];
+        const op = this.obstaclePhysics[i];
         const mesh = obs.mesh;
-
-        let hit = false;
-        let pushForce = 0;
-        let worldNx = 0, worldNz = 0;
-
+        let hit = false, pushForce = 0, worldNx = 0, worldNz = 0;
         if (obs.type === 'barrel') {
-          // 圆形碰撞
           const dx = mesh.position.x - cs.x;
           const dz = mesh.position.z - cs.z;
           const dist = Math.sqrt(dx * dx + dz * dz);
-          const minDist = COLLISION.carHalfL + obs.radius;
+          const minDist = this.COLLISION.carHalfL + obs.radius;
           if (dist < minDist && dist > 0.01) {
-            hit = true;
-            pushForce = Math.abs(cs.speed) * 0.9 + 4;
-            worldNx = dx / dist;
-            worldNz = dz / dist;
+            hit = true; pushForce = Math.abs(cs.speed) * 0.9 + 4;
+            worldNx = dx / dist; worldNz = dz / dist;
           }
         } else if (obs.type === 'barrier') {
-          // 简化为圆形碰撞（路障较长，用较大半径）
           const dx = mesh.position.x - cs.x;
           const dz = mesh.position.z - cs.z;
           const dist = Math.sqrt(dx * dx + dz * dz);
-          const minDist = COLLISION.carHalfL + obs.radius;
+          const minDist = this.COLLISION.carHalfL + obs.radius;
           if (dist < minDist && dist > 0.01) {
-            hit = true;
-            pushForce = Math.abs(cs.speed) * 0.6 + 2;
-            worldNx = dx / dist;
-            worldNz = dz / dist;
-            op.immovable = true; // 路障较重，不容易推动
+            hit = true; pushForce = Math.abs(cs.speed) * 0.6 + 2;
+            worldNx = dx / dist; worldNz = dz / dist;
           }
         }
-
         if (hit) {
-          if (op.immovable) {
-            // 路障：车反弹，添加碰撞冷却避免卡死
+          if (op.immovable || op.immovable === undefined) {
             if (!cs.collisionCooldown || cs.collisionCooldown <= 0) {
               cs.speed *= -0.3;
               cs.x -= worldNx * 1.0;
               cs.z -= worldNz * 1.0;
-              cs.collisionCooldown = 0.3; // 0.3秒冷却
+              cs.collisionCooldown = 0.3;
             }
           } else {
-            // 油桶：被撞飞
             op.vx = worldNx * pushForce + cs.speed * Math.sin(cs.rotation) * 0.4;
             op.vz = worldNz * pushForce + cs.speed * Math.cos(cs.rotation) * 0.4;
             op.vy = pushForce * 0.5 + 3;
@@ -1622,165 +1359,103 @@
             op.avz = (Math.random() - 0.5) * 8;
             cs.speed *= 0.75;
           }
-
-          // 碰撞粒子
           const pColor = obs.type === 'barrel' ? 0x6699cc : 0xff6600;
           for (let j = 0; j < 4; j++) {
-            createParticle(
-              mesh.position.x, mesh.position.y, mesh.position.z,
-              (Math.random() - 0.5) * 6, Math.random() * 4, (Math.random() - 0.5) * 6,
-              0.2, pColor, 0.5
-            );
+            this.createParticle(mesh.position.x, mesh.position.y, mesh.position.z,
+              (Math.random() - 0.5) * 6, Math.random() * 4, (Math.random() - 0.5) * 6, 0.2, pColor, 0.5);
           }
         }
       }
 
-      // ============================================
-      // 障碍物物理更新
-      // ============================================
-      for (let i = 0; i < obstacles.length; i++) {
-        const obs = obstacles[i];
-        const op = obstaclePhysics[i];
+      // 障碍物物理
+      for (let i = 0; i < this.obstacles.length; i++) {
+        const obs = this.obstacles[i];
+        const op = this.obstaclePhysics[i];
         if (op.immovable || op.grounded) continue;
-
-        op.vy += gravity * dt;
+        op.vy += -15 * dt;
         op.vx *= (1 - 0.5 * dt);
         op.vz *= (1 - 0.5 * dt);
-
         obs.mesh.position.x += op.vx * dt;
         obs.mesh.position.y += op.vy * dt;
         obs.mesh.position.z += op.vz * dt;
-
         op.rx += op.avx * dt;
         op.rz += op.avz * dt;
         obs.mesh.rotation.x = op.rx;
         obs.mesh.rotation.z = op.rz;
-
         const restY = obs.type === 'barrel' ? 0.6 : 0.4;
-        const terrainY = getTerrainHeight(obs.mesh.position.x, obs.mesh.position.z);
+        const terrainY = this.getTerrainHeight(obs.mesh.position.x, obs.mesh.position.z);
         if (obs.mesh.position.y <= terrainY + restY) {
           obs.mesh.position.y = terrainY + restY;
-          op.vy = -op.vy * 0.25;
-          op.vx *= 0.6;
-          op.vz *= 0.6;
-          op.avx *= 0.6;
-          op.avz *= 0.6;
-          if (Math.abs(op.vy) < 0.5) {
-            op.vy = 0;
-            op.grounded = true;
-            obs.mesh.rotation.x *= 0.5;
-            obs.mesh.rotation.z *= 0.5;
-          }
+          op.vy = -op.vy * 0.25; op.vx *= 0.6; op.vz *= 0.6;
+          op.avx *= 0.6; op.avz *= 0.6;
+          if (Math.abs(op.vy) < 0.5) { op.vy = 0; op.grounded = true; obs.mesh.rotation.x *= 0.5; obs.mesh.rotation.z *= 0.5; }
         }
-
-        const b = WORLD_SIZE / 2;
+        const b = this.WORLD_SIZE / 2;
         if (Math.abs(obs.mesh.position.x) > b || Math.abs(obs.mesh.position.z) > b) {
-          op.grounded = true;
-          op.vx = 0; op.vy = 0; op.vz = 0;
+          op.grounded = true; op.vx = 0; op.vy = 0; op.vz = 0;
         }
       }
 
-      // ============================================
-      // 碰撞检测：车辆 vs 锥桶（有冷却期）
-      // ============================================
+      // 碰撞检测: 锥桶
       if (!cs.collisionCooldown || cs.collisionCooldown <= 0) {
-        for (let i = 0; i < cones.length; i++) {
-          const cone = cones[i];
-          const cp = conePhysics[i];
+        for (let i = 0; i < this.cones.length; i++) {
+          const cone = this.cones[i];
+          const cp = this.conePhysics[i];
           if (!cp.active) continue;
-
-          const result = COLLISION.checkCarCone(cs, cone.position);
+          const result = this.COLLISION.checkCarCone(cs, cone.position);
           if (result.hit) {
-            // 计算碰撞冲量
             const impactSpeed = Math.abs(cs.speed);
-            const pushForce = impactSpeed * 0.8 + 3;
-
-            // 将碰撞法线转回世界坐标
+            const pushForce2 = impactSpeed * 0.8 + 3;
             const cos = Math.cos(cs.rotation);
             const sin = Math.sin(cs.rotation);
-            const worldNx = result.nx * cos - result.nz * sin;
-            const worldNz = result.nx * sin + result.nz * cos;
-
-            // 推开锥桶
-            cp.vx = worldNx * pushForce + cs.speed * sin * 0.3;
-            cp.vz = worldNz * pushForce + cs.speed * cos * 0.3;
-            cp.vy = pushForce * 0.4 + 2; // 弹起
+            const wNx = result.nx * cos - result.nz * sin;
+            const wNz = result.nx * sin + result.nz * cos;
+            cp.vx = wNx * pushForce2 + cs.speed * sin * 0.3;
+            cp.vz = wNz * pushForce2 + cs.speed * cos * 0.3;
+            cp.vy = pushForce2 * 0.4 + 2;
             cp.grounded = false;
             cp.angularVx = (Math.random() - 0.5) * 10;
             cp.angularVz = (Math.random() - 0.5) * 10;
-
-            // 车辆减速并推开
             cs.speed *= 0.7;
-            cs.x -= worldNx * 0.8;
-            cs.z -= worldNz * 0.8;
-            cs.collisionCooldown = 0.15; // 0.15秒冷却
-
-            // 碰撞粒子（橙色碎片）
+            cs.x -= wNx * 0.8;
+            cs.z -= wNz * 0.8;
+            cs.collisionCooldown = 0.15;
             for (let j = 0; j < 5; j++) {
-              createParticle(
-                cone.position.x, cone.position.y, cone.position.z,
-                (Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5,
-                0.15, 0xff8800, 0.6
-              );
+              this.createParticle(cone.position.x, cone.position.y, cone.position.z,
+                (Math.random() - 0.5) * 5, Math.random() * 3, (Math.random() - 0.5) * 5, 0.15, 0xff8800, 0.6);
             }
           }
         }
       }
 
-      // ============================================
-      // 锥桶物理更新
-      // ============================================
-      const gravity = -15;
-      for (let i = 0; i < cones.length; i++) {
-        const cone = cones[i];
-        const cp = conePhysics[i];
+      // 锥桶物理
+      for (let i = 0; i < this.cones.length; i++) {
+        const cone = this.cones[i];
+        const cp = this.conePhysics[i];
         if (cp.active && !cp.grounded) {
-          // 重力
-          cp.vy += gravity * dt;
-          // 空气阻力
+          cp.vy += -15 * dt;
           cp.vx *= (1 - 0.5 * dt);
           cp.vz *= (1 - 0.5 * dt);
-
-          // 更新位置
           cone.position.x += cp.vx * dt;
           cone.position.y += cp.vy * dt;
           cone.position.z += cp.vz * dt;
-
-          // 旋转
           cp.rx += cp.angularVx * dt;
           cp.rz += cp.angularVz * dt;
           cone.rotation.x = cp.rx;
           cone.rotation.z = cp.rz;
-
-          // 地面碰撞（贴合地形）
-          const terrainY = getTerrainHeight(cone.position.x, cone.position.z);
-          const groundY = terrainY + 0.5;
+          const terrainY2 = this.getTerrainHeight(cone.position.x, cone.position.z);
+          const groundY = terrainY2 + 0.5;
           if (cone.position.y <= groundY) {
             cone.position.y = groundY;
-            cp.vy = -cp.vy * 0.3; // 弹跳衰减
-            cp.vx *= 0.7; // 地面摩擦
-            cp.vz *= 0.7;
-            cp.angularVx *= 0.7;
-            cp.angularVz *= 0.7;
-
-            if (Math.abs(cp.vy) < 0.5) {
-              cp.vy = 0;
-              cp.grounded = true;
-              // 恢复直立
-              cone.rotation.x *= 0.5;
-              cone.rotation.z *= 0.5;
-            }
+            cp.vy = -cp.vy * 0.3; cp.vx *= 0.7; cp.vz *= 0.7; cp.angularVx *= 0.7; cp.angularVz *= 0.7;
+            if (Math.abs(cp.vy) < 0.5) { cp.vy = 0; cp.grounded = true; cone.rotation.x *= 0.5; cone.rotation.z *= 0.5; }
           }
-
-          // 超出边界重置
-          const b = WORLD_SIZE / 2;
-          if (Math.abs(cone.position.x) > b || Math.abs(cone.position.z) > b) {
-            const resetY = getTerrainHeight(cone.position.x, cone.position.z);
+          const b2 = this.WORLD_SIZE / 2;
+          if (Math.abs(cone.position.x) > b2 || Math.abs(cone.position.z) > b2) {
+            const resetY = this.getTerrainHeight(cone.position.x, cone.position.z);
             cone.position.y = resetY + 0.5;
-            cp.vx = 0; cp.vy = 0; cp.vz = 0;
-            cp.grounded = true;
-            cone.rotation.x = 0;
-            cone.rotation.z = 0;
+            cp.vx = 0; cp.vy = 0; cp.vz = 0; cp.grounded = true;
+            cone.rotation.x = 0; cone.rotation.z = 0;
           }
         }
       }
@@ -1789,15 +1464,15 @@
     // ============================================
     // 更新粒子
     // ============================================
-    function updateParticles(dt) {
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
+    updateParticles(dt) {
+      for (let i = this.particles.length - 1; i >= 0; i--) {
+        const p = this.particles[i];
         p.userData.life -= dt;
         if (p.userData.life <= 0) {
-          scene.remove(p);
+          this.remove(p);
           p.geometry.dispose();
           p.material.dispose();
-          particles.splice(i, 1);
+          this.particles.splice(i, 1);
           continue;
         }
         const t = p.userData.life / p.userData.maxLife;
@@ -1805,25 +1480,25 @@
         p.position.x += p.userData.vx * dt;
         p.position.y += p.userData.vy * dt;
         p.position.z += p.userData.vz * dt;
-        p.userData.vy += 1.0 * dt; // 上升
+        p.userData.vy += 1.0 * dt;
         p.scale.setScalar(1 + (1 - t) * 2);
         p.rotation.z += p.userData.rotSpeed * dt;
-        p.lookAt(camera.position);
+        p.lookAt(this.camera3D.camera.position);
       }
     }
 
     // ============================================
-    // 更新 skid marks 渐隐
+    // 更新 skid marks
     // ============================================
-    function updateSkidMarks(dt) {
-      for (let i = skidMarks.length - 1; i >= 0; i--) {
-        const mark = skidMarks[i];
+    updateSkidMarks(dt) {
+      for (let i = this.skidMarks.length - 1; i >= 0; i--) {
+        const mark = this.skidMarks[i];
         mark.userData.life -= mark.userData.fadeRate;
         if (mark.userData.life <= 0) {
-          scene.remove(mark);
+          this.remove(mark);
           mark.geometry.dispose();
           mark.material.dispose();
-          skidMarks.splice(i, 1);
+          this.skidMarks.splice(i, 1);
         } else {
           mark.material.opacity = mark.userData.life * 0.5;
         }
@@ -1833,124 +1508,78 @@
     // ============================================
     // 更新相机
     // ============================================
-    function updateCamera(dt) {
-      const cs = carState;
+    updateCamera(dt) {
+      const cs = this.carState;
       const sin = Math.sin(cs.rotation);
       const cos = Math.cos(cs.rotation);
-      const carH = getTerrainHeight(cs.x, cs.z);
+      const carH = this.getTerrainHeight(cs.x, cs.z);
+      const T = this.THREE;
 
       let targetPos, lookAt;
-
-      if (cameraMode === 0) {
-        // 跟随视角
+      if (this.cameraMode === 0) {
         const dist = 8 + Math.abs(cs.speed) * 0.15;
         const height = 4 + Math.abs(cs.speed) * 0.05;
-        targetPos = new THREE.Vector3(
-          cs.x - sin * dist,
-          carH + height,
-          cs.z - cos * dist
-        );
-        lookAt = new THREE.Vector3(cs.x, carH + 1, cs.z);
-      } else if (cameraMode === 1) {
-        // 车头视角
+        targetPos = new T.Vector3(cs.x - sin * dist, carH + height, cs.z - cos * dist);
+        lookAt = new T.Vector3(cs.x, carH + 1, cs.z);
+      } else if (this.cameraMode === 1) {
         const hoodDist = 1.5;
         const hoodHeight = 1.2;
-        targetPos = new THREE.Vector3(
-          cs.x + sin * hoodDist,
-          carH + hoodHeight,
-          cs.z + cos * hoodDist
-        );
-        lookAt = new THREE.Vector3(
-          cs.x + sin * 10,
-          carH + 1,
-          cs.z + cos * 10
-        );
+        targetPos = new T.Vector3(cs.x + sin * hoodDist, carH + hoodHeight, cs.z + cos * hoodDist);
+        lookAt = new T.Vector3(cs.x + sin * 10, carH + 1, cs.z + cos * 10);
       } else {
-        // 环绕视角
-        targetPos = new THREE.Vector3(
-          cs.x + Math.sin(orbitAngle) * orbitDistance,
-          carH + 6,
-          cs.z + Math.cos(orbitAngle) * orbitDistance
-        );
-        lookAt = new THREE.Vector3(cs.x, carH + 1, cs.z);
+        targetPos = new T.Vector3(cs.x + Math.sin(this.orbitAngle) * this.orbitDistance, carH + 6, cs.z + Math.cos(this.orbitAngle) * this.orbitDistance);
+        lookAt = new T.Vector3(cs.x, carH + 1, cs.z);
       }
 
-      // 平滑插值
-      const lerpFactor = Math.min(1, (cameraMode === 1 ? 12 : 4) * dt);
-      camera.position.lerp(targetPos, lerpFactor);
-      camera.lookAt(lookAt);
+      const lerpFactor = Math.min(1, (this.cameraMode === 1 ? 12 : 4) * dt);
+      this.camera3D.camera.position.lerp(targetPos, lerpFactor);
+      this.camera3D.camera.lookAt(lookAt);
     }
 
     // ============================================
     // 更新 UI
     // ============================================
-    // 暴露到全局，供触屏控制脚本使用
-    window._gameInput = input;
-    window._gameUpdateUI = updateUI;
-    window._gameSwitchCar = switchCar;
+    updateUI(dt) {
+      const cs = this.carState;
+      const gs = this.gameState;
 
-    function updateUI(dt) {
-      const cs = carState;
-      const gs = gameState;
-
-      // 速度表
       const kmh = Math.abs(Math.round(cs.speed * 3.6));
       document.getElementById('speedText').textContent = kmh;
-
-      // 指针角度 (-135 ~ 135 度)
       const maxKmh = Math.round(cs.maxSpeed * 3.6 * 1.5);
       const needleAngle = -135 + (kmh / maxKmh) * 270;
       document.getElementById('speedNeedle').setAttribute('transform', `rotate(${needleAngle} 80 80)`);
-
-      // 圆弧填充
-      const arcLength = 330; // 近似圆弧长度
+      const arcLength = 330;
       const dash = Math.min(arcLength, (kmh / maxKmh) * arcLength);
       const arc = document.getElementById('speedArc');
       arc.setAttribute('stroke-dasharray', `${dash} ${arcLength}`);
-      // 颜色根据速度变化
       if (kmh > 120) arc.setAttribute('stroke', '#ef4444');
       else if (kmh > 80) arc.setAttribute('stroke', '#f59e0b');
       else arc.setAttribute('stroke', '#22c55e');
 
-      // 计时器
       const elapsed = (performance.now() - gs.startTime) / 1000;
       const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
       const secs = Math.floor(elapsed % 60).toString().padStart(2, '0');
       const ms = Math.floor((elapsed % 1) * 100).toString().padStart(2, '0');
       document.getElementById('timer').textContent = `${mins}:${secs}.${ms}`;
 
-      // 漂移得分
       const driftEl = document.getElementById('drift-score');
       if (gs.isDrifting || gs.currentDriftScore > 0) {
         driftEl.classList.add('active');
-        const displayScore = Math.floor(gs.currentDriftScore * gs.driftCombo);
-        document.getElementById('driftMain').textContent = displayScore;
-        if (gs.driftCombo > 1) {
-          document.getElementById('driftCombo').textContent = `x${gs.driftCombo} 连击!`;
-        } else {
-          document.getElementById('driftCombo').textContent = '';
-        }
+        document.getElementById('driftMain').textContent = Math.floor(gs.currentDriftScore * gs.driftCombo);
+        document.getElementById('driftCombo').textContent = gs.driftCombo > 1 ? `x${gs.driftCombo} 连击!` : '';
       } else {
         driftEl.classList.remove('active');
       }
 
-      // 相机提示自动隐藏
       if (gs.cameraHintTimer > 0) {
         gs.cameraHintTimer -= dt;
-        if (gs.cameraHintTimer <= 0) {
-          document.getElementById('camera-hint').classList.remove('show');
-        }
+        if (gs.cameraHintTimer <= 0) document.getElementById('camera-hint').classList.remove('show');
       }
-
-      // 车辆信息提示自动隐藏
       if (gs.carInfoTimer > 0) {
         gs.carInfoTimer -= dt;
-        if (gs.carInfoTimer <= 0) {
-          document.getElementById('car-info').classList.remove('show');
-        }
+        if (gs.carInfoTimer <= 0) document.getElementById('car-info').classList.remove('show');
       }
 
-      // 调试面板
       if (gs.debugVisible) {
         document.getElementById('dbg-speed').textContent = cs.speed.toFixed(2);
         document.getElementById('dbg-steer').textContent = cs.steerAngle.toFixed(3);
@@ -1960,70 +1589,55 @@
         document.getElementById('dbg-z').textContent = cs.z.toFixed(1);
         document.getElementById('dbg-rot').textContent = ((cs.rotation * 180 / Math.PI) % 360).toFixed(1);
         const camNames = ['跟随', '车头', '环绕'];
-        document.getElementById('dbg-cam').textContent = camNames[cameraMode];
-        document.getElementById('dbg-car').textContent = CAR_TYPES[currentCarIndex].name;
+        document.getElementById('dbg-cam').textContent = camNames[this.cameraMode];
+        document.getElementById('dbg-car').textContent = this.CAR_TYPES[this.currentCarIndex].name;
         document.getElementById('dbg-fps').textContent = gs.fps;
       }
 
-      // 迷你地图
-      updateMinimap();
+      this.updateMinimap();
     }
 
     // ============================================
-    // 更新迷你地图
+    // 迷你地图
     // ============================================
-    function updateMinimap() {
+    updateMinimap() {
       const canvas = document.getElementById('minimapCanvas');
       const ctx = canvas.getContext('2d');
       const w = canvas.width, h = canvas.height;
-
       ctx.fillStyle = '#111827';
       ctx.fillRect(0, 0, w, h);
-
-      const scale = w / WORLD_SIZE;
+      const scale = w / this.WORLD_SIZE;
       const cx = w / 2, cy = h / 2;
-
-      // 绘制锥桶
       ctx.fillStyle = '#ff6600';
-      cones.forEach(cone => {
-        const px = cx + cone.position.x * scale;
-        const py = cy + cone.position.z * scale;
+      this.cones.forEach(cone => {
         ctx.beginPath();
-        ctx.arc(px, py, 2, 0, Math.PI * 2);
+        ctx.arc(cx + cone.position.x * scale, cy + cone.position.z * scale, 2, 0, Math.PI * 2);
         ctx.fill();
       });
-
-      // 绘制车辆
-      const carX = cx + carState.x * scale;
-      const carY = cy + carState.z * scale;
-
+      const carX = cx + this.carState.x * scale;
+      const carY = cy + this.carState.z * scale;
       ctx.save();
       ctx.translate(carX, carY);
-      ctx.rotate(-carState.rotation);
-
-      // 车身颜色根据当前车辆类型
-      const carColor = '#' + new THREE.Color(CAR_TYPES[currentCarIndex].color).getHexString();
+      ctx.rotate(-this.carState.rotation);
+      const T = this.THREE;
+      const carColor = '#' + new T.Color(this.CAR_TYPES[this.currentCarIndex].color).getHexString();
       ctx.fillStyle = carColor;
       ctx.fillRect(-4, -8, 8, 16);
-      // 车头方向指示
       ctx.fillStyle = '#ffffaa';
       ctx.fillRect(-3, 6, 2, 4);
       ctx.fillRect(1, 6, 2, 4);
-
       ctx.restore();
-
-      // 绘制边界
       ctx.strokeStyle = '#374151';
-      ctx.strokeRect(cx - WORLD_SIZE/2 * scale, cy - WORLD_SIZE/2 * scale, WORLD_SIZE * scale, WORLD_SIZE * scale);
+      ctx.strokeRect(cx - this.WORLD_SIZE / 2 * scale, cy - this.WORLD_SIZE / 2 * scale, this.WORLD_SIZE * scale, this.WORLD_SIZE * scale);
     }
 
     // ============================================
     // 速度表刻度
     // ============================================
-    function initSpeedometer() {
+    initSpeedometer() {
       const container = document.getElementById('speedTicks');
       container.innerHTML = '';
-      const maxKmh = Math.round(carState.maxSpeed * 3.6 * 1.5);
+      const maxKmh = Math.round(this.carState.maxSpeed * 3.6 * 1.5);
       for (let i = 0; i <= 10; i++) {
         const angle = -135 + (i / 10) * 270;
         const rad = (angle - 90) * Math.PI / 180;
@@ -2032,123 +1646,64 @@
         const y1 = 80 + Math.sin(rad) * r1;
         const x2 = 80 + Math.cos(rad) * r2;
         const y2 = 80 + Math.sin(rad) * r2;
-
         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        line.setAttribute('x1', x1);
-        line.setAttribute('y1', y1);
-        line.setAttribute('x2', x2);
-        line.setAttribute('y2', y2);
-        line.setAttribute('stroke', '#6b7280');
-        line.setAttribute('stroke-width', '2');
+        line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+        line.setAttribute('stroke', '#6b7280'); line.setAttribute('stroke-width', '2');
         container.appendChild(line);
-
-        // 数字
         const val = Math.round((i / 10) * maxKmh);
         const tx = 80 + Math.cos(rad) * (r2 + 10);
         const ty = 80 + Math.sin(rad) * (r2 + 10);
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        text.setAttribute('x', tx);
-        text.setAttribute('y', ty + 3);
-        text.setAttribute('text-anchor', 'middle');
-        text.setAttribute('fill', '#9ca3af');
-        text.setAttribute('font-size', '9');
-        text.textContent = val;
+        text.setAttribute('x', tx); text.setAttribute('y', ty + 3);
+        text.setAttribute('text-anchor', 'middle'); text.setAttribute('fill', '#9ca3af');
+        text.setAttribute('font-size', '9'); text.textContent = val;
         container.appendChild(text);
       }
     }
+  }
 
-    // ============================================
-    // 主循环
-    // ============================================
-    let lastTime = 0;
-    function animate(time) {
-      requestAnimationFrame(animate);
+  // ============================================
+  // 引擎初始化
+  // ============================================
+  const engine = new QGE.Core(document.getElementById('game-canvas'), {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    renderer: 'webgl',
+  });
 
-      const dt = Math.min((time - lastTime) / 1000, 0.05); // 限制最大 dt
-      lastTime = time;
+  engine.scenes.register('game', DriftScene3D);
+  engine.scenes.switch('game');
+  engine.start();
 
-      if (dt <= 0) return;
-
-      // FPS 计算
-      gameState.frameCount++;
-      if (time - gameState.lastFpsTime >= 1000) {
-        gameState.fps = gameState.frameCount;
-        gameState.frameCount = 0;
-        gameState.lastFpsTime = time;
-      }
-
-      updatePhysics(dt);
-      updateParticles(dt);
-      updateSkidMarks(dt);
-      updateCamera(dt);
-      // 使用 window._gameUpdateUI 以便触屏控制可以覆盖它
-      if (window._gameUpdateUI) window._gameUpdateUI(dt);
-
-      renderer.render(scene, camera);
+  // 启动按钮
+  document.getElementById('startBtn').addEventListener('click', () => {
+    const scene = engine.scenes.current();
+    if (scene && scene._ready && !scene._started) {
+      scene.startGame();
     }
-
-    // ============================================
-    // 启动
-    // ============================================
-    function startGame() {
-      document.getElementById('splash').classList.add('hidden');
-      gameState.startTime = performance.now();
-      lastTime = performance.now();
-      requestAnimationFrame(animate);
-    }
-
-    // 初始化
-    initThree();
-    createTerrain();
-    createCar();
-    createCones();
-    createObstacles();
-    initSpeedometer();
-    setupInput();
-
-    document.getElementById('loadingText').textContent = '点击开始按钮进入游戏';
-    document.getElementById('startBtn').addEventListener('click', startGame);
-
-    // 初始渲染一帧
-    renderer.render(scene, camera);
+  });
   </script>
 
   <!-- ============================================
        触屏控制（虚拟摇杆 + 按键）
        ============================================ -->
   <div id="touch-controls">
-    <!-- 左摇杆（转向） -->
     <div id="touch-zone-left">
       <div id="touch-joystick">
         <div id="touch-joystick-knob"></div>
       </div>
       <div class="touch-label">转向</div>
     </div>
-
-    <!-- 右侧按钮 -->
     <div id="touch-zone-right">
-      <div id="touch-btn-accelerate" class="touch-btn touch-btn-accel">
-        <span>油门</span>
-      </div>
-      <div id="touch-btn-brake" class="touch-btn touch-btn-brake">
-        <span>刹车</span>
-      </div>
-      <div id="touch-btn-boost" class="touch-btn touch-btn-boost">
-        <span>氮气</span>
-      </div>
-      <div id="touch-btn-handbrake" class="touch-btn touch-btn-handbrake">
-        <span>漂移</span>
-      </div>
+      <div id="touch-btn-accelerate" class="touch-btn touch-btn-accel"><span>油门</span></div>
+      <div id="touch-btn-brake" class="touch-btn touch-btn-brake"><span>刹车</span></div>
+      <div id="touch-btn-boost" class="touch-btn touch-btn-boost"><span>氮气</span></div>
+      <div id="touch-btn-handbrake" class="touch-btn touch-btn-handbrake"><span>漂移</span></div>
     </div>
-
-    <!-- 顶部功能按钮 -->
     <div id="touch-zone-top">
-      <div id="touch-btn-switch-car" class="touch-btn-func">
-        <span>换车</span>
-      </div>
-      <div id="touch-btn-camera" class="touch-btn-func">
-        <span>视角</span>
-      </div>
+      <div id="touch-btn-switch-car" class="touch-btn-func"><span>换车</span></div>
+      <div id="touch-btn-camera" class="touch-btn-func"><span>视角</span></div>
     </div>
   </div>
 
@@ -2161,21 +1716,16 @@
       pointer-events: none;
       display: none;
     }
-
     @media (hover: none) and (pointer: coarse) {
       #touch-controls { display: block; }
-      /* 隐藏键盘控制提示 */
       #controls-hint { display: none; }
     }
-
-    /* 左摇杆区 */
     #touch-zone-left {
       position: absolute;
       bottom: 30px; left: 30px;
       width: 130px; height: 130px;
       pointer-events: auto;
     }
-
     #touch-joystick {
       width: 130px; height: 130px;
       border-radius: 50%;
@@ -2184,7 +1734,6 @@
       position: relative;
       touch-action: none;
     }
-
     #touch-joystick-knob {
       position: absolute;
       top: 50%; left: 50%;
@@ -2195,7 +1744,6 @@
       transform: translate(-50%, -50%);
       transition: none;
     }
-
     .touch-label {
       text-align: center;
       color: rgba(255,255,255,0.4);
@@ -2203,8 +1751,6 @@
       margin-top: 4px;
       letter-spacing: 2px;
     }
-
-    /* 右侧按钮区 */
     #touch-zone-right {
       position: absolute;
       bottom: 30px; right: 20px;
@@ -2213,7 +1759,6 @@
       gap: 10px;
       pointer-events: auto;
     }
-
     .touch-btn {
       width: 64px; height: 64px;
       border-radius: 50%;
@@ -2227,35 +1772,13 @@
       user-select: none;
       -webkit-user-select: none;
     }
-
-    .touch-btn:active, .touch-btn.active {
-      transform: scale(0.92);
-    }
-
-    .touch-btn-accel {
-      background: rgba(34, 197, 94, 0.3);
-      border: 2px solid rgba(34, 197, 94, 0.6);
-    }
-    .touch-btn-accel:active, .touch-btn-accel.active {
-      background: rgba(34, 197, 94, 0.6);
-    }
-
-    .touch-btn-brake {
-      background: rgba(239, 68, 68, 0.3);
-      border: 2px solid rgba(239, 68, 68, 0.6);
-    }
-    .touch-btn-brake:active, .touch-btn-brake.active {
-      background: rgba(239, 68, 68, 0.6);
-    }
-
-    .touch-btn-boost {
-      background: rgba(59, 130, 246, 0.3);
-      border: 2px solid rgba(59, 130, 246, 0.6);
-    }
-    .touch-btn-boost:active, .touch-btn-boost.active {
-      background: rgba(59, 130, 246, 0.6);
-    }
-
+    .touch-btn:active, .touch-btn.active { transform: scale(0.92); }
+    .touch-btn-accel { background: rgba(34, 197, 94, 0.3); border: 2px solid rgba(34, 197, 94, 0.6); }
+    .touch-btn-accel:active, .touch-btn-accel.active { background: rgba(34, 197, 94, 0.6); }
+    .touch-btn-brake { background: rgba(239, 68, 68, 0.3); border: 2px solid rgba(239, 68, 68, 0.6); }
+    .touch-btn-brake:active, .touch-btn-brake.active { background: rgba(239, 68, 68, 0.6); }
+    .touch-btn-boost { background: rgba(59, 130, 246, 0.3); border: 2px solid rgba(59, 130, 246, 0.6); }
+    .touch-btn-boost:active, .touch-btn-boost.active { background: rgba(59, 130, 246, 0.6); }
     .touch-btn-handbrake {
       background: rgba(249, 115, 22, 0.3);
       border: 2px solid rgba(249, 115, 22, 0.6);
@@ -2263,11 +1786,7 @@
       width: 100%;
       border-radius: 32px;
     }
-    .touch-btn-handbrake:active, .touch-btn-handbrake.active {
-      background: rgba(249, 115, 22, 0.6);
-    }
-
-    /* 顶部功能按钮 */
+    .touch-btn-handbrake:active, .touch-btn-handbrake.active { background: rgba(249, 115, 22, 0.6); }
     #touch-zone-top {
       position: absolute;
       top: 70px; right: 15px;
@@ -2276,10 +1795,8 @@
       gap: 8px;
       pointer-events: auto;
     }
-
     .touch-btn-func {
-      width: auto;
-      height: auto;
+      width: auto; height: auto;
       padding: 8px 16px;
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.1);
@@ -2292,13 +1809,7 @@
       -webkit-user-select: none;
       pointer-events: auto;
     }
-
-    .touch-btn-func:active {
-      background: rgba(34, 197, 94, 0.4);
-      border-color: rgba(34, 197, 94, 0.6);
-    }
-
-    /* 手机竖屏适配 */
+    .touch-btn-func:active { background: rgba(34, 197, 94, 0.4); border-color: rgba(34, 197, 94, 0.6); }
     @media (max-width: 480px) {
       #touch-zone-left { bottom: 20px; left: 14px; width: 100px; height: 100px; }
       #touch-joystick { width: 100px; height: 100px; }
@@ -2307,8 +1818,7 @@
       .touch-btn { width: 54px; height: 54px; font-size: 10px; }
       .touch-btn-handbrake { width: 100%; }
       #speedometer { width: 100px; height: 100px; bottom: 12px; left: 12px; }
-      #miniMap { width: 80px; height: 80px; top: 60px; }
-      /* 适配小屏速度表文字 */
+      #minimap { width: 80px; height: 80px; top: 60px; }
       .speed-text { font-size: 20px; }
       .speed-unit { font-size: 9px; }
     }
@@ -2318,38 +1828,17 @@
     // 触屏控制逻辑 - 直接触发键盘事件，与键鼠操作完全一致
     (function() {
       'use strict';
-
-      // 辅助函数：模拟键盘事件
       function dispatchKey(type, code) {
-        var ev = new KeyboardEvent(type, {
-          code: code,
-          key: code,
-          bubbles: true,
-          cancelable: true
-        });
+        var ev = new KeyboardEvent(type, { code: code, key: code, bubbles: true, cancelable: true });
         document.dispatchEvent(ev);
       }
-
-      // 绑定按钮到键盘事件
       function bindKeyBtn(id, downCode, upCode) {
         var el = document.getElementById(id);
         if (!el) return;
-        el.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          dispatchKey('keydown', downCode);
-          el.classList.add('active');
-        });
-        el.addEventListener('touchend', function(e) {
-          e.preventDefault();
-          dispatchKey('keyup', upCode || downCode);
-          el.classList.remove('active');
-        });
-        el.addEventListener('touchcancel', function() {
-          dispatchKey('keyup', upCode || downCode);
-          el.classList.remove('active');
-        });
+        el.addEventListener('touchstart', function(e) { e.preventDefault(); dispatchKey('keydown', downCode); el.classList.add('active'); });
+        el.addEventListener('touchend', function(e) { e.preventDefault(); dispatchKey('keyup', upCode || downCode); el.classList.remove('active'); });
+        el.addEventListener('touchcancel', function() { dispatchKey('keyup', upCode || downCode); el.classList.remove('active'); });
       }
-
       bindKeyBtn('touch-btn-accelerate', 'KeyW');
       bindKeyBtn('touch-btn-brake', 'KeyS');
       bindKeyBtn('touch-btn-boost', 'ShiftLeft');
@@ -2357,19 +1846,16 @@
       bindKeyBtn('touch-btn-switch-car', 'KeyV');
       bindKeyBtn('touch-btn-camera', 'KeyC');
 
-      // ---- 左摇杆（转向） - 模拟 A/D 键 ----
       var joystick = document.getElementById('touch-joystick');
       var knob = document.getElementById('touch-joystick-knob');
       var joyX = 0;
       var joyTouchId = null;
       var joyLeftActive = false;
       var joyRightActive = false;
-
       function getJoystickCenter() {
         var rect = joystick.getBoundingClientRect();
         return { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, r: rect.width / 2 - 22 };
       }
-
       function updateJoystick(touchX, touchY) {
         var c = getJoystickCenter();
         var dx = touchX - c.cx;
@@ -2378,8 +1864,6 @@
         if (dist > c.r) { dx = dx / dist * c.r; dy = dy / dist * c.r; }
         joyX = dx / c.r;
         knob.style.transform = 'translate(' + (dx - 22) + 'px, ' + (dy - 22) + 'px)';
-
-        // 模拟 A/D 键
         if (joyX < -0.2) {
           if (!joyLeftActive) { joyLeftActive = true; dispatchKey('keydown', 'KeyA'); }
           if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
@@ -2391,37 +1875,19 @@
           if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
         }
       }
-
       function resetJoystick() {
-        joyX = 0;
-        joyTouchId = null;
+        joyX = 0; joyTouchId = null;
         knob.style.transform = 'translate(-22px, -22px)';
         if (joyLeftActive) { joyLeftActive = false; dispatchKey('keyup', 'KeyA'); }
         if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
       }
-
       if (joystick) {
-        joystick.addEventListener('touchstart', function(e) {
-          e.preventDefault();
-          var t = e.changedTouches[0];
-          joyTouchId = t.identifier;
-          updateJoystick(t.clientX, t.clientY);
-        });
-        joystick.addEventListener('touchmove', function(e) {
-          e.preventDefault();
-          for (var i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === joyTouchId) {
-              updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY);
-            }
-          }
-        });
-        joystick.addEventListener('touchend', function(e) {
-          for (var i = 0; i < e.changedTouches.length; i++) {
-            if (e.changedTouches[i].identifier === joyTouchId) resetJoystick();
-          }
-        });
+        joystick.addEventListener('touchstart', function(e) { e.preventDefault(); var t = e.changedTouches[0]; joyTouchId = t.identifier; updateJoystick(t.clientX, t.clientY); });
+        joystick.addEventListener('touchmove', function(e) { e.preventDefault(); for (var i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === joyTouchId) updateJoystick(e.changedTouches[i].clientX, e.changedTouches[i].clientY); } });
+        joystick.addEventListener('touchend', function(e) { for (var i = 0; i < e.changedTouches.length; i++) { if (e.changedTouches[i].identifier === joyTouchId) resetJoystick(); } });
         joystick.addEventListener('touchcancel', resetJoystick);
       }
+    })();
   </script>
 </body>
 </html>
