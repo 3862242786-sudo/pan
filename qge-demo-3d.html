@@ -2081,7 +2081,8 @@
       updateParticles(dt);
       updateSkidMarks(dt);
       updateCamera(dt);
-      updateUI(dt);
+      // 使用 window._gameUpdateUI 以便触屏控制可以覆盖它
+      if (window._gameUpdateUI) window._gameUpdateUI(dt);
 
       renderer.render(scene, camera);
     }
