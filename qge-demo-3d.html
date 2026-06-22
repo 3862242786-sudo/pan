@@ -564,6 +564,7 @@
     // init - 异步初始化场景 (QGE.Scene3D 入口)
     // ============================================
     async init() {
+      try {
       // 调用 Scene3D.init3D，初始化 threeScene, renderer3D, camera3D
       await this.init3D({
         antialias: true,
@@ -619,6 +620,11 @@
       this._ready = true;
       super.init();
       document.getElementById('loadingText').textContent = '点击开始按钮进入游戏';
+      } catch (err) {
+        console.error('[QGE Racing] 初始化失败:', err);
+        document.getElementById('loadingText').textContent = '加载失败: ' + err.message;
+        document.getElementById('loadingText').style.color = '#ff4444';
+      }
     }
 
     startGame() {
@@ -1670,6 +1676,8 @@
     width: window.innerWidth,
     height: window.innerHeight,
     renderer: 'webgl',
+    autoResize: false,
+    pixelRatio: 1,
   });
 
   engine.scenes.register('game', DriftScene3D);
