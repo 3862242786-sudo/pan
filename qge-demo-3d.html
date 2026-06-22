@@ -2315,50 +2315,92 @@
   </style>
 
   <script>
-    // 触屏控制逻辑
+    // 触屏控制逻辑 - 直接触发键盘事件，与键鼠操作完全一致
     (function() {
       'use strict';
 
-      // 等待游戏模块加载完成
-      function waitForGame() {
-        if (window._gameInput && window._gameUpdateUI) {
-          initTouchControls();
+      // 辅助函数：模拟键盘事件
+      function dispatchKey(type, code) {
+        var ev = new KeyboardEvent(type, {
+          code: code,
+          key: code,
+          bubbles: true,
+          cancelable: true
+        });
+        document.dispatchEvent(ev);
+      }
+
+      // 绑定按钮到键盘事件
+      function bindKeyBtn(id, downCode, upCode) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('touchstart', function(e) {
+          e.preventDefault();
+          dispatchKey('keydown', downCode);
+          el.classList.add('active');
+        });
+        el.addEventListener('touchend', function(e) {
+          e.preventDefault();
+          dispatchKey('keyup', upCode || downCode);
+          el.classList.remove('active');
+        });
+        el.addEventListener('touchcancel', function() {
+          dispatchKey('keyup', upCode || downCode);
+          el.classList.remove('active');
+        });
+      }
+
+      bindKeyBtn('touch-btn-accelerate', 'KeyW');
+      bindKeyBtn('touch-btn-brake', 'KeyS');
+      bindKeyBtn('touch-btn-boost', 'ShiftLeft');
+      bindKeyBtn('touch-btn-handbrake', 'Space');
+      bindKeyBtn('touch-btn-switch-car', 'KeyV');
+      bindKeyBtn('touch-btn-camera', 'KeyC');
+
+      // ---- 左摇杆（转向） - 模拟 A/D 键 ----
+      var joystick = document.getElementById('touch-joystick');
+      var knob = document.getElementById('touch-joystick-knob');
+      var joyX = 0;
+      var joyTouchId = null;
+      var joyLeftActive = false;
+      var joyRightActive = false;
+
+      function getJoystickCenter() {
+        var rect = joystick.getBoundingClientRect();
+        return { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, r: rect.width / 2 - 22 };
+      }
+
+      function updateJoystick(touchX, touchY) {
+        var c = getJoystickCenter();
+        var dx = touchX - c.cx;
+        var dy = touchY - c.cy;
+        var dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > c.r) { dx = dx / dist * c.r; dy = dy / dist * c.r; }
+        joyX = dx / c.r;
+        knob.style.transform = 'translate(' + (dx - 22) + 'px, ' + (dy - 22) + 'px)';
+
+        // 模拟 A/D 键
+        if (joyX < -0.2) {
+          if (!joyLeftActive) { joyLeftActive = true; dispatchKey('keydown', 'KeyA'); }
+          if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
+        } else if (joyX > 0.2) {
+          if (!joyRightActive) { joyRightActive = true; dispatchKey('keydown', 'KeyD'); }
+          if (joyLeftActive) { joyLeftActive = false; dispatchKey('keyup', 'KeyA'); }
         } else {
-          setTimeout(waitForGame, 100);
+          if (joyLeftActive) { joyLeftActive = false; dispatchKey('keyup', 'KeyA'); }
+          if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
         }
       }
 
-      function initTouchControls() {
-        const gameInput = window._gameInput;
-        const origUpdateUI = window._gameUpdateUI;
+      function resetJoystick() {
+        joyX = 0;
+        joyTouchId = null;
+        knob.style.transform = 'translate(-22px, -22px)';
+        if (joyLeftActive) { joyLeftActive = false; dispatchKey('keyup', 'KeyA'); }
+        if (joyRightActive) { joyRightActive = false; dispatchKey('keyup', 'KeyD'); }
+      }
 
-        // ---- 左摇杆（转向） ----
-        const joystick = document.getElementById('touch-joystick');
-        const knob = document.getElementById('touch-joystick-knob');
-        let joyX = 0;
-        let joyTouchId = null;
-
-        function getJoystickCenter() {
-          const rect = joystick.getBoundingClientRect();
-          return { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2, r: rect.width / 2 - 22 };
-        }
-
-        function updateJoystick(touchX, touchY) {
-          const { cx, cy, r } = getJoystickCenter();
-          let dx = touchX - cx;
-          let dy = touchY - cy;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > r) { dx = dx / dist * r; dy = dy / dist * r; }
-          joyX = dx / r;
-          knob.style.transform = 'translate(' + (dx - 22) + 'px, ' + (dy - 22) + 'px)';
-        }
-
-        function resetJoystick() {
-          joyX = 0;
-          joyTouchId = null;
-          knob.style.transform = 'translate(-22px, -22px)';
-        }
-
+      if (joystick) {
         joystick.addEventListener('touchstart', function(e) {
           e.preventDefault();
           var t = e.changedTouches[0];
@@ -2379,85 +2421,7 @@
           }
         });
         joystick.addEventListener('touchcancel', resetJoystick);
-
-        // ---- 触摸状态 ----
-        var touchState = { accel: false, brake: false, boost: false, hb: false };
-
-        function setupTouchBtn(id, key) {
-          var el = document.getElementById(id);
-          if (!el) return;
-          el.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            touchState[key] = true;
-            el.classList.add('active');
-          });
-          el.addEventListener('touchend', function(e) {
-            e.preventDefault();
-            touchState[key] = false;
-            el.classList.remove('active');
-          });
-          el.addEventListener('touchcancel', function() {
-            touchState[key] = false;
-            el.classList.remove('active');
-          });
-        }
-
-        setupTouchBtn('touch-btn-accelerate', 'accel');
-        setupTouchBtn('touch-btn-brake', 'brake');
-        setupTouchBtn('touch-btn-boost', 'boost');
-        setupTouchBtn('touch-btn-handbrake', 'hb');
-
-        // ---- 功能按钮（单次触发） ----
-        var switchBtn = document.getElementById('touch-btn-switch-car');
-        if (switchBtn) {
-          switchBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            if (window._gameSwitchCar) window._gameSwitchCar();
-          });
-        }
-
-        var cameraBtn = document.getElementById('touch-btn-camera');
-        if (cameraBtn) {
-          cameraBtn.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            // 切换相机 - 直接调用游戏内的逻辑
-            if (window._gameCameraMode !== undefined) {
-              window._gameCameraMode = (window._gameCameraMode + 1) % 3;
-            }
-          });
-        }
-
-        // ---- 每帧同步触摸输入到游戏 input ----
-        window._gameUpdateUI = function(dt) {
-          // 先同步触摸状态
-          gameInput.accelerate = touchState.accel;
-          gameInput.brake = touchState.brake;
-          gameInput.boost = touchState.boost;
-          gameInput.handbrake = touchState.hb;
-
-          // 摇杆转向
-          if (joyX < -0.2) {
-            gameInput.left = true;
-            gameInput.right = false;
-          } else if (joyX > 0.2) {
-            gameInput.right = true;
-            gameInput.left = false;
-          } else {
-            // 不触摸摇杆时不覆盖键盘输入
-          }
-
-          // 调用原始 updateUI
-          origUpdateUI(dt);
-        };
       }
-
-      // 启动
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', waitForGame);
-      } else {
-        waitForGame();
-      }
-    })();
   </script>
 </body>
 </html>
