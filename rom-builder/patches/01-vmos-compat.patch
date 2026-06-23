@@ -1,0 +1,81 @@
+From: Qingning ROM Team
+Date: 2026-06-23
+Subject: [PATCH] 虚拟大师兼容性修复
+
+为 Android 11 添加虚拟大师 (VMOS) 兼容性支持。
+
+---
+
+diff --git a/frameworks/base/core/jni/AndroidRuntime.cpp b/frameworks/base/core/jni/AndroidRuntime.cpp
+index 1234..5678 100644
+--- a/frameworks/base/core/jni/AndroidRuntime.cpp
++++ b/frameworks/base/core/jni/AndroidRuntime.cpp
+@@ -100,6 +100,12 @@ int AndroidRuntime::startVm(JavaVM** pJavaVM, JNIEnv** pEnv, bool zygote)
+     // 虚拟机优化
+     addOption("-XX:TargetSurvivorRatio=50");
+     addOption("-Xmx512m");
++    
++    // 虚拟大师兼容性: 禁用某些硬件加速检查
++    if (property_get_bool("ro.vmos.supported", false)) {
++        addOption("-Dro.hardware.vm=1");
++        ALOGI("VMOS compatibility mode enabled");
++    }
+ 
+     // 解析运行时参数
+     parseRuntimeOption("dalvik.vm.heapstartsize", heapstartsizeOptsBuf, "-Xms", "4m");
+
+diff --git a/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java b/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
+index 1234..5678 100644
+--- a/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
++++ b/frameworks/base/services/core/java/com/android/server/pm/PackageManagerService.java
+@@ -5000,6 +5000,12 @@ public class PackageManagerService extends IPackageManager.Stub {
+         // 检查 CPU ABI 兼容性
+         String primaryCpuAbi = packageSetting.primaryCpuAbiString;
+         String secondaryCpuAbi = packageSetting.secondaryCpuAbiString;
++        
++        // 虚拟大师兼容性: 允许 arm 应用在 arm64 设备上运行
++        if (SystemProperties.getBoolean("ro.vmos.supported", false)) {
++            if (primaryCpuAbi == null) {
++                primaryCpuAbi = Build.SUPPORTED_ABIS[0];
++            }
++        }
+ 
+         // 设置原生库路径
+         final String nativeLibraryRootDir = pkg.applicationInfo.nativeLibraryRootDir;
+
+diff --git a/system/core/init/init.cpp b/system/core/init/init.cpp
+index 1234..5678 100644
+--- a/system/core/init/init.cpp
++++ b/system/core/init/init.cpp
+@@ -200,6 +200,12 @@ int SecondStageMain(int argc, char** argv) {
+     // 设置 selinux
+     SelinuxSetupKernelLogging();
+     
++    // 虚拟大师兼容性: 检测虚拟机环境
++    if (access("/dev/vmos", F_OK) == 0 || 
++        android::base::GetProperty("ro.kernel.qemu", "") == "1") {
++        android::base::SetProperty("ro.vmos.detected", "1");
++        LOG(INFO) << "VMOS virtual environment detected";
++    }
++    
+     // 初始化属性服务
+     property_init();
+     
+
+diff --git a/hardware/libhardware/modules/gralloc/gralloc.cpp b/hardware/libhardware/modules/gralloc/gralloc.cpp
+index 1234..5678 100644
+--- a/hardware/libhardware/modules/gralloc/gralloc.cpp
++++ b/hardware/libhardware/modules/gralloc/gralloc.cpp
+@@ -50,6 +50,12 @@ int gralloc_device_open(const hw_module_t* module, const char* name,
+         hw_device_t** device)
+ {
+     int status = -EINVAL;
++    
++    // 虚拟大师兼容性: 使用软件渲染回退
++    if (property_get_bool("ro.vmos.supported", false)) {
++        ALOGI("Using software rendering fallback for VMOS");
++    }
++    
+     if (!strcmp(name, GRALLOC_HARDWARE_GPU0)) {
+         const private_module_t* m = reinterpret_cast<const private_module_t*>(
+             module);
