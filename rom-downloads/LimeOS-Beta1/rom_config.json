@@ -1,0 +1,31 @@
+{
+  "name": "LimeOS",
+  "version": "1.0.0-beta1",
+  "versionCode": 10001,
+  "android_version": "11",
+  "api_level": 30,
+  "architecture": "arm64-v8a",
+  "author": "LimeOS Team",
+  "description": "专为虚拟大师优化的 Android 11 定制 ROM",
+  "build_date": "2026-06-23",
+  "build_type": "beta",
+  "features": [
+    "预装 Root (Magisk v26.4)",
+    "Xposed 框架支持 (LSPosed)",
+    "系统精简优化",
+    "虚拟大师兼容性修复",
+    "深色主题",
+    "系统更新检测",
+    "ADB 调试支持"
+  ],
+  "min_vm_version": "2.0",
+  "recommended_ram": 2048,
+  "recommended_storage": 4096,
+  "supports_import": true,
+  "import_format": ["zip"],
+  "file_size": 0,
+  "md5": "",
+  "download_url": "https://3862242786-sudo.github.io/pan/rom-downloads/LimeOS-Beta1/LimeOS-Beta1-Android11.zip",
+  "changelog_url": "https://3862242786-sudo.github.io/pan/rom-downloads/LimeOS-Beta1/changelog.txt",
+  "update_url": "https://3862242786-sudo.github.io/pan/rom-update.json"
+}
