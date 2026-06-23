@@ -237,3 +237,4 @@ EOF
         echo "包名: ${{ env.PACKAGE_NAME }}"
         echo "下载: ~/rom-work/${{ env.PACKAGE_NAME }}.zip"
         ls -lh ~/rom-work/*.zip
+# trigger
