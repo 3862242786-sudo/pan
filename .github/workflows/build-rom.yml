@@ -77,7 +77,12 @@ jobs:
           fi
 
           sudo mkdir -p gsi-mount/system/etc/limeos
-          printf '%s\n' '<?xml version="1.0" encoding="utf-8"?>' '<limeos-config>' "  <property name=\"version\" value=\"${{ env.ROM_VERSION }}\" />" '  <property name="vmos_compat" value="true" />' '  <property name="root_enabled" value="true" />' '</limeos-config>' | sudo tee gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo '<?xml version="1.0" encoding="utf-8"?>' | sudo tee gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo '<limeos-config>' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo "  <property name=\"version\" value=\"${{ env.ROM_VERSION }}\" />" | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo '  <property name="vmos_compat" value="true" />' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo '  <property name="root_enabled" value="true" />' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
+          echo '</limeos-config>' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
 
           sudo umount gsi-mount || sudo guestunmount gsi-mount
 
@@ -98,11 +103,65 @@ jobs:
         mkdir -p "$PACKAGE_NAME"
         cp system.img "$PACKAGE_NAME/"
 
-        printf '%s\n' '{' '  "name": "LimeOS",' "  \"version\": \"${{ env.ROM_VERSION }}\"," "  \"build_date\": \"$BUILD_DATE\"," '  "android_version": "11",' '  "api_level": 30,' '  "architecture": "arm64-v8a",' '  "build_type": "beta",' '  "based_on": "phh'"'"'s Android 11 GSI",' '  "features": [' '    "VMOS compatibility",' '    "System optimization",' '    "Root support",' '    "Dark theme"' '  ]' '}' > "$PACKAGE_NAME/rom_config.json"
+        echo '{' > "$PACKAGE_NAME/rom_config.json"
+        echo '  "name": "LimeOS",' >> "$PACKAGE_NAME/rom_config.json"
+        echo "  \"version\": \"${{ env.ROM_VERSION }}\"," >> "$PACKAGE_NAME/rom_config.json"
+        echo "  \"build_date\": \"$BUILD_DATE\"," >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "android_version": "11",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "api_level": 30,' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "architecture": "arm64-v8a",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "build_type": "beta",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "based_on": "phh'"'"'s Android 11 GSI",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  "features": [' >> "$PACKAGE_NAME/rom_config.json"
+        echo '    "VMOS compatibility",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '    "System optimization",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '    "Root support",' >> "$PACKAGE_NAME/rom_config.json"
+        echo '    "Dark theme"' >> "$PACKAGE_NAME/rom_config.json"
+        echo '  ]' >> "$PACKAGE_NAME/rom_config.json"
+        echo '}' >> "$PACKAGE_NAME/rom_config.json"
 
-        printf '%s\n' "LimeOS ${{ env.ROM_VERSION }}" "Build Date: $BUILD_DATE" "" "Based on: phh's Android 11 GSI (Treble)" "" "Import Method (Virtual Master / VMOS Pro):" "  1. Copy ZIP file to phone" "  2. Open Virtual Master app" '  3. Click "Add Custom ROM"' "  4. Select ZIP file" "  5. Wait for import" "  6. Start virtual machine" "" "Recommended:" "  - RAM: 2GB+" "  - Storage: 4GB+" "" "Note:" "  - First boot may take 3-5 minutes" "  - This is a Beta test version" "" "Support: https://3862242786-sudo.github.io/pan/qingning-rom.html" > "$PACKAGE_NAME/README.txt"
+        echo "LimeOS ${{ env.ROM_VERSION }}" > "$PACKAGE_NAME/README.txt"
+        echo "Build Date: $BUILD_DATE" >> "$PACKAGE_NAME/README.txt"
+        echo "" >> "$PACKAGE_NAME/README.txt"
+        echo "Based on: phh's Android 11 GSI (Treble)" >> "$PACKAGE_NAME/README.txt"
+        echo "" >> "$PACKAGE_NAME/README.txt"
+        echo "Import Method (Virtual Master / VMOS Pro):" >> "$PACKAGE_NAME/README.txt"
+        echo "  1. Copy ZIP file to phone" >> "$PACKAGE_NAME/README.txt"
+        echo "  2. Open Virtual Master app" >> "$PACKAGE_NAME/README.txt"
+        echo '  3. Click "Add Custom ROM"' >> "$PACKAGE_NAME/README.txt"
+        echo "  4. Select ZIP file" >> "$PACKAGE_NAME/README.txt"
+        echo "  5. Wait for import" >> "$PACKAGE_NAME/README.txt"
+        echo "  6. Start virtual machine" >> "$PACKAGE_NAME/README.txt"
+        echo "" >> "$PACKAGE_NAME/README.txt"
+        echo "Recommended:" >> "$PACKAGE_NAME/README.txt"
+        echo "  - RAM: 2GB+" >> "$PACKAGE_NAME/README.txt"
+        echo "  - Storage: 4GB+" >> "$PACKAGE_NAME/README.txt"
+        echo "" >> "$PACKAGE_NAME/README.txt"
+        echo "Note:" >> "$PACKAGE_NAME/README.txt"
+        echo "  - First boot may take 3-5 minutes" >> "$PACKAGE_NAME/README.txt"
+        echo "  - This is a Beta test version" >> "$PACKAGE_NAME/README.txt"
+        echo "" >> "$PACKAGE_NAME/README.txt"
+        echo "Support: https://3862242786-sudo.github.io/pan/qingning-rom.html" >> "$PACKAGE_NAME/README.txt"
 
-        printf '%s\n' "LimeOS ${{ env.ROM_VERSION }} Changelog" "========================" "" "Build Date: $BUILD_DATE" "" "[Based On]" "- phh's Android 11 GSI v313" "- Treble arm64 A/B" "" "[Features]" "- VMOS Virtual Master compatibility" "- System property optimization" "- Root support (via Magisk patch)" "- Dark theme base" "" "[Known Issues]" "- Some hardware features limited" "- First boot slower" "- Camera may not work" > "$PACKAGE_NAME/changelog.txt"
+        echo "LimeOS ${{ env.ROM_VERSION }} Changelog" > "$PACKAGE_NAME/changelog.txt"
+        echo "========================" >> "$PACKAGE_NAME/changelog.txt"
+        echo "" >> "$PACKAGE_NAME/changelog.txt"
+        echo "Build Date: $BUILD_DATE" >> "$PACKAGE_NAME/changelog.txt"
+        echo "" >> "$PACKAGE_NAME/changelog.txt"
+        echo "[Based On]" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- phh's Android 11 GSI v313" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- Treble arm64 A/B" >> "$PACKAGE_NAME/changelog.txt"
+        echo "" >> "$PACKAGE_NAME/changelog.txt"
+        echo "[Features]" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- VMOS Virtual Master compatibility" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- System property optimization" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- Root support (via Magisk patch)" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- Dark theme base" >> "$PACKAGE_NAME/changelog.txt"
+        echo "" >> "$PACKAGE_NAME/changelog.txt"
+        echo "[Known Issues]" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- Some hardware features limited" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- First boot slower" >> "$PACKAGE_NAME/changelog.txt"
+        echo "- Camera may not work" >> "$PACKAGE_NAME/changelog.txt"
 
         zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
 
