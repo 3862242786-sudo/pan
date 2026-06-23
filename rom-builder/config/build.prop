@@ -1,0 +1,101 @@
+# ============================================================================
+# 青柠 ROM - 系统属性配置
+# ============================================================================
+# 虚拟大师定制版 Android 11
+# ============================================================================
+
+# 产品信息
+ro.product.brand=Qingning
+ro.product.name=qingning_rom
+ro.product.device=generic
+ro.product.model=Qingning ROM for Virtual Master
+ro.product.manufacturer=QingningOS
+
+# ROM 版本
+ro.qingning.version=1.0.0
+ro.qingning.version.code=1000
+ro.qingning.build.date=2026-06-23
+ro.qingning.build.type=userdebug
+
+# Android 版本
+ro.build.version.release=11
+ro.build.version.sdk=30
+ro.build.version.codename=REL
+
+# 虚拟大师兼容性
+ro.vmos.supported=true
+ro.vmos.version=2
+ro.boot.vmos=1
+persist.vmos.compat=1
+
+# 虚拟机检测
+ro.kernel.qemu=1
+ro.hardware.vm=1
+ro.hardware=qingning
+
+# 性能优化
+ro.config.low_ram=false
+persist.sys.vm_stats=false
+persist.sys.purgeable_assets=1
+persist.sys.use_dithering=0
+
+# Dalvik 虚拟机优化
+dalvik.vm.heapstartsize=8m
+dalvik.vm.heapgrowthlimit=192m
+dalvik.vm.heapsize=512m
+dalvik.vm.heaptargetutilization=0.75
+dalvik.vm.heapminfree=512k
+dalvik.vm.heapmaxfree=8m
+
+# 渲染优化
+ro.opengles.version=196609
+ro.sf.lcd_density=320
+ro.hardware.egl=mesa
+ro.hardware.gralloc=default
+
+# 网络优化
+net.dns1=8.8.8.8
+net.dns2=8.8.4.4
+net.eth0.dns1=8.8.8.8
+net.eth0.dns2=8.8.4.4
+persist.sys.tcp_timestamps=1
+persist.sys.tcp_sack=1
+persist.sys.tcp_window_scaling=1
+
+# WiFi
+wifi.interface=wlan0
+wifi.supplicant_scan_interval=180
+
+# 调试支持 (开发版本)
+ro.debuggable=1
+ro.adb.secure=0
+persist.sys.usb.config=adb
+persist.service.adb.enable=1
+persist.service.debuggable=1
+persist.sys.disable_rescue=true
+
+# 日志
+persist.log.tag=D
+persist.logd.size=262144
+
+# 时区
+persist.sys.timezone=Asia/Shanghai
+
+# 语言
+ro.product.locale=zh-CN
+ro.product.locale.language=zh
+ro.product.locale.region=CN
+
+# 输入法
+ro.com.android.dataroaming=false
+ro.com.google.clientidbase=android-qingning
+
+# 动画速度
+window.animation_scale=0.5
+transition.animation_scale=0.5
+animator.duration_scale=0.5
+
+# 禁用不必要的功能
+ro.config.nocheckin=1
+ro.config.hw_quickpoweron=false
+ro.telephony.disable-call=true

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    青柠 ROM 系统主题样式
+    覆盖 AOSP 默认样式
+-->
+<resources>
+    <!-- 系统主题 - 深色 -->
+    <style name="Theme.Qingning.Dark" parent="Theme.Material">
+        <item name="colorPrimary">@color/primary_material_dark</item>
+        <item name="colorPrimaryDark">@color/primary_dark_material_dark</item>
+        <item name="colorAccent">@color/accent_material_dark</item>
+        <item name="android:colorBackground">@color/background_material_dark</item>
+        <item name="android:windowBackground">@color/background_material_dark</item>
+        <item name="android:statusBarColor">@color/status_bar_color</item>
+        <item name="android:navigationBarColor">@color/navigation_bar_color</item>
+    </style>
+    
+    <!-- 系统主题 - 浅色 -->
+    <style name="Theme.Qingning.Light" parent="Theme.Material.Light">
+        <item name="colorPrimary">@color/primary_material_light</item>
+        <item name="colorPrimaryDark">@color/primary_dark_material_light</item>
+        <item name="colorAccent">@color/accent_material_light</item>
+        <item name="android:colorBackground">@color/background_material_light</item>
+        <item name="android:windowBackground">@color/background_material_light</item>
+    </style>
+    
+    <!-- 锁屏主题 -->
+    <style name="Theme.Qingning.Lockscreen">
+        <item name="android:windowBackground">@color/lockscreen_background</item>
+        <item name="android:textColorPrimary">@color/lockscreen_clock_color</item>
+    </style>
+    
+    <!-- 快速设置主题 -->
+    <style name="Theme.Qingning.QuickSettings">
+        <item name="android:background">@color/qs_background_color</item>
+        <item name="android:textColor">@color/qs_tile_text</item>
+    </style>
+    
+    <!-- 音量面板主题 -->
+    <style name="Theme.Qingning.VolumePanel">
+        <item name="android:background">@color/volume_panel_background</item>
+        <item name="android:progressTint">@color/volume_slider_active</item>
+    </style>
+    
+    <!-- 关机菜单主题 -->
+    <style name="Theme.Qingning.GlobalActions">
+        <item name="android:background">@color/global_actions_background</item>
+        <item name="android:textColor">@color/global_actions_text</item>
+    </style>
+</resources>
