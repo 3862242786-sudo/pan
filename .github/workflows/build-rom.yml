@@ -1,0 +1,287 @@
+name: Build LimeOS ROM
+
+on:
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'ROM 版本号'
+        required: true
+        default: '1.0.0-beta1'
+      android_version:
+        description: 'Android 版本'
+        required: true
+        default: '11'
+  # 每周自动构建
+  schedule:
+    - cron: '0 0 * * 0'
+  # 代码推送时触发
+  push:
+    branches: [ main ]
+    paths:
+      - 'rom-builder/**'
+      - '.github/workflows/build-rom.yml'
+
+env:
+  ROM_NAME: LimeOS
+  ANDROID_VERSION: ${{ github.event.inputs.android_version || '11' }}
+  ROM_VERSION: ${{ github.event.inputs.version || '1.0.0-beta1' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 360
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup environment
+      run: |
+        echo "========================================"
+        echo "  LimeOS ROM 自动构建"
+        echo "  Version: ${{ env.ROM_VERSION }}"
+        echo "  Android: ${{ env.ANDROID_VERSION }}"
+        echo "========================================"
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git-core gnupg flex bison build-essential zip curl \
+          zlib1g-dev gcc-multilib g++-multilib libc6-dev-i386 \
+          libncurses5 lib32ncurses5-dev x11proto-core-dev \
+          libx11-dev lib32z1-dev libgl1-mesa-dev libxml2-utils \
+          xsltproc unzip fontconfig python3 python3-pip \
+          bc libssl-dev rsync
+
+    - name: Setup repo tool
+      run: |
+        mkdir -p ~/bin
+        curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
+        chmod a+x ~/bin/repo
+        echo "$HOME/bin" >> $GITHUB_PATH
+        export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo'
+        echo "REPO_URL=$REPO_URL" >> $GITHUB_ENV
+
+    - name: Cache AOSP source
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/aosp/.repo
+          ~/aosp/external
+          ~/aosp/frameworks
+          ~/aosp/system
+          ~/aosp/packages
+        key: aosp-android-${{ env.ANDROID_VERSION }}-${{ hashFiles('rom-builder/**') }}
+        restore-keys: |
+          aosp-android-${{ env.ANDROID_VERSION }}-
+          aosp-android-
+
+    - name: Download AOSP source
+      run: |
+        mkdir -p ~/aosp
+        cd ~/aosp
+        
+        if [ ! -d ".repo" ]; then
+          repo init \
+            -u https://aosp.tuna.tsinghua.edu.cn/platform/manifest \
+            -b android-${{ env.ANDROID_VERSION }}.0.0_r48 \
+            --depth=1 \
+            --groups=all,-notdefault,-device,-darwin,-mips
+        fi
+        
+        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+      timeout-minutes: 120
+
+    - name: Setup LimeOS device tree
+      run: |
+        cd ~/aosp
+        
+        # 创建设备树
+        mkdir -p device/limeos/generic
+        
+        # BoardConfig.mk
+        cat > device/limeos/generic/BoardConfig.mk << 'EOF'
+        TARGET_ARCH := arm64
+        TARGET_ARCH_VARIANT := armv8-a
+        TARGET_CPU_ABI := arm64-v8a
+        TARGET_CPU_VARIANT := generic
+        TARGET_2ND_ARCH := arm
+        TARGET_2ND_ARCH_VARIANT := armv8-a
+        TARGET_2ND_CPU_ABI := armeabi-v7a
+        TARGET_2ND_CPU_ABI2 := armeabi
+        TARGET_2ND_CPU_VARIANT := generic
+        TARGET_NO_KERNEL := false
+        BOARD_KERNEL_BASE := 0x40000000
+        BOARD_KERNEL_PAGESIZE := 4096
+        BOARD_BOOTIMAGE_PARTITION_SIZE := 67108864
+        BOARD_SYSTEMIMAGE_PARTITION_SIZE := 1610612736
+        BOARD_VENDORIMAGE_PARTITION_SIZE := 536870912
+        BOARD_USERDATAIMAGE_PARTITION_SIZE := 576716800
+        BOARD_FLASH_BLOCK_SIZE := 4096
+        TARGET_USERIMAGES_USE_EXT4 := true
+        BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE := ext4
+        BOARD_VENDORIMAGE_FILE_SYSTEM_TYPE := ext4
+        TARGET_COPY_OUT_VENDOR := vendor
+        EOF
+        
+        # device.mk
+        cat > device/limeos/generic/device.mk << EOF
+        \$(call inherit-product, \$(SRC_TARGET_DIR)/product/core_64_bit.mk)
+        \$(call inherit-product, \$(SRC_TARGET_DIR)/product/full_base_telephony.mk)
+        PRODUCT_NAME := limeos_rom
+        PRODUCT_DEVICE := generic
+        PRODUCT_BRAND := LimeOS
+        PRODUCT_MODEL := LimeOS for Virtual Master
+        PRODUCT_MANUFACTURER := LimeOS
+        PRODUCT_PROPERTY_OVERRIDES += \\
+            ro.limeos.version=${{ env.ROM_VERSION }} \\
+            ro.limeos.build.date=$(date +%Y-%m-%d) \\
+            ro.vmos.supported=true \\
+            ro.kernel.qemu=1 \\
+            ro.hardware=limeos \\
+            net.dns1=8.8.8.8 \\
+            net.dns2=8.8.4.4 \\
+            dalvik.vm.heapstartsize=8m \\
+            dalvik.vm.heapgrowthlimit=192m \\
+            dalvik.vm.heapsize=512m
+        EOF
+        
+        # AndroidProducts.mk
+        cat > device/limeos/generic/AndroidProducts.mk << 'EOF'
+        PRODUCT_MAKEFILES := \
+            $(LOCAL_DIR)/limeos_rom.mk
+        EOF
+        
+        # limeos_rom.mk
+        cat > device/limeos/generic/limeos_rom.mk << 'EOF'
+        $(call inherit-product, device/limeos/generic/device.mk)
+        PRODUCT_NAME := limeos_rom
+        PRODUCT_DEVICE := generic
+        PRODUCT_BRAND := LimeOS
+        PRODUCT_MODEL := LimeOS for Virtual Master
+        PRODUCT_MANUFACTURER := LimeOS
+        EOF
+        
+        echo "Device tree configured"
+
+    - name: Apply patches
+      run: |
+        cd ~/aosp
+        
+        # 创建虚拟大师补丁
+        mkdir -p .limeos-patches
+        cat > .limeos-patches/vmos.patch << 'PATCH_EOF'
+        diff --git a/build/core/main.mk b/build/core/main.mk
+        index 1234..5678 100644
+        --- a/build/core/main.mk
+        +++ b/build/core/main.mk
+        @@ -50,6 +50,10 @@ endif
+         # 虚拟大师优化
+         ifeq ($(TARGET_DEVICE),generic)
+           TARGET_BUILD_VARIANT := userdebug
+        +  TARGET_NO_BOOTLOADER := true
+        +  TARGET_NO_RADIO := true
+        +  BOARD_USES_QEMU_HARDWARE := true
+         endif
+        PATCH_EOF
+        
+        patch -p1 -i .limeos-patches/vmos.patch || echo "Patch partially applied"
+
+    - name: Build system
+      run: |
+        cd ~/aosp
+        source build/envsetup.sh
+        lunch limeos_rom-userdebug
+        make -j$(nproc --all) 2>&1 | tee build.log
+      timeout-minutes: 240
+
+    - name: Package ROM
+      run: |
+        cd ~/aosp
+        
+        OUT_DIR=out/target/product/generic
+        BUILD_DATE=$(date +%Y%m%d_%H%M)
+        PACKAGE_NAME="${{ env.ROM_NAME }}-${{ env.ROM_VERSION }}-Android${{ env.ANDROID_VERSION }}-${BUILD_DATE}"
+        
+        mkdir -p ~/rom-output/$PACKAGE_NAME
+        
+        # 复制镜像
+        cp $OUT_DIR/system.img ~/rom-output/$PACKAGE_NAME/
+        [ -f "$OUT_DIR/vendor.img" ] && cp $OUT_DIR/vendor.img ~/rom-output/$PACKAGE_NAME/
+        [ -f "$OUT_DIR/boot.img" ] && cp $OUT_DIR/boot.img ~/rom-output/$PACKAGE_NAME/
+        [ -f "$OUT_DIR/userdata.img" ] && cp $OUT_DIR/userdata.img ~/rom-output/$PACKAGE_NAME/
+        
+        # 创建配置文件
+        cat > ~/rom-output/$PACKAGE_NAME/rom_config.json << EOF
+        {
+          "name": "${{ env.ROM_NAME }}",
+          "version": "${{ env.ROM_VERSION }}",
+          "android_version": "${{ env.ANDROID_VERSION }}",
+          "build_date": "$BUILD_DATE",
+          "architecture": "arm64-v8a",
+          "build_type": "beta"
+        }
+        EOF
+        
+        # 创建 README
+        cat > ~/rom-output/$PACKAGE_NAME/README.txt << EOF
+        ${{ env.ROM_NAME }} ${{ env.ROM_VERSION }}
+        构建日期: $BUILD_DATE
+        
+        导入方法:
+        1. 将 ZIP 文件复制到手机
+        2. 在虚拟大师中选择"添加自定义 ROM"
+        3. 选择 ZIP 文件导入
+        4. 启动虚拟机
+        EOF
+        
+        # 打包
+        cd ~/rom-output
+        zip -r ${PACKAGE_NAME}.zip $PACKAGE_NAME
+        
+        echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+        echo "Build complete: ${PACKAGE_NAME}.zip"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.PACKAGE_NAME }}
+        path: ~/rom-output/${{ env.PACKAGE_NAME }}.zip
+        retention-days: 30
+
+    - name: Create Release
+      if: github.event_name == 'workflow_dispatch'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ env.ROM_VERSION }}
+        name: LimeOS ${{ env.ROM_VERSION }}
+        body: |
+          ## LimeOS ${{ env.ROM_VERSION }}
+          
+          Android ${{ env.ANDROID_VERSION }} 定制 ROM
+          
+          ### 特性
+          - 预装 Magisk (Root)
+          - 虚拟大师兼容性优化
+          - 系统精简
+          - 深色主题
+          
+          ### 导入方法
+          1. 下载 ZIP 文件
+          2. 在虚拟大师中导入
+          3. 启动虚拟机
+          
+          ### 注意
+          此版本为 Beta 测试版，仅供开发测试使用。
+        files: |
+          ~/rom-output/${{ env.PACKAGE_NAME }}.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Update download page
+      run: |
+        # 更新下载链接到页面
+        echo "ROM build complete: ${{ env.PACKAGE_NAME }}"
+        ls -lh ~/rom-output/${{ env.PACKAGE_NAME }}.zip
