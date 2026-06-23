@@ -61,22 +61,6 @@ jobs:
         curl -s https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
         chmod a+x ~/bin/repo
         echo "$HOME/bin" >> $GITHUB_PATH
-        export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo'
-        echo "REPO_URL=$REPO_URL" >> $GITHUB_ENV
-
-    - name: Cache AOSP source
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/aosp/.repo
-          ~/aosp/external
-          ~/aosp/frameworks
-          ~/aosp/system
-          ~/aosp/packages
-        key: aosp-android-${{ env.ANDROID_VERSION }}-${{ hashFiles('rom-builder/**') }}
-        restore-keys: |
-          aosp-android-${{ env.ANDROID_VERSION }}-
-          aosp-android-
 
     - name: Download AOSP source
       run: |
@@ -85,7 +69,7 @@ jobs:
         
         if [ ! -d ".repo" ]; then
           repo init \
-            -u https://aosp.tuna.tsinghua.edu.cn/platform/manifest \
+            -u https://android.googlesource.com/platform/manifest \
             -b android-${{ env.ANDROID_VERSION }}.0.0_r48 \
             --depth=1 \
             --groups=all,-notdefault,-device,-darwin,-mips
