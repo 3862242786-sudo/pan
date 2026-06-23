@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>青柠 ROM - 虚拟大师定制版</title>
+    <title>青柠 ROM Beta - 开发者预览版</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -12,6 +12,105 @@
             color: #e2e8f0;
             line-height: 1.6;
             overflow-x: hidden;
+        }
+
+        /* 密码保护弹窗 */
+        .password-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,14,26,0.98);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .password-overlay.hidden {
+            display: none !important;
+        }
+        .password-box {
+            background: rgba(30,41,59,0.8);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        .password-box .lock-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: rgba(34,197,94,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-box h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+        .password-box p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .password-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(34,197,94,0.3);
+            background: rgba(10,14,26,0.6);
+            color: #f1f5f9;
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .password-input:focus {
+            border-color: #22c55e;
+        }
+        .password-input::placeholder {
+            color: #64748b;
+            letter-spacing: normal;
+        }
+        .password-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            min-height: 1.2em;
+        }
+        .password-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34,197,94,0.3);
+        }
+        .beta-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            color: #f59e0b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
         }
 
         /* Hero */
@@ -32,9 +131,9 @@
             gap: 6px;
             padding: 6px 16px;
             border-radius: 20px;
-            background: rgba(34,197,94,0.15);
-            border: 1px solid rgba(34,197,94,0.3);
-            color: #22c55e;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            color: #f59e0b;
             font-size: 0.85rem;
             font-weight: 500;
             margin-bottom: 1.5rem;
@@ -125,6 +224,36 @@
             margin-bottom: 2rem;
         }
 
+        /* Beta Warning */
+        .beta-warning {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .beta-warning-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(245,158,11,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .beta-warning h3 {
+            color: #f59e0b;
+            margin-bottom: 0.5rem;
+        }
+        .beta-warning p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
         /* Target Info */
         .target-card {
             background: rgba(30,41,59,0.6);
@@ -169,6 +298,7 @@
         .tag-green { background: rgba(34,197,94,0.15); color: #22c55e; }
         .tag-blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
         .tag-orange { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
 
         /* Features */
         .features-grid {
@@ -282,6 +412,15 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        .btn-beta {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+        }
+        .btn-beta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(245,158,11,0.4);
+        }
 
         /* Footer */
         footer {
@@ -301,10 +440,25 @@
     </style>
 </head>
 <body>
+    <!-- 密码保护 -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <div class="lock-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <h2>开发者预览版</h2>
+            <p>此页面包含 Beta 版本下载，仅供开发人员访问。请输入访问密码。</p>
+            <input type="password" class="password-input" id="passwordInput" placeholder="输入密码" maxlength="20">
+            <div class="password-error" id="passwordError"></div>
+            <button class="password-btn" onclick="checkPassword()">验证并进入</button>
+            <div class="beta-badge">BETA 1</div>
+        </div>
+    </div>
+
     <nav>
         <a href="index.html" class="nav-brand">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-            青柠 ROM
+            青柠 ROM Beta
         </a>
         <ul class="nav-links">
             <li><a href="#target">目标</a></li>
@@ -317,7 +471,7 @@
     <section class="hero">
         <div class="hero-badge">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            虚拟大师定制版
+            Beta 1 开发者预览
         </div>
         <h1>青柠 ROM</h1>
         <p class="hero-subtitle">专为虚拟大师优化的 Android 11 定制 ROM。轻量、稳定、开箱即用。</p>
@@ -327,8 +481,8 @@
                 <div class="meta-label">API 30</div>
             </div>
             <div class="meta-item">
-                <div class="meta-value">虚拟大师</div>
-                <div class="meta-label">目标平台</div>
+                <div class="meta-value">Beta 1</div>
+                <div class="meta-label">开发者预览</div>
             </div>
             <div class="meta-item">
                 <div class="meta-value">arm64</div>
@@ -338,6 +492,16 @@
     </section>
 
     <section class="section" id="target">
+        <div class="beta-warning">
+            <div class="beta-warning-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+                <h3>开发者预览版警告</h3>
+                <p>此版本为 Beta 1 开发者预览版，仅供测试和开发用途。可能包含未修复的 bug、不稳定的功能和未完成的界面。请勿用于生产环境或日常主力设备。</p>
+            </div>
+        </div>
+
         <h2 class="section-title">目标平台</h2>
         <p class="section-subtitle">针对虚拟大师的兼容性优化</p>
         <div class="target-card">
@@ -349,7 +513,7 @@
                     <span class="tag tag-green">Android 11</span>
                     <span class="tag tag-blue">API 30</span>
                     <span class="tag tag-orange">arm64-v8a</span>
-                    <span class="tag tag-green">轻量精简</span>
+                    <span class="tag tag-red">Beta 1</span>
                 </div>
             </div>
         </div>
@@ -362,39 +526,39 @@
             <div class="feature-card">
                 <div class="feature-icon">R</div>
                 <h3>根权限内置</h3>
-                <p>预装 Magisk 或 SuperSU，虚拟机内直接获取 root，无需额外操作。</p>
+                <p>预装 Magisk，虚拟机内直接获取 root，无需额外操作。</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">X</div>
                 <h3>Xposed 框架</h3>
-                <p>预装 LSPosed 或 EdXposed，支持模块扩展，增强系统功能。</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">G</div>
-                <h3>GApps 可选</h3>
-                <p>提供带 Google 服务和不带 Google 服务两个版本，按需选择。</p>
+                <p>预装 LSPosed，支持模块扩展，增强系统功能。</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">S</div>
                 <h3>系统精简</h3>
-                <p>移除厂商预装应用，减少后台服务，降低内存占用，提升虚拟机性能。</p>
+                <p>移除无用组件，降低内存占用，提升虚拟机性能。</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">N</div>
                 <h3>网络优化</h3>
-                <p>修复虚拟机内 DNS 解析、WiFi 代理、VPN 兼容性等问题。</p>
+                <p>修复虚拟机内 DNS、代理、VPN 兼容性问题。</p>
             </div>
             <div class="feature-card">
                 <div class="feature-icon">D</div>
                 <h3>调试支持</h3>
-                <p>开启 ADB 无线调试、日志记录，方便开发和排错。</p>
+                <p>开启 ADB 无线调试、日志记录，方便开发排错。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">U</div>
+                <h3>系统更新</h3>
+                <p>内置更新检测，自动获取最新 Beta 版本。</p>
             </div>
         </div>
     </section>
 
     <section class="section" id="status">
         <h2 class="section-title">构建状态</h2>
-        <p class="section-subtitle">ROM 开发进度一览</p>
+        <p class="section-subtitle">Beta 1 开发进度</p>
         <table class="status-table">
             <thead>
                 <tr>
@@ -407,22 +571,22 @@
                 <tr>
                     <td>AOSP 源码同步</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>android-11.0.0_r48 标签，脚本已就绪</td>
+                    <td>android-11.0.0_r48</td>
                 </tr>
                 <tr>
                     <td>设备树配置</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>generic arm64 目标，BoardConfig.mk 已创建</td>
+                    <td>generic arm64</td>
                 </tr>
                 <tr>
                     <td>内核编译</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>Goldfish 内核编译脚本已就绪</td>
+                    <td>Goldfish 虚拟内核</td>
                 </tr>
                 <tr>
                     <td>Root 集成</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>Magisk 预装脚本 + 青柠优化模块</td>
+                    <td>Magisk v26.4</td>
                 </tr>
                 <tr>
                     <td>虚拟大师适配</td>
@@ -432,7 +596,7 @@
                 <tr>
                     <td>系统主题</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>青柠深色主题 + 颜色覆盖</td>
+                    <td>青柠深色主题</td>
                 </tr>
                 <tr>
                     <td>系统应用</td>
@@ -442,12 +606,12 @@
                 <tr>
                     <td>VM ROM 打包</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>05-package-vm-rom.sh 虚拟大师导入格式</td>
+                    <td>ZIP 导入包格式</td>
                 </tr>
                 <tr>
                     <td>构建测试</td>
-                    <td><span class="status-dot status-waiting"></span>等待</td>
-                    <td>待首次完整构建</td>
+                    <td><span class="status-dot status-progress"></span>进行中</td>
+                    <td>Beta 1 首次构建</td>
                 </tr>
             </tbody>
         </table>
@@ -455,34 +619,77 @@
 
     <section class="section" id="download">
         <h2 class="section-title">下载</h2>
-        <p class="section-subtitle">获取青柠 ROM 虚拟机导入包</p>
+        <p class="section-subtitle">Beta 1 开发者预览版</p>
         <div class="download-area">
-            <div class="version">QingningROM-v1.0.0</div>
-            <div class="info">Android 11 | API 30 | arm64 | 虚拟大师/VMOS 导入格式</div>
-            <button class="btn btn-primary" disabled>
+            <div class="version">QingningROM-Beta1</div>
+            <div class="info">Android 11 | API 30 | arm64 | 虚拟大师导入格式</div>
+            <button class="btn btn-beta" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                即将发布
+                构建中
             </button>
-            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">ROM 正在开发中，完成后将提供 .zip 导入包。</p>
+            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">Beta 1 正在构建中，完成后将在此页面提供下载。</p>
         </div>
 
         <div style="margin-top:2rem;background:rgba(30,41,59,0.6);border:1px solid rgba(34,197,94,0.15);border-radius:16px;padding:2rem;">
             <h3 style="color:#f1f5f9;margin-bottom:1rem;font-size:1.1rem;">导入方法</h3>
             <ol style="color:#94a3b8;line-height:2;padding-left:1.5rem;">
-                <li>下载 QingningROM-v1.0.0-Android11-YYYYMMDD.zip</li>
+                <li>下载 QingningROM-Beta1-Android11.zip</li>
                 <li>打开虚拟大师 / VMOS Pro 应用</li>
-                <li>点击"添加自定义 ROM"或"导入 ROM"</li>
+                <li>点击"添加自定义 ROM"</li>
                 <li>选择下载的 ZIP 文件</li>
                 <li>等待导入完成（约 1-2 分钟）</li>
                 <li>启动虚拟机</li>
             </ol>
-            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">支持: 虚拟大师、VMOS Pro、其他支持 ZIP 导入的 Android 虚拟机</p>
+        </div>
+
+        <div style="margin-top:2rem;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:16px;padding:2rem;">
+            <h3 style="color:#f59e0b;margin-bottom:1rem;font-size:1.1rem;">已知问题</h3>
+            <ul style="color:#94a3b8;line-height:2;padding-left:1.5rem;">
+                <li>首次启动可能需要 3-5 分钟</li>
+                <li>部分应用可能无法正常运行</li>
+                <li>相机功能尚未适配</li>
+                <li>蓝牙功能在虚拟机内受限</li>
+                <li>系统更新检测需要网络连接</li>
+            </ul>
         </div>
     </section>
 
     <footer>
-        <p>青柠 ROM Project &copy; 2026</p>
-        <p style="margin-top:0.5rem;font-size:0.8rem;">基于 Android Open Source Project (AOSP) 构建</p>
+        <p>青柠 ROM Beta Project &copy; 2026</p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;">仅供开发人员测试使用 | 基于 Android Open Source Project</p>
     </footer>
+
+    <script>
+        // 密码验证
+        const CORRECT_PASSWORD = 'qingning2026';
+        const STORAGE_KEY = 'qingning_beta_access';
+
+        // 检查是否已验证
+        if (localStorage.getItem(STORAGE_KEY) === 'granted') {
+            document.getElementById('passwordOverlay').classList.add('hidden');
+        }
+
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            const value = input.value.trim();
+
+            if (value === CORRECT_PASSWORD) {
+                localStorage.setItem(STORAGE_KEY, 'granted');
+                document.getElementById('passwordOverlay').classList.add('hidden');
+            } else {
+                error.textContent = '密码错误，请重试';
+                input.value = '';
+                input.focus();
+            }
+        }
+
+        // 回车提交
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+    </script>
 </body>
 </html>
