@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用名称 -->
+    <string name="app_name">设置</string>
+
+    <!-- 设置项标题 -->
+    <string name="network_title">网络和互联网</string>
+    <string name="network_summary">WLAN、移动网络、数据流量</string>
+
+    <string name="bluetooth_title">已连接的设备</string>
+    <string name="bluetooth_summary">蓝牙、投屏、NFC</string>
+
+    <string name="apps_title">应用和通知</string>
+    <string name="apps_summary">应用权限、通知管理</string>
+
+    <string name="battery_title">电池</string>
+    <string name="battery_summary">电量使用情况、省电模式</string>
+
+    <string name="display_title">显示</string>
+    <string name="display_summary">亮度、深色主题、字体大小</string>
+
+    <string name="sound_title">声音</string>
+    <string name="sound_summary">音量、铃声、勿扰模式</string>
+
+    <string name="storage_title">存储</string>
+    <string name="storage_summary">内部存储、应用占用</string>
+
+    <string name="privacy_title">隐私</string>
+    <string name="privacy_summary">权限管理、应用行为记录</string>
+
+    <string name="location_title">位置信息</string>
+    <string name="location_summary">定位模式、最近请求</string>
+
+    <string name="security_title">安全</string>
+    <string name="security_summary">屏幕锁定、指纹、SIM卡锁</string>
+
+    <string name="account_title">账号</string>
+    <string name="account_summary">Google、青柠账号</string>
+
+    <string name="system_title">系统</string>
+    <string name="system_summary">语言、手势、备份、重置</string>
+
+    <string name="about_title">关于手机</string>
+    <string name="about_summary">ROM版本、设备信息、检测更新</string>
+
+    <!-- 搜索 -->
+    <string name="search_settings">搜索设置</string>
+
+    <!-- 关于页面 -->
+    <string name="check_update">检测更新</string>
+    <string name="update_latest">已是最新版本</string>
+    <string name="update_available">有新版本可用</string>
+    <string name="update_checking">正在检查...</string>
+    <string name="update_new_version">新版本: %s</string>
+
+    <string name="rom_info">ROM 信息</string>
+    <string name="rom_info_summary">查看 ROM 详细版本信息</string>
+
+    <string name="device_info">设备信息</string>
+    <string name="device_info_summary">查看硬件和系统信息</string>
+
+    <string name="legal_info">法律信息</string>
+    <string name="privacy_policy">隐私政策</string>
+    <string name="open_source_licenses">开源许可</string>
+    <string name="copyright">Qingning ROM Project 2026\n基于 Android Open Source Project</string>
+
+    <!-- 更新页面 -->
+    <string name="update_title">系统更新</string>
+    <string name="current_version">当前版本: %s</string>
+    <string name="latest_version">最新版本: 检查中...</string>
+    <string name="update_changelog">更新日志</string>
+    <string name="no_changelog">暂无更新日志</string>
+    <string name="checking">检查中...</string>
+    <string name="connecting_server">正在连接服务器...</string>
+    <string name="already_latest">已是最新版本</string>
+    <string name="no_update_info">当前版本已是最新，无需更新</string>
+    <string name="no_update_toast">当前已是最新版本</string>
+
+    <!-- 下载 -->
+    <string name="download_update">下载更新 (%s)</string>
+    <string name="downloading">正在下载...</string>
+    <string name="download_done">下载完成</string>
+    <string name="download_progress">下载进度: %d%%</string>
+    <string name="download_started">开始下载...</string>
+    <string name="download_complete">下载完成</string>
+    <string name="download_failed">下载失败</string>
+    <string name="retry_download">重试下载</string>
+    <string name="download_url_error">下载链接无效</string>
+    <string name="download_title">青柠 ROM 系统更新</string>
+    <string name="download_description">正在下载系统更新包</string>
+
+    <!-- 安装 -->
+    <string name="install_title">安装更新</string>
+    <string name="install_message">更新包已下载完成，是否立即安装并重启？</string>
+    <string name="install_now">立即安装</string>
+    <string name="install_later">稍后安装</string>
+    <string name="reboot_failed">重启失败，请手动重启</string>
+
+    <!-- 错误 -->
+    <string name="error_open_settings">无法打开系统设置</string>
+</resources>

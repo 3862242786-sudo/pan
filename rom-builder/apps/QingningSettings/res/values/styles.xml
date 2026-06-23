@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 应用主题 -->
+    <style name="Theme.QingningSettings" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/surface_dark</item>
+        <item name="android:colorPrimaryDark">@color/background_dark</item>
+        <item name="android:colorAccent">@color/accent_green</item>
+        <item name="android:windowBackground">@color/background_dark</item>
+        <item name="android:statusBarColor">@color/surface_dark</item>
+        <item name="android:navigationBarColor">@color/background_dark</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+    </style>
+</resources>
