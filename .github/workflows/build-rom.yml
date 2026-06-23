@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'ROM 版本号'
+        description: 'ROM version'
         required: true
         default: '1.0.0-beta1'
 
@@ -23,57 +23,50 @@ jobs:
     - name: Download Android 11 GSI
       run: |
         echo "========================================"
-        echo "  LimeOS ROM 构建"
+        echo "  LimeOS ROM Build"
         echo "  Version: ${{ env.ROM_VERSION }}"
         echo "========================================"
         echo
-        
+
         mkdir -p ~/rom-work
         cd ~/rom-work
-        
-        # 下载 phh's Android 11 GSI (预编译的通用系统镜像)
-        echo "[1/5] 下载 Android 11 GSI..."
+
+        echo "[1/5] Downloading Android 11 GSI..."
         GSI_URL="https://github.com/phhusson/treble_experimentations/releases/download/v313/system-roar-arm64-ab-vndklite-vanilla.img.xz"
         curl -L -o system.img.xz "$GSI_URL" || {
-          echo "下载失败，尝试备用源..."
+          echo "Primary source failed, trying backup..."
           curl -L -o system.img.xz "https://sourceforge.net/projects/androgsis/files/LineageOS-18.1/lineage-18.1-20220115-UNOFFICIAL-treble_arm64_bvS.img.xz/download"
         }
-        
-        echo "解压镜像..."
+
+        echo "Extracting image..."
         xz -d system.img.xz || unxz system.img.xz || {
-          echo "尝试直接下载未压缩镜像..."
+          echo "Trying uncompressed download..."
           curl -L -o system.img "https://github.com/phhusson/treble_experimentations/releases/download/v313/system-roar-arm64-ab-vndklite-vanilla.img"
         }
-        
+
         ls -lh system.img
-        echo "GSI 下载完成"
+        echo "GSI download complete"
 
     - name: Mount and customize GSI
       run: |
         cd ~/rom-work
-        echo "[2/5] 挂载并定制 GSI..."
-        
-        # 创建挂载点
+        echo "[2/5] Mounting and customizing GSI..."
+
         mkdir -p gsi-mount
-        
-        # 挂载 system.img (需要 sudo)
+
         sudo mount -o loop system.img gsi-mount || {
-          echo "loop挂载失败，尝试其他方式..."
-          # 使用 guestmount (libguestfs)
+          echo "Loop mount failed, trying guestmount..."
           sudo apt-get update -qq
           sudo apt-get install -y libguestfs-tools
           sudo guestmount -a system.img -m /dev/sda1 gsi-mount || {
-            echo "guestmount也失败，使用直接修改方式"
-            # 复制并直接修改img文件
+            echo "guestmount also failed, using direct modification"
             cp system.img system-modified.img
           }
         }
-        
-        # 如果挂载成功，进行修改
+
         if [ -d "gsi-mount/system" ] || [ -d "gsi-mount/framework" ]; then
-          echo "挂载成功，开始定制..."
-          
-          # 修改 build.prop
+          echo "Mounted successfully, customizing..."
+
           if [ -f gsi-mount/system/build.prop ]; then
             sudo sed -i 's/ro.product.name=.*/ro.product.name=limeos_rom/' gsi-mount/system/build.prop
             sudo sed -i 's/ro.product.brand=.*/ro.product.brand=LimeOS/' gsi-mount/system/build.prop
@@ -82,43 +75,37 @@ jobs:
             echo "ro.limeos.version=${{ env.ROM_VERSION }}" | sudo tee -a gsi-mount/system/build.prop
             echo "ro.vmos.supported=true" | sudo tee -a gsi-mount/system/build.prop
           fi
-          
-          # 复制 LimeOS 配置文件
+
           sudo mkdir -p gsi-mount/system/etc/limeos
-          sudo tee gsi-mount/system/etc/limeos/config.xml << 'EOF'
+          sudo tee gsi-mount/system/etc/limeos/config.xml > /dev/null << 'XMLEOF'
 <?xml version="1.0" encoding="utf-8"?>
 <limeos-config>
   <property name="version" value="${{ env.ROM_VERSION }}" />
   <property name="vmos_compat" value="true" />
   <property name="root_enabled" value="true" />
 </limeos-config>
-EOF
-          
-          # 卸载
+XMLEOF
+
           sudo umount gsi-mount || sudo guestunmount gsi-mount
-          
-          # 使用修改后的镜像
+
           mv system.img system-original.img
           cp system-modified.img system.img 2>/dev/null || true
         fi
-        
-        echo "定制完成"
+
+        echo "Customization complete"
 
     - name: Create ROM package
       run: |
         cd ~/rom-work
-        echo "[3/5] 创建 ROM 包..."
-        
+        echo "[3/5] Creating ROM package..."
+
         BUILD_DATE=$(date +%Y%m%d_%H%M)
         PACKAGE_NAME="LimeOS-${{ env.ROM_VERSION }}-${BUILD_DATE}"
-        
+
         mkdir -p "$PACKAGE_NAME"
-        
-        # 复制镜像
         cp system.img "$PACKAGE_NAME/"
-        
-        # 创建 rom_config.json
-        cat > "$PACKAGE_NAME/rom_config.json" << EOF
+
+        cat > "$PACKAGE_NAME/rom_config.json" << JSONEOF
 {
   "name": "LimeOS",
   "version": "${{ env.ROM_VERSION }}",
@@ -129,68 +116,65 @@ EOF
   "build_type": "beta",
   "based_on": "phh's Android 11 GSI",
   "features": [
-    "VMOS兼容性",
-    "系统精简",
-    "Root支持",
-    "深色主题"
+    "VMOS compatibility",
+    "System optimization",
+    "Root support",
+    "Dark theme"
   ]
 }
-EOF
-        
-        # 创建 README
-        cat > "$PACKAGE_NAME/README.txt" << EOF
+JSONEOF
+
+        cat > "$PACKAGE_NAME/README.txt" << TEXTEOF
 LimeOS ${{ env.ROM_VERSION }}
-构建日期: $BUILD_DATE
+Build Date: $BUILD_DATE
 
-基于: phh's Android 11 GSI (Treble)
+Based on: phh's Android 11 GSI (Treble)
 
-导入方法 (虚拟大师 / VMOS Pro):
-  1. 将 ZIP 文件复制到手机
-  2. 打开虚拟大师应用
-  3. 点击"添加自定义 ROM"
-  4. 选择 ZIP 文件
-  5. 等待导入完成
-  6. 启动虚拟机
+Import Method (Virtual Master / VMOS Pro):
+  1. Copy ZIP file to phone
+  2. Open Virtual Master app
+  3. Click "Add Custom ROM"
+  4. Select ZIP file
+  5. Wait for import
+  6. Start virtual machine
 
-推荐配置:
-  - 内存: 2GB+
-  - 存储: 4GB+
+Recommended:
+  - RAM: 2GB+
+  - Storage: 4GB+
 
-注意:
-  - 首次启动可能需要 3-5 分钟
-  - 此版本为 Beta 测试版
+Note:
+  - First boot may take 3-5 minutes
+  - This is a Beta test version
 
-技术支持: https://3862242786-sudo.github.io/pan/qingning-rom.html
-EOF
-        
-        # 创建 changelog
-        cat > "$PACKAGE_NAME/changelog.txt" << EOF
-LimeOS ${{ env.ROM_VERSION }} 更新日志
+Support: https://3862242786-sudo.github.io/pan/qingning-rom.html
+TEXTEOF
+
+        cat > "$PACKAGE_NAME/changelog.txt" << CHANGEEOF
+LimeOS ${{ env.ROM_VERSION }} Changelog
 ========================
 
-构建日期: $BUILD_DATE
+Build Date: $BUILD_DATE
 
-[基于]
+[Based On]
 - phh's Android 11 GSI v313
 - Treble arm64 A/B
 
-[特性]
-- VMOS 虚拟大师兼容性
-- 系统属性优化
-- Root 支持 (通过 Magisk 补丁)
-- 深色主题基础
+[Features]
+- VMOS Virtual Master compatibility
+- System property optimization
+- Root support (via Magisk patch)
+- Dark theme base
 
-[已知问题]
-- 部分硬件功能受限
-- 首次启动较慢
-- 相机可能不工作
-EOF
-        
-        # 打包
+[Known Issues]
+- Some hardware features limited
+- First boot slower
+- Camera may not work
+CHANGEEOF
+
         zip -r "${PACKAGE_NAME}.zip" "$PACKAGE_NAME"
-        
+
         echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-        echo "ROM 包创建完成: ${PACKAGE_NAME}.zip"
+        echo "ROM package created: ${PACKAGE_NAME}.zip"
         ls -lh "${PACKAGE_NAME}.zip"
 
     - name: Upload artifact
@@ -207,34 +191,33 @@ EOF
         name: LimeOS ${{ env.ROM_VERSION }}
         body: |
           ## LimeOS ${{ env.ROM_VERSION }}
-          
-          基于 Android 11 GSI 的定制 ROM
-          
-          ### 特性
-          - 虚拟大师 (VMOS) 兼容性
-          - 系统精简优化
-          - Root 支持
-          - 深色主题
-          
-          ### 导入方法
-          1. 下载 ZIP 文件
-          2. 在虚拟大师中导入
-          3. 启动虚拟机
-          
-          ### 注意
-          此版本为 Beta 测试版，仅供开发测试使用。
+
+          Custom ROM based on Android 11 GSI
+
+          ### Features
+          - Virtual Master (VMOS) compatibility
+          - System optimization
+          - Root support
+          - Dark theme
+
+          ### Import Method
+          1. Download ZIP file
+          2. Import in Virtual Master
+          3. Start virtual machine
+
+          ### Note
+          This is a Beta test version, for development testing only.
         files: |
           ~/rom-work/${{ env.PACKAGE_NAME }}.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Update download page
+    - name: Build summary
       run: |
         echo "========================================"
-        echo "  LimeOS ROM 构建完成!"
+        echo "  LimeOS ROM Build Complete!"
         echo "========================================"
-        echo "版本: ${{ env.ROM_VERSION }}"
-        echo "包名: ${{ env.PACKAGE_NAME }}"
-        echo "下载: ~/rom-work/${{ env.PACKAGE_NAME }}.zip"
+        echo "Version: ${{ env.ROM_VERSION }}"
+        echo "Package: ${{ env.PACKAGE_NAME }}"
+        echo "Download: ~/rom-work/${{ env.PACKAGE_NAME }}.zip"
         ls -lh ~/rom-work/*.zip
-# trigger
