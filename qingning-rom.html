@@ -416,13 +416,8 @@
                 </tr>
                 <tr>
                     <td>内核编译</td>
-                    <td><span class="status-dot status-waiting"></span>等待</td>
-                    <td>goldfish 虚拟内核，待构建</td>
-                </tr>
-                <tr>
-                    <td>内核编译</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>Goldfish 内核编译脚本已就绪 (04-build-kernel.sh)</td>
+                    <td>Goldfish 内核编译脚本已就绪</td>
                 </tr>
                 <tr>
                     <td>Root 集成</td>
@@ -432,7 +427,7 @@
                 <tr>
                     <td>虚拟大师适配</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>兼容性补丁已编写 (01-vmos-compat.patch)</td>
+                    <td>兼容性补丁 + VM 导入格式</td>
                 </tr>
                 <tr>
                     <td>系统主题</td>
@@ -440,14 +435,19 @@
                     <td>青柠深色主题 + 颜色覆盖</td>
                 </tr>
                 <tr>
-                    <td>系统属性</td>
+                    <td>系统应用</td>
                     <td><span class="status-dot status-done"></span>完成</td>
-                    <td>build.prop 优化配置</td>
+                    <td>青柠设置 + 更新检测</td>
                 </tr>
                 <tr>
-                    <td>打包发布</td>
+                    <td>VM ROM 打包</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>05-package-vm-rom.sh 虚拟大师导入格式</td>
+                </tr>
+                <tr>
+                    <td>构建测试</td>
                     <td><span class="status-dot status-waiting"></span>等待</td>
-                    <td>构建脚本已就绪，待首次构建</td>
+                    <td>待首次完整构建</td>
                 </tr>
             </tbody>
         </table>
@@ -455,15 +455,28 @@
 
     <section class="section" id="download">
         <h2 class="section-title">下载</h2>
-        <p class="section-subtitle">获取青柠 ROM 刷机包</p>
+        <p class="section-subtitle">获取青柠 ROM 虚拟机导入包</p>
         <div class="download-area">
             <div class="version">QingningROM-v1.0.0</div>
-            <div class="info">Android 11 | API 30 | arm64 | 虚拟大师专用</div>
+            <div class="info">Android 11 | API 30 | arm64 | 虚拟大师/VMOS 导入格式</div>
             <button class="btn btn-primary" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 即将发布
             </button>
-            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">ROM 正在开发中，完成后将在此页面提供下载。</p>
+            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">ROM 正在开发中，完成后将提供 .zip 导入包。</p>
+        </div>
+
+        <div style="margin-top:2rem;background:rgba(30,41,59,0.6);border:1px solid rgba(34,197,94,0.15);border-radius:16px;padding:2rem;">
+            <h3 style="color:#f1f5f9;margin-bottom:1rem;font-size:1.1rem;">导入方法</h3>
+            <ol style="color:#94a3b8;line-height:2;padding-left:1.5rem;">
+                <li>下载 QingningROM-v1.0.0-Android11-YYYYMMDD.zip</li>
+                <li>打开虚拟大师 / VMOS Pro 应用</li>
+                <li>点击"添加自定义 ROM"或"导入 ROM"</li>
+                <li>选择下载的 ZIP 文件</li>
+                <li>等待导入完成（约 1-2 分钟）</li>
+                <li>启动虚拟机</li>
+            </ol>
+            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">支持: 虚拟大师、VMOS Pro、其他支持 ZIP 导入的 Android 虚拟机</p>
         </div>
     </section>
 
