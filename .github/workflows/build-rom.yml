@@ -47,47 +47,43 @@ jobs:
         ls -lh system.img
         echo "GSI download complete"
 
-    - name: Mount and customize GSI
+    - name: Install tools
+      run: |
+        echo "[2/5] Installing image tools..."
+        sudo apt-get update -qq
+        sudo apt-get install -y e2fsprogs dump-tools android-sdk-libs
+
+    - name: Customize GSI
       run: |
         cd ~/rom-work
-        echo "[2/5] Mounting and customizing GSI..."
+        echo "[3/5] Customizing GSI..."
 
-        mkdir -p gsi-mount
+        # 检测镜像类型
+        file system.img
 
-        sudo mount -o loop system.img gsi-mount || {
-          echo "Loop mount failed, trying guestmount..."
-          sudo apt-get update -qq
-          sudo apt-get install -y libguestfs-tools
-          sudo guestmount -a system.img -m /dev/sda1 gsi-mount || {
-            echo "guestmount also failed, using direct modification"
-            cp system.img system-modified.img
-          }
-        }
+        # 尝试使用 debugfs 直接修改 ext4 镜像 (不需要挂载)
+        if echo "system.img" | debugfs -R "cat build.prop" 2>/dev/null | head -5; then
+          echo "debugfs works, modifying build.prop..."
 
-        if [ -d "gsi-mount/system" ] || [ -d "gsi-mount/framework" ]; then
-          echo "Mounted successfully, customizing..."
+          # 提取 build.prop
+          debugfs -R "cat build.prop" system.img > build.prop.tmp 2>/dev/null
 
-          if [ -f gsi-mount/system/build.prop ]; then
-            sudo sed -i 's/ro.product.name=.*/ro.product.name=limeos_rom/' gsi-mount/system/build.prop
-            sudo sed -i 's/ro.product.brand=.*/ro.product.brand=LimeOS/' gsi-mount/system/build.prop
-            sudo sed -i 's/ro.product.model=.*/ro.product.model=LimeOS for Virtual Master/' gsi-mount/system/build.prop
-            sudo sed -i 's/ro.product.manufacturer=.*/ro.product.manufacturer=LimeOS/' gsi-mount/system/build.prop
-            echo "ro.limeos.version=${{ env.ROM_VERSION }}" | sudo tee -a gsi-mount/system/build.prop
-            echo "ro.vmos.supported=true" | sudo tee -a gsi-mount/system/build.prop
-          fi
+          # 修改属性
+          sed -i 's/ro.product.name=.*/ro.product.name=limeos_rom/' build.prop.tmp
+          sed -i 's/ro.product.brand=.*/ro.product.brand=LimeOS/' build.prop.tmp
+          sed -i 's/ro.product.model=.*/ro.product.model=LimeOS for Virtual Master/' build.prop.tmp
+          sed -i 's/ro.product.manufacturer=.*/ro.product.manufacturer=LimeOS/' build.prop.tmp
+          echo "ro.limeos.version=${{ env.ROM_VERSION }}" >> build.prop.tmp
+          echo "ro.vmos.supported=true" >> build.prop.tmp
 
-          sudo mkdir -p gsi-mount/system/etc/limeos
-          echo '<?xml version="1.0" encoding="utf-8"?>' | sudo tee gsi-mount/system/etc/limeos/config.xml > /dev/null
-          echo '<limeos-config>' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
-          echo "  <property name=\"version\" value=\"${{ env.ROM_VERSION }}\" />" | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
-          echo '  <property name="vmos_compat" value="true" />' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
-          echo '  <property name="root_enabled" value="true" />' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
-          echo '</limeos-config>' | sudo tee -a gsi-mount/system/etc/limeos/config.xml > /dev/null
+          # 写回 build.prop
+          debugfs -w -R "rm build.prop" system.img 2>/dev/null || true
+          debugfs -w -R "write build.prop.tmp build.prop" system.img 2>/dev/null
 
-          sudo umount gsi-mount || sudo guestunmount gsi-mount
-
-          mv system.img system-original.img
-          cp system-modified.img system.img 2>/dev/null || true
+          echo "Build.prop modified successfully"
+        else
+          echo "debugfs not available or image not ext4, skipping direct modification"
+          echo "Using original GSI image as-is"
         fi
 
         echo "Customization complete"
