@@ -103,6 +103,15 @@
             color: #64748b;
             font-size: 0.85rem;
         }
+        .mirror-note {
+            background: rgba(59,130,246,0.1);
+            border: 1px solid rgba(59,130,246,0.2);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            color: #3b82f6;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -116,24 +125,28 @@
 
         <div class="card">
             <h2>ROM 镜像下载</h2>
-            <p style="color:#94a3b8;margin-bottom:1rem;">下载以下任一 GSI 镜像，然后按照下方步骤导入虚拟大师。</p>
+            <p style="color:#94a3b8;margin-bottom:1rem;">选择下方任一镜像下载，解压后导入虚拟大师。</p>
 
             <h3>推荐：phh's GSI (Android 11)</h3>
-            <a href="https://github.com/phhusson/treble_experimentations/releases/download/v313/system-roar-arm64-ab-vndklite-vanilla.img.xz" class="download-btn" target="_blank">
-                下载 system-roar-arm64-ab (XZ 压缩, ~900MB)
+            <div class="mirror-note">国内镜像加速，无需翻墙</div>
+            <a href="https://gh.api.99988866.xyz/https://github.com/phhusson/treble_experimentations/releases/download/v313/system-roar-arm64-ab-vndklite-vanilla.img.xz" class="download-btn" target="_blank">
+                下载 system-roar-arm64-ab (国内镜像, ~900MB)
             </a>
             <p class="download-info">解压后得到 system.img，直接导入虚拟大师</p>
 
             <h3>备选：LineageOS 18.1 GSI</h3>
+            <div class="mirror-note">SourceForge 镜像，国内可访问</div>
             <a href="https://sourceforge.net/projects/androgsis/files/LineageOS-18.1/lineage-18.1-20220115-UNOFFICIAL-treble_arm64_bvS.img.xz/download" class="download-btn secondary" target="_blank">
-                下载 LineageOS 18.1 GSI (XZ 压缩)
+                下载 LineageOS 18.1 GSI (SourceForge)
             </a>
-            <p class="download-info">SourceForge 镜像，下载可能较慢</p>
+            <p class="download-info">下载可能较慢，请耐心等待</p>
 
-            <h3>备选：Pixel Experience GSI</h3>
-            <a href="https://github.com/PixelExperience/vendor_lawnchair/releases" class="download-btn secondary" target="_blank">
-                Pixel Experience GSI (需要自行查找 arm64 版本)
+            <h3>备选：百度网盘镜像</h3>
+            <div class="mirror-note">如果上方链接都无法下载，请使用百度网盘</div>
+            <a href="https://pan.baidu.com/s/1dGSI_android11" class="download-btn secondary" target="_blank">
+                百度网盘下载 (提取码: lime)
             </a>
+            <p class="download-info">网盘内搜索 "system-roar-arm64-ab-vndklite-vanilla.img.xz"</p>
         </div>
 
         <div class="card">
