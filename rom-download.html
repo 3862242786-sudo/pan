@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LimeOS - ROM 下载</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        h1 {
+            font-size: 2rem;
+            background: linear-gradient(135deg, #22c55e, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+        .subtitle { color: #94a3b8; margin-bottom: 2rem; }
+        .card {
+            background: rgba(30,41,59,0.6);
+            border: 1px solid rgba(34,197,94,0.15);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: #f1f5f9;
+        }
+        .card h3 {
+            font-size: 1rem;
+            margin: 1rem 0 0.5rem;
+            color: #22c55e;
+        }
+        .download-btn {
+            display: block;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 0.75rem;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34,197,94,0.3);
+        }
+        .download-btn.secondary {
+            background: rgba(30,41,59,0.8);
+            border: 1px solid rgba(34,197,94,0.3);
+            color: #22c55e;
+        }
+        .download-info {
+            color: #64748b;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .warning {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #f59e0b;
+            font-size: 0.9rem;
+        }
+        ol, ul {
+            padding-left: 1.5rem;
+            color: #94a3b8;
+        }
+        li { margin-bottom: 0.5rem; }
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            margin-right: 4px;
+        }
+        .tag-green { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .tag-blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .tag-orange { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LimeOS ROM 下载</h1>
+        <p class="subtitle">Beta 1 开发者预览版 | Android 11 | arm64</p>
+
+        <div class="warning">
+            Beta 测试版，仅供开发人员使用。首次启动可能需要 3-5 分钟。
+        </div>
+
+        <div class="card">
+            <h2>ROM 镜像下载</h2>
+            <p style="color:#94a3b8;margin-bottom:1rem;">下载以下任一 GSI 镜像，然后按照下方步骤导入虚拟大师。</p>
+
+            <h3>推荐：phh's GSI (Android 11)</h3>
+            <a href="https://github.com/phhusson/treble_experimentations/releases/download/v313/system-roar-arm64-ab-vndklite-vanilla.img.xz" class="download-btn" target="_blank">
+                下载 system-roar-arm64-ab (XZ 压缩, ~900MB)
+            </a>
+            <p class="download-info">解压后得到 system.img，直接导入虚拟大师</p>
+
+            <h3>备选：LineageOS 18.1 GSI</h3>
+            <a href="https://sourceforge.net/projects/androgsis/files/LineageOS-18.1/lineage-18.1-20220115-UNOFFICIAL-treble_arm64_bvS.img.xz/download" class="download-btn secondary" target="_blank">
+                下载 LineageOS 18.1 GSI (XZ 压缩)
+            </a>
+            <p class="download-info">SourceForge 镜像，下载可能较慢</p>
+
+            <h3>备选：Pixel Experience GSI</h3>
+            <a href="https://github.com/PixelExperience/vendor_lawnchair/releases" class="download-btn secondary" target="_blank">
+                Pixel Experience GSI (需要自行查找 arm64 版本)
+            </a>
+        </div>
+
+        <div class="card">
+            <h2>导入虚拟大师步骤</h2>
+            <ol>
+                <li>下载上方 GSI 镜像 (.img.xz 文件)</li>
+                <li>在手机上解压 XZ 文件（用 ZArchiver 等工具）</li>
+                <li>得到 <code>system.img</code> 文件</li>
+                <li>打开虚拟大师 / VMOS Pro</li>
+                <li>点击"添加自定义 ROM"或"导入 ROM"</li>
+                <li>选择 <code>system.img</code> 文件</li>
+                <li>等待导入完成（1-2 分钟）</li>
+                <li>启动虚拟机</li>
+            </ol>
+        </div>
+
+        <div class="card">
+            <h2>推荐配置</h2>
+            <ul>
+                <li>内存: <strong>2GB+</strong> (推荐 4GB)</li>
+                <li>存储: <strong>4GB+</strong> (推荐 8GB)</li>
+                <li>架构: <span class="tag tag-green">arm64-v8a</span></li>
+                <li>Android: <span class="tag tag-blue">11 (API 30)</span></li>
+                <li>类型: <span class="tag tag-orange">Beta 1</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>已知问题</h2>
+            <ul>
+                <li>首次启动需要 3-5 分钟</li>
+                <li>相机功能不可用</li>
+                <li>蓝牙功能受限</li>
+                <li>部分应用可能不兼容</li>
+                <li>系统更新检测需要网络</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>如何获取 Root</h2>
+            <ol>
+                <li>启动虚拟机后，打开浏览器</li>
+                <li>访问 <a href="https://github.com/topjohnwu/Magisk/releases/latest" style="color:#22c55e;">Magisk 最新版</a></li>
+                <li>下载 Magisk APK</li>
+                <li>安装 Magisk</li>
+                <li>按照 Magisk 引导修补 boot.img</li>
+            </ol>
+        </div>
+
+        <footer>
+            <p>LimeOS Project &copy; 2026</p>
+            <p>基于 Android Open Source Project</p>
+        </footer>
+    </div>
+</body>
+</html>
