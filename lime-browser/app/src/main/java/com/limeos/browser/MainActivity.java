@@ -44,6 +44,15 @@ public class MainActivity extends AppCompatActivity {
     private int currentTab = 0;
     private static final String HOME_URL = "https://www.bing.com";
 
+    // User-Agent presets
+    private static final String UA_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+    private static final String UA_IE = "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko";
+    private static final String UA_EDGE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0";
+    private static final String UA_FIREFOX = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0";
+    private String currentUA = UA_CHROME;
+    private String[] uaNames = {"Chrome (默认)", "IE 11 (兼容模式)", "Edge", "Firefox"};
+    private String[] uaValues = {UA_CHROME, UA_IE, UA_EDGE, UA_FIREFOX};
+
     @SuppressLint("SetJavaScriptEnabled")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        settings.setUserAgentString(settings.getUserAgentString() + " LimeBrowser/1.0");
+        settings.setUserAgentString(currentUA + " LimeBrowser/1.0");
         
         CookieManager.getInstance().setAcceptCookie(true);
         CookieManager.getInstance().setAcceptThirdPartyCookies(webView, true);
@@ -229,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showMenuDialog() {
-        String[] items = {"分享", "复制链接", "添加到书签", "设置", "关于 LimeBrowser"};
+        String[] items = {"分享", "复制链接", "添加到书签", "切换内核模式", "关于 LimeBrowser"};
         new AlertDialog.Builder(this)
                 .setTitle("菜单")
                 .setItems(items, (dialog, which) -> {
@@ -253,17 +262,38 @@ public class MainActivity extends AppCompatActivity {
                             Toast.makeText(this, "已添加到书签", Toast.LENGTH_SHORT).show();
                             break;
                         case 3:
-                            Toast.makeText(this, "设置功能开发中", Toast.LENGTH_SHORT).show();
+                            showUASwitcher();
                             break;
                         case 4:
                             new AlertDialog.Builder(this)
                                     .setTitle("关于 LimeBrowser")
-                                    .setMessage("LimeBrowser v1.0.0\n基于 Android WebView (Chromium)\nLimeOS Project 2026")
+                                    .setMessage("LimeBrowser v1.0.0\n基于 Android WebView (Chromium)\n支持 IE/Edge/Firefox 兼容模式\nLimeOS Project 2026")
                                     .setPositiveButton("确定", null)
                                     .show();
                             break;
                     }
                 })
+                .show();
+    }
+
+    private void showUASwitcher() {
+        int currentIndex = 0;
+        for (int i = 0; i < uaValues.length; i++) {
+            if (uaValues[i].equals(currentUA)) {
+                currentIndex = i;
+                break;
+            }
+        }
+        new AlertDialog.Builder(this)
+                .setTitle("切换内核模式 (User-Agent)")
+                .setSingleChoiceItems(uaNames, currentIndex, (dialog, which) -> {
+                    currentUA = uaValues[which];
+                    webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.0");
+                    Toast.makeText(this, "已切换到: " + uaNames[which], Toast.LENGTH_SHORT).show();
+                    webView.reload();
+                    dialog.dismiss();
+                })
+                .setNegativeButton("取消", null)
                 .show();
     }
 
