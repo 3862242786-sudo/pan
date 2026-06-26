@@ -1,9 +1,6 @@
-plugins {
-    id 'com.android.application'
-}
+apply plugin: 'com.android.application'
 
 android {
-    namespace 'com.limeos.browser'
     compileSdk 33
 
     defaultConfig {
