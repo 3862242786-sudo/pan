@@ -37,7 +37,7 @@ jobs:
     - name: Release APK
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: browser-v1.0.0
+        tag_name: LimeBrowser-v1.0.0
         name: LimeBrowser v1.0.0
         body: |
           LimeBrowser 青柠浏览器 APK
