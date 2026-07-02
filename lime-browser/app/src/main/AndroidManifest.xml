@@ -32,6 +32,11 @@
                 <data android:scheme="https" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.LimeBrowser" />
         
     </application>
 </manifest>
