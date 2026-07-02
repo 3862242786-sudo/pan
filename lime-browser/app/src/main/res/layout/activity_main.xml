@@ -46,6 +46,36 @@
                 android:src="@drawable/ic_tabs"
                 android:contentDescription="@string/tabs" />
 
+            <LinearLayout
+                android:id="@+id/btnUAMode"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="2dp"
+                android:background="@drawable/ua_mode_bg"
+                android:gravity="center"
+                android:orientation="horizontal"
+                android:paddingHorizontal="8dp"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageButton
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@drawable/ic_desktop"
+                    android:background="@null"
+                    android:contentDescription="模式" />
+
+                <TextView
+                    android:id="@+id/tvUAModeLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:text="手机"
+                    android:textColor="@color/primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
             <ImageButton
                 android:id="@+id/btnMenu"
                 android:layout_width="40dp"
