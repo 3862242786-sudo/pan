@@ -3,603 +3,693 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>青柠网盘</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="qna/ui/qna-ui.css">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="qna/qna-loader.js"></script>
-    <script src="site-check.js"></script>
+    <title>LimeOS Beta - 开发者预览版</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans SC', sans-serif;
+            background: #0a0e1a;
+            color: #e2e8f0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* 密码保护弹窗 */
+        .password-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10,14,26,0.98);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .password-overlay.hidden {
+            display: none !important;
+        }
+        .password-box {
+            background: rgba(30,41,59,0.8);
+            border: 1px solid rgba(34,197,94,0.2);
+            border-radius: 20px;
+            padding: 3rem;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        .password-box .lock-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: rgba(34,197,94,0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .password-box h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+        .password-box p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 1.5rem;
+        }
+        .password-input {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            border: 1px solid rgba(34,197,94,0.3);
+            background: rgba(10,14,26,0.6);
+            color: #f1f5f9;
+            font-size: 1rem;
+            text-align: center;
+            letter-spacing: 4px;
+            margin-bottom: 1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .password-input:focus {
+            border-color: #22c55e;
+        }
+        .password-input::placeholder {
+            color: #64748b;
+            letter-spacing: normal;
+        }
+        .password-error {
+            color: #ef4444;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            min-height: 1.2em;
+        }
+        .password-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34,197,94,0.3);
+        }
+        .beta-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 8px;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            color: #f59e0b;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        /* Hero */
+        .hero {
+            min-height: 60vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 4rem 2rem;
+            position: relative;
+            background: radial-gradient(ellipse at center, rgba(34,197,94,0.08) 0%, transparent 70%);
+        }
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 16px;
+            border-radius: 20px;
+            background: rgba(245,158,11,0.15);
+            border: 1px solid rgba(245,158,11,0.3);
+            color: #f59e0b;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+        }
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #22c55e, #4ade80, #86efac);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: #94a3b8;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+        .hero-meta {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .meta-item {
+            text-align: center;
+        }
+        .meta-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22c55e;
+        }
+        .meta-label {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+            background: rgba(10,14,26,0.9);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(34,197,94,0.1);
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #22c55e;
+            font-weight: 700;
+            text-decoration: none;
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+            list-style: none;
+        }
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover { color: #22c55e; }
+
+        /* Sections */
+        .section {
+            padding: 4rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+        .section-subtitle {
+            color: #64748b;
+            margin-bottom: 2rem;
+        }
+
+        /* Beta Warning */
+        .beta-warning {
+            background: rgba(245,158,11,0.1);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        .beta-warning-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(245,158,11,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .beta-warning h3 {
+            color: #f59e0b;
+            margin-bottom: 0.5rem;
+        }
+        .beta-warning p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Target Info */
+        .target-card {
+            background: rgba(30,41,59,0.6);
+            border: 1px solid rgba(34,197,94,0.15);
+            border-radius: 16px;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+        .target-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: rgba(34,197,94,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+        .target-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .target-info p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+        }
+        .target-tags {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .tag {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .tag-green { background: rgba(34,197,94,0.15); color: #22c55e; }
+        .tag-blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+        .tag-orange { background: rgba(245,158,11,0.15); color: #f59e0b; }
+        .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+
+        /* Features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        .feature-card {
+            background: rgba(30,41,59,0.5);
+            border: 1px solid rgba(34,197,94,0.1);
+            border-radius: 14px;
+            padding: 1.5rem;
+            transition: all 0.3s;
+        }
+        .feature-card:hover {
+            border-color: rgba(34,197,94,0.3);
+            transform: translateY(-4px);
+        }
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(34,197,94,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        .feature-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        .feature-card p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        /* Build Status */
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .status-table th,
+        .status-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .status-table th {
+            color: #64748b;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-waiting { background: #f59e0b; }
+        .status-done { background: #22c55e; }
+        .status-progress { background: #3b82f6; animation: pulse 1.5s infinite; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Download */
+        .download-area {
+            background: rgba(30,41,59,0.6);
+            border: 1px solid rgba(34,197,94,0.15);
+            border-radius: 16px;
+            padding: 2.5rem;
+            text-align: center;
+        }
+        .download-area .version {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #22c55e;
+            margin-bottom: 0.5rem;
+        }
+        .download-area .info {
+            color: #94a3b8;
+            margin-bottom: 1.5rem;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(34,197,94,0.3);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(34,197,94,0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-beta {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+        }
+        .btn-beta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(245,158,11,0.4);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 2rem;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .target-card { grid-template-columns: 1fr; text-align: center; }
+            .nav-links { display: none; }
+        }
+    </style>
 </head>
 <body>
-    <!-- APP下载弹窗（仅移动端显示） -->
-    <div id="appDownloadModal" class="app-modal" style="display:none;">
-        <div class="app-modal-backdrop" onclick="closeAppModal()"></div>
-        <div class="app-modal-content">
-            <div class="app-modal-header">
-                <div class="app-modal-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>
-                    </svg>
-                </div>
-                <button class="app-modal-close" onclick="closeAppModal()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
+    <!-- 密码保护 -->
+    <div class="password-overlay" id="passwordOverlay">
+        <div class="password-box">
+            <div class="lock-icon">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
             </div>
-            <div class="app-modal-body">
-                <h3>下载青柠网盘 APP</h3>
-                <p class="app-modal-subtitle">随时随地，轻松管理你的文件</p>
-                <div class="app-features">
-                    <div class="app-feature-item">
-                        <div class="app-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                                <polyline points="17 8 12 3 7 8"/>
-                                <line x1="12" y1="3" x2="12" y2="15"/>
-                            </svg>
-                        </div>
-                        <span>极速上传下载</span>
-                    </div>
-                    <div class="app-feature-item">
-                        <div class="app-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                            </svg>
-                        </div>
-                        <span>文件安全存储</span>
-                    </div>
-                    <div class="app-feature-item">
-                        <div class="app-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"/>
-                                <polyline points="12 6 12 12 16 14"/>
-                            </svg>
-                        </div>
-                        <span>7x24小时可用</span>
-                    </div>
-                </div>
-            </div>
-            <div class="app-modal-footer">
-                <a href="https://3862242786-sudo.github.io/pan/qingning-pan.apk" download class="app-download-btn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="7 10 12 15 17 10"/>
-                        <line x1="12" y1="15" x2="12" y2="3"/>
-                    </svg>
-                    立即下载
-                </a>
-                <label class="app-no-remind">
-                    <input type="checkbox" id="noRemindCheckbox" onchange="handleNoRemind()">
-                    <span>不再提醒</span>
-                </label>
-            </div>
+            <h2>开发者预览版</h2>
+            <p>此页面包含 LimeOS Beta 版本下载，仅供开发人员访问。请输入访问密码。</p>
+            <input type="password" class="password-input" id="passwordInput" placeholder="输入密码" maxlength="20">
+            <div class="password-error" id="passwordError"></div>
+            <button class="password-btn" onclick="checkPassword()">验证并进入</button>
+            <div class="beta-badge">BETA 1</div>
         </div>
     </div>
 
-    <!-- 导航栏 -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg> 青柠网盘</a>
-            <ul class="nav-links">
-                <li><a href="#files">文件列表</a></li>
-                <li><a href="upload.html" class="nav-login-btn">上传文件</a></li>
-                <li><a href="qingning-community.html">青柠社区</a></li>
-                <li><a href="app.html" style="color:#3b82f6;font-weight:600">APP下载</a></li>
-                <li><a href="about.html">关于</a></li>
-                <li><a href="#contact">联系我</a></li>
-                <li><a href="auth.html" id="navLoginBtn">登录</a></li>
-                <li id="navProfileArea" style="display:none">
-                    <a href="profile.html" id="navMyProfile" style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(59,130,246,.15);color:#60a5fa;font-size:.85rem;font-weight:600;text-decoration:none">
-                        <span id="navAvatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;overflow:hidden"></span>
-                        <span id="navUsername">我的</span>
-                    </a>
-                </li>
-                <li><a href="admin.html" class="nav-admin-btn" id="navAdminBtn" style="display:none">管理后台</a></li>
-                <li><a href="javascript:void(0)" id="navLogoutBtn" style="display:none" onclick="handleLogout()">退出</a></li>
-                <li class="nav-dropdown">
-                    <a href="javascript:void(0)" id="moreMenuBtn">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                        更多
-                    </a>
-                    <div class="dropdown-menu" id="appDropdownMenu">
-                        <a href="app.html" class="dropdown-item dropdown-primary">
-                            <span class="dropdown-version">青柠网盘 APP</span>
-                            <span class="dropdown-desc">下载客户端</span>
-                        </a>
-                        <a href="versions.html" class="dropdown-item">
-                            <span class="dropdown-version">历史版本</span>
-                            <span class="dropdown-desc">所有版本记录</span>
-                        </a>
-                        <div style="height:1px;background:#e2e8f0;margin:6px 12px;"></div>
-                        <div style="padding:4px 16px 2px;font-size:11px;color:#94a3b8;font-weight:600;">下载其他应用</div>
-                        <a href="antivirus-app.html" class="dropdown-item">
-                            <span class="dropdown-version">🛡️ 青柠杀毒</span>
-                            <span class="dropdown-desc">本地病毒扫描工具</span>
-                        </a>
-                        <a href="qingning-desktop.html" class="dropdown-item">
-                            <span class="dropdown-version">🖥️ 青柠桌面</span>
-                            <span class="dropdown-desc">Windows桌面环境替换</span>
-                        </a>
-                        <a href="antivirus-extensions.html" class="dropdown-item">
-                            <span class="dropdown-version">🧩 杀毒扩展模块</span>
-                            <span class="dropdown-desc">下载扩展病毒库</span>
-                        </a>
-                        <a href="qingning-store.html" class="dropdown-item">
-                            <span class="dropdown-version">🏪 青柠应用商店</span>
-                            <span class="dropdown-desc">下载所有青柠应用</span>
-                        </a>
-                        <a href="qingning-os.html" class="dropdown-item">
-                            <span class="dropdown-version">🐧 青柠OS</span>
-                            <span class="dropdown-desc">基于Linux的操作系统</span>
-                        </a>
-                        <a href="qingning-guide.html" class="dropdown-item">
-                            <span class="dropdown-version">📖 使用教程</span>
-                            <span class="dropdown-desc">完整使用指南</span>
-                        </a>
-                        <div style="height:1px;background:#e2e8f0;margin:6px 12px;"></div>
-                        <div style="padding:4px 16px 2px;font-size:11px;color:#94a3b8;font-weight:600;">新功能</div>
-                        <a href="qingning-ai.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠AI助手</span>
-                            <span class="dropdown-desc">多平台AI聊天</span>
-                        </a>
-                        <a href="qge.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠游戏内核</span>
-                            <span class="dropdown-desc">HTML5游戏引擎</span>
-                        </a>
-                        <a href="qingning-architecture-2.0.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠架构 2.0</span>
-                            <span class="dropdown-desc">全栈技术架构 - 不畏艰难</span>
-                        </a>
-                        <a href="token.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠登录令牌</span>
-                            <span class="dropdown-desc">安全令牌登录</span>
-                        </a>
-                        <a href="3d-workshop.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠3D工坊</span>
-                            <span class="dropdown-desc">2D转3D工具</span>
-                        </a>
-                        <a href="qingning-forum.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠论坛</span>
-                            <span class="dropdown-desc">讨论交流社区</span>
-                        </a>
-                        <a href="qingning-opensource/index.html" class="dropdown-item">
-                            <span class="dropdown-version">青柠开源</span>
-                            <span class="dropdown-desc">开源项目展示</span>
-                        </a>
-                    </div>
-                </li>
-            </ul>
-            <button class="mobile-menu-btn" aria-label="菜单">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
-        </div>
+    <nav>
+        <a href="index.html" class="nav-brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            LimeOS Beta
+        </a>
+        <ul class="nav-links">
+            <li><a href="#target">目标</a></li>
+            <li><a href="#features">特性</a></li>
+            <li><a href="#status">状态</a></li>
+            <li><a href="#download">下载</a></li>
+        </ul>
     </nav>
 
-    <!-- 主页横幅 -->
-    <section class="hero" style="min-height:auto;padding:80px 0 60px">
-        <div class="hero-content" style="max-width:640px;margin:0 auto;text-align:center">
-            <div style="width:72px;height:72px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 24px;box-shadow:0 12px 32px rgba(59,130,246,.3)">
-                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+    <section class="hero">
+        <div class="hero-badge">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            Beta 1 开发者预览
+        </div>
+        <h1>LimeOS</h1>
+        <p class="hero-subtitle">专为虚拟大师优化的 Android 11 定制 ROM。轻量、稳定、开箱即用。</p>
+        <div class="hero-meta">
+            <div class="meta-item">
+                <div class="meta-value">Android 11</div>
+                <div class="meta-label">API 30</div>
             </div>
-            <h1 style="font-size:42px;margin-bottom:12px;background:linear-gradient(135deg,#3b82f6,#6366f1);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">青柠网盘</h1>
-            <p style="font-size:18px;color:#64748b;margin-bottom:32px;line-height:1.7">简洁高效的云端存储服务<br>上传下载一键完成，无需注册，打开即用</p>
-            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:40px">
-                <a href="upload.html" style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:#3b82f6;color:#fff;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 4px 16px rgba(59,130,246,.3)">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                    上传文件
-                </a>
-                <a href="https://3862242786-sudo.github.io/pan/qingning-pan.apk" download style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.3);border-radius:12px;font-size:16px;font-weight:600;text-decoration:none">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    下载APP
-                </a>
-                <a href="https://jbmymvpydycurynmxgbr.supabase.co/storage/v1/object/public/files/qingning-antivirus/qingning-antivirus.exe" download="青柠杀毒.exe" style="display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border-radius:12px;font-size:16px;font-weight:600;text-decoration:none;box-shadow:0 4px 16px rgba(34,197,94,.3)">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                    下载青柠杀毒
-                </a>
+            <div class="meta-item">
+                <div class="meta-value">Beta 1</div>
+                <div class="meta-label">开发者预览</div>
             </div>
-            <div class="hero-stats">
-                <div class="stat">
-                    <span class="stat-num">100%</span>
-                    <span class="stat-label">免费使用</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">0</span>
-                    <span class="stat-label">广告干扰</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-num">180</span>
-                    <span class="stat-label">行代码</span>
+            <div class="meta-item">
+                <div class="meta-value">arm64</div>
+                <div class="meta-label">架构</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section" id="target">
+        <div class="beta-warning">
+            <div class="beta-warning-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+                <h3>开发者预览版警告</h3>
+                <p>此版本为 Beta 1 开发者预览版，仅供测试和开发用途。可能包含未修复的 bug、不稳定的功能和未完成的界面。请勿用于生产环境或日常主力设备。</p>
+            </div>
+        </div>
+
+        <h2 class="section-title">目标平台</h2>
+        <p class="section-subtitle">针对虚拟大师的兼容性优化</p>
+        <div class="target-card">
+            <div class="target-icon">VM</div>
+            <div class="target-info">
+                <h3>虚拟大师 (Virtual Master)</h3>
+                <p>一款 Android 虚拟机应用，可在手机内运行独立的 Android 系统。LimeOS 针对其虚拟化环境做了专门适配，确保系统服务、图形渲染、网络连接在虚拟机内正常运行。</p>
+                <div class="target-tags">
+                    <span class="tag tag-green">Android 11</span>
+                    <span class="tag tag-blue">API 30</span>
+                    <span class="tag tag-orange">arm64-v8a</span>
+                    <span class="tag tag-red">Beta 1</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 搜索栏 -->
-    <section class="search-section">
-        <div class="container">
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜索文件...">
-                <button onclick="searchFiles()"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 搜索</button>
+    <section class="section" id="features">
+        <h2 class="section-title">LimeOS 特性</h2>
+        <p class="section-subtitle">为虚拟环境量身定制的系统优化</p>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">R</div>
+                <h3>根权限内置</h3>
+                <p>预装 Magisk，虚拟机内直接获取 root，无需额外操作。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">X</div>
+                <h3>Xposed 框架</h3>
+                <p>预装 LSPosed，支持模块扩展，增强系统功能。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">S</div>
+                <h3>系统精简</h3>
+                <p>移除无用组件，降低内存占用，提升虚拟机性能。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">N</div>
+                <h3>网络优化</h3>
+                <p>修复虚拟机内 DNS、代理、VPN 兼容性问题。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">D</div>
+                <h3>调试支持</h3>
+                <p>开启 ADB 无线调试、日志记录，方便开发排错。</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">U</div>
+                <h3>系统更新</h3>
+                <p>内置更新检测，自动获取最新 Beta 版本。</p>
             </div>
         </div>
     </section>
 
-    <!-- 公告横幅 -->
-    <div id="announcementBanner" class="announcement-banner" style="display:none">
-        <div class="container">
-            <div class="announcement-content">
-                <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
-                <span id="announcementText"></span>
-                <button class="announcement-close" onclick="closeAnnouncement()">×</button>
-            </div>
+    <section class="section" id="status">
+        <h2 class="section-title">构建状态</h2>
+        <p class="section-subtitle">Beta 1 开发进度</p>
+        <table class="status-table">
+            <thead>
+                <tr>
+                    <th>组件</th>
+                    <th>状态</th>
+                    <th>说明</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>AOSP 源码同步</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>android-11.0.0_r48</td>
+                </tr>
+                <tr>
+                    <td>设备树配置</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>generic arm64</td>
+                </tr>
+                <tr>
+                    <td>内核编译</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>Goldfish 虚拟内核</td>
+                </tr>
+                <tr>
+                    <td>Root 集成</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>Magisk v26.4</td>
+                </tr>
+                <tr>
+                    <td>虚拟大师适配</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>兼容性补丁 + VM 导入格式</td>
+                </tr>
+                <tr>
+                    <td>系统主题</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>青柠深色主题</td>
+                </tr>
+                <tr>
+                    <td>系统应用</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>青柠设置 + 更新检测</td>
+                </tr>
+                <tr>
+                    <td>VM ROM 打包</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>ZIP 导入包格式</td>
+                </tr>
+                <tr>
+                    <td>构建测试</td>
+                    <td><span class="status-dot status-done"></span>完成</td>
+                    <td>Beta 1 已发布</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="section" id="download">
+        <h2 class="section-title">下载</h2>
+        <p class="section-subtitle">Beta 1 开发者预览版</p>
+        <div class="download-area">
+            <div class="version">LimeOS-Beta1</div>
+            <div class="info">Android 11 | API 30 | arm64 | 虚拟大师导入格式</div>
+            <a href="rom-download.html" class="btn btn-beta">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                下载 LimeOS Beta 1
+            </a>
+            <p style="margin-top:1rem;color:#64748b;font-size:0.85rem;">跳转到 ROM 下载页面，选择 GSI 镜像下载</p>
         </div>
-    </div>
-    <div style="padding:8px 16px; background:rgba(34,197,94,.15); border-bottom:1px solid rgba(34,197,94,.3); color:#86efac; font-size:13px; text-align:center;">
-        🛡️ 为保障安全，上传文件将自动通过青柠杀毒扫描，检测到病毒文件将禁止上传。
-    </div>
 
-    <!-- 文件列表 -->
-    <section id="files" class="section">
-        <div class="container">
-            <h2 class="section-title"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> 文件列表</h2>
+        <div style="margin-top:2rem;background:rgba(30,41,59,0.6);border:1px solid rgba(34,197,94,0.15);border-radius:16px;padding:2rem;">
+            <h3 style="color:#f1f5f9;margin-bottom:1rem;font-size:1.1rem;">导入方法</h3>
+            <ol style="color:#94a3b8;line-height:2;padding-left:1.5rem;">
+                <li>下载 LimeOS-Beta1-Android11.zip</li>
+                <li>打开虚拟大师 / VMOS Pro 应用</li>
+                <li>点击"添加自定义 ROM"</li>
+                <li>选择下载的 ZIP 文件</li>
+                <li>等待导入完成（约 1-2 分钟）</li>
+                <li>启动虚拟机</li>
+            </ol>
+        </div>
 
-            <!-- 文件列表（动态加载） -->
-            <div class="file-list" id="fileList">
-                <div class="loading-text">加载中...</div>
-            </div>
-
-            <div style="text-align:center;margin-top:20px;">
-                <a href="upload.html" class="nav-login-btn" style="display:inline-block;padding:12px 32px;text-decoration:none;font-size:1rem;"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 上传文件</a>
-            </div>
+        <div style="margin-top:2rem;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:16px;padding:2rem;">
+            <h3 style="color:#f59e0b;margin-bottom:1rem;font-size:1.1rem;">已知问题</h3>
+            <ul style="color:#94a3b8;line-height:2;padding-left:1.5rem;">
+                <li>首次启动可能需要 3-5 分钟</li>
+                <li>部分应用可能无法正常运行</li>
+                <li>相机功能尚未适配</li>
+                <li>蓝牙功能在虚拟机内受限</li>
+                <li>系统更新检测需要网络连接</li>
+            </ul>
         </div>
     </section>
 
-    <!-- 关于 -->
-    <section id="about" class="section section-gray">
-        <div class="container">
-            <h2 class="section-title">关于网盘</h2>
-            <div class="about-grid">
-                <div class="about-card">
-                    <div class="about-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-                    <h3>高速下载</h3>
-                    <p>基于GitHub Pages，全球CDN加速</p>
-                </div>
-                <div class="about-card">
-                    <div class="about-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-                    <h3>安全可靠</h3>
-                    <p>所有文件经过审核，安全无忧</p>
-                </div>
-                <div class="about-card">
-                    <div class="about-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></div>
-                    <h3>永久免费</h3>
-                    <p>无需注册，无需付费，直接下载</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 联系 -->
-    <section id="contact" class="section">
-        <div class="container">
-            <h2 class="section-title">联系我</h2>
-            <div class="contact-content">
-                <div class="contact-info">
-                    <div class="contact-item">
-                        <span class="contact-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
-                        <span>有文件需求或问题欢迎联系</span>
-                    </div>
-                    <div class="contact-item">
-                        <span class="contact-icon"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
-                        <span>欢迎留言反馈</span>
-                    </div>
-                </div>
-                <form class="contact-form" onsubmit="handleSubmit(event)">
-                    <input type="text" placeholder="您的称呼" required>
-                    <input type="email" placeholder="您的邮箱" required>
-                    <textarea placeholder="留言内容（如需分享文件，请填写文件名和下载链接）" rows="4" required></textarea>
-                    <button type="submit" class="submit-btn">发送留言</button>
-                </form>
-            </div>
-        </div>
-    </section>
-
-    <!-- 页脚 -->
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024-2026 青柠网盘. All rights reserved.</p>
-            <p class="credit">王梓豪制作</p>
-        </div>
+    <footer>
+        <p>LimeOS Project &copy; 2026</p>
+        <p style="margin-top:0.5rem;font-size:0.8rem;">仅供开发人员测试使用 | 基于 Android Open Source Project</p>
     </footer>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2.49.4"></script>
-    <script src="auth2.js"></script>
-    <script src="script.js"></script>
     <script>
-        // 检查登录状态，更新导航栏（异步验证Session）
-        (async function() {
-            const loginBtn = document.getElementById('navLoginBtn');
-            const adminBtn = document.getElementById('navAdminBtn');
-            const logoutBtn = document.getElementById('navLogoutBtn');
-            const profileArea = document.getElementById('navProfileArea');
-            const navAvatar = document.getElementById('navAvatar');
-            const navUsername = document.getElementById('navUsername');
-            
-            if (typeof supabaseClient === 'undefined') return;
-            
-            try {
-                // 验证真实的Supabase Session
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                
-                if (session) {
-                    // Session有效，显示已登录状态
-                    const email = session.user.email;
-                    const isAdmin = email === '3862242786@qq.com';
-                    loginBtn.style.display = 'none';
-                    logoutBtn.style.display = 'block';
-                    profileArea.style.display = 'block';
-                    if (isAdmin) {
-                        adminBtn.style.display = 'block';
-                    }
-                    // 显示用户头像首字母
-                    const letter = email ? email.charAt(0).toUpperCase() : '?';
-                    navAvatar.textContent = letter;
-                    // 从 localStorage 加载用户名和头像
-                    try {
-                        const profileKey = 'qn_profile_' + email;
-                        const profileData = localStorage.getItem(profileKey);
-                        if (profileData) {
-                            const profile = JSON.parse(profileData);
-                            navUsername.textContent = profile.username || '我的';
-                            if (profile.avatar_url) {
-                                navAvatar.innerHTML = '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-                            }
-                        }
-                    } catch(pe) {}
-                    // 同步localStorage
-                    localStorage.setItem('qn_logged_in', 'true');
-                    localStorage.setItem('qn_user_email', email);
-                    localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
-                } else {
-                    // Session无效，清除本地状态
-                    localStorage.removeItem('qn_logged_in');
-                    localStorage.removeItem('qn_user_email');
-                    localStorage.removeItem('qn_is_admin');
-                }
-            } catch (e) {
-                // 出错时保守处理，显示未登录
-                console.warn('Session check failed:', e);
-            }
-        })();
+        // 密码验证
+        const CORRECT_PASSWORD = 'qingning2026';
+        const STORAGE_KEY = 'qingning_beta_access';
 
-        // 从云端加载公告和设置
-        (async function() {
-            try {
-                const { data } = supabaseClient.storage.from('files').getPublicUrl('site_settings.json');
-                const resp = await fetch(data.publicUrl + '?t=' + Date.now());
-                if (resp.ok) {
-                    const settings = await resp.json();
-                    const announcement = settings.announcement;
-                    const dismissed = sessionStorage.getItem('qn_announcement_dismissed');
-                    if (announcement && announcement.trim() && !dismissed) {
-                        document.getElementById('announcementText').textContent = announcement;
-                        document.getElementById('announcementBanner').style.display = 'block';
-                    }
-                }
-            } catch (err) {}
-        })();
-
-        function closeAnnouncement() {
-            document.getElementById('announcementBanner').style.display = 'none';
-            sessionStorage.setItem('qn_announcement_dismissed', 'true');
+        // 检查是否已验证
+        if (localStorage.getItem(STORAGE_KEY) === 'granted') {
+            document.getElementById('passwordOverlay').classList.add('hidden');
         }
 
-        // 动态加载文件列表
-        (async function() {
-            const fileList = document.getElementById('fileList');
-            try {
-                // 分页获取所有文件
-                let allFiles = [];
-                let page = 0;
-                const pageSize = 100;
-                let hasMore = true;
+        function checkPassword() {
+            const input = document.getElementById('passwordInput');
+            const error = document.getElementById('passwordError');
+            const value = input.value.trim();
 
-                while (hasMore) {
-                    const { data, error } = await supabaseClient.storage
-                        .from('files')
-                        .list('', { 
-                            limit: pageSize, 
-                            offset: page * pageSize,
-                            sortBy: { column: 'created_at', order: 'desc' } 
-                        });
-
-                    if (error) {
-                        console.error('[文件列表] 加载失败:', error);
-                        break;
-                    }
-                    if (!data || data.length === 0) {
-                        hasMore = false;
-                        break;
-                    }
-                    allFiles = allFiles.concat(data);
-                    if (data.length < pageSize) hasMore = false;
-                    page++;
-                }
-
-                // 过滤掉系统文件
-                const userFiles = allFiles.filter(file => {
-                    if (file.name.startsWith('qingning-antivirus/')) return false;
-                    if (file.name.endsWith('.qn-verify')) return false;
-                    if (file.name === 'site_settings.json') return false;
-                    if (file.name.startsWith('os-version')) return false;
-                    return true;
-                });
-
-                if (userFiles.length === 0) {
-                    fileList.innerHTML = '<div class="empty-text"><svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg> 暂无文件，快去上传吧！</div>';
-                    return;
-                }
-
-                let html = '';
-                userFiles.forEach(file => {
-                    const { data: urlData } = supabaseClient.storage.from('files').getPublicUrl(file.name);
-                    const size = file.metadata?.size ? formatSize(file.metadata.size) : '';
-                    const date = new Date(file.created_at).toLocaleString('zh-CN');
-                    const ext = file.name.split('.').pop().toLowerCase();
-                    const icons = {
-                        'pdf':'📕','doc':'📘','docx':'📘','xls':'📗','xlsx':'📗',
-                        'ppt':'📙','pptx':'📙','txt':'📄','jpg':'🖼️','jpeg':'🖼️',
-                        'png':'🖼️','gif':'🖼️','mp4':'🎬','mp3':'🎵','zip':'📦','rar':'📦'
-                    };
-                    const icon = icons[ext] || '📄';
-
-                    html += '<div class="file-item">' +
-                        '<div class="file-info">' +
-                        '<span class="file-icon">' + icon + '</span>' +
-                        '<div class="file-detail">' +
-                        '<span class="file-name">' + file.name + '</span>' +
-                        '<span class="file-meta">' + size + ' · ' + date + '</span>' +
-                        '</div></div>' +
-                        '<a href="javascript:void(0)" onclick="downloadFile(\'' + urlData.publicUrl + '\',\'' + file.name + '\')" class="file-download-btn"><svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> 下载</a>' +
-                        '</div>';
-                });
-                fileList.innerHTML = html;
-            } catch(err) {
-                fileList.innerHTML = '<div class="empty-text"><svg class="icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg> 暂无文件</div>';
-            }
-        })();
-
-        // 通过 fetch+blob 强制下载（解决跨域download属性无效问题）
-        async function downloadFile(url, filename) {
-            try {
-                const resp = await fetch(url);
-                const blob = await resp.blob();
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(a.href);
-            } catch (err) {
-                // 降级：直接打开链接
-                window.open(url, '_blank');
-            }
-        }
-
-        // 检测是否为移动设备
-        function isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-
-        // 显示APP下载弹窗（仅移动端，且未勾选不再提醒）
-        function showAppDownloadModal() {
-            if (!isMobile()) return; // 电脑端不显示
-            if (localStorage.getItem('qn_app_modal_never')) return; // 用户选择不再提醒
-            if (localStorage.getItem('qn_app_modal_closed') === new Date().toDateString()) return; // 今天已关闭
-            
-            setTimeout(() => {
-                document.getElementById('appDownloadModal').style.display = 'flex';
-            }, 1500); // 1.5秒后弹出
-        }
-
-        // 关闭弹窗
-        function closeAppModal() {
-            document.getElementById('appDownloadModal').style.display = 'none';
-            // 如果没有勾选"不再提醒"，则只记录今天关闭
-            if (!localStorage.getItem('qn_app_modal_never')) {
-                localStorage.setItem('qn_app_modal_closed', new Date().toDateString());
-            }
-        }
-
-        // 处理"不再提醒"
-        function handleNoRemind() {
-            const checked = document.getElementById('noRemindCheckbox').checked;
-            if (checked) {
-                localStorage.setItem('qn_app_modal_never', 'true');
+            if (value === CORRECT_PASSWORD) {
+                localStorage.setItem(STORAGE_KEY, 'granted');
+                document.getElementById('passwordOverlay').classList.add('hidden');
             } else {
-                localStorage.removeItem('qn_app_modal_never');
+                error.textContent = '密码错误，请重试';
+                input.value = '';
+                input.focus();
             }
         }
 
-        // 页面加载时检测
-        window.addEventListener('load', showAppDownloadModal);
-
-        // APP下载下拉菜单 - 使用捕获阶段确保优先执行
-        (function() {
-            var moreBtn = document.getElementById('moreMenuBtn');
-            var dropdownMenu = document.getElementById('appDropdownMenu');
-            var navEl = document.querySelector('.nav-links');
-            
-            if (moreBtn && dropdownMenu) {
-                // 使用捕获阶段，优先于 script.js 中的冒泡阶段监听器
-                moreBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    
-                    dropdownMenu.classList.toggle('active');
-                    
-                    // 移动端：确保导航菜单保持打开
-                    if (navEl) {
-                        navEl.classList.add('active');
-                    }
-                }, true); // true = 捕获阶段
+        // 回车提交
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
             }
-            
-            // 点击外部关闭下拉菜单
-            document.addEventListener('click', function(e) {
-                var dropdown = document.querySelector('.nav-dropdown');
-                if (dropdown && !dropdown.contains(e.target)) {
-                    dropdownMenu.classList.remove('active');
-                }
-            });
-        })();
-
-        function formatSize(bytes) {
-            if (!bytes) return '';
-            const k = 1024;
-            const sizes = ['B','KB','MB','GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
+        });
     </script>
-<div style="text-align:center;padding:16px;color:#475569;font-size:12px;border-top:1px solid rgba(148,163,184,.08)">
-    <a href="qingning-architecture-2.0.html" style="color:#22c55e;text-decoration:none;display:inline-flex;align-items:center;gap:4px;margin-right:16px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-        青柠架构 2.0 - 不畏艰难
-    </a>
-    <a href="qna-architecture.html" style="color:#64748b;text-decoration:none;display:inline-flex;align-items:center;gap:4px">
-        <img src="assets/qna-logo.jpg" alt="" style="width:14px;height:14px;border-radius:3px">
-        青柠架构 v1.5
-    </a>
-</div>
-<script>
-    // 登录状态同步：检查并恢复 Supabase Session
-    (async function() {
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (session) {
-                localStorage.setItem('qn_logged_in', 'true');
-                localStorage.setItem('qn_user_email', session.user.email);
-                localStorage.setItem('qn_user_name', session.user.user_metadata?.name || session.user.email.split('@')[0]);
-                if (session.user.email === '3862242786@qq.com') {
-                    localStorage.setItem('qn_is_admin', 'true');
-                }
-            } else {
-                localStorage.removeItem('qn_logged_in');
-                localStorage.removeItem('qn_is_admin');
-            }
-        } catch(e) {}
-    })();
-</script>
 </body>
 </html>
