@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LimeBrowser Web</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #0a0e1a;
+            --surface: #1e293b;
+            --surface2: #0f172a;
+            --primary: #22c55e;
+            --primary-light: #4ade80;
+            --text: #f1f5f9;
+            --text2: #94a3b8;
+            --text3: #64748b;
+            --border: #334155;
+            --danger: #ef4444;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 10px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+        .url-bar {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0 14px;
+            height: 38px;
+        }
+        .url-bar input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-size: 14px;
+            outline: none;
+            padding: 0 8px;
+        }
+        .url-bar input::placeholder { color: var(--text3); }
+        .btn {
+            width: 36px; height: 36px;
+            border: none; border-radius: 10px;
+            background: transparent;
+            color: var(--text);
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .btn:hover { background: rgba(255,255,255,0.08); }
+        .btn.active { color: var(--primary); }
+        .btn-badge {
+            position: relative;
+        }
+        .btn-badge .badge {
+            position: absolute;
+            top: 2px; right: 2px;
+            min-width: 16px; height: 16px;
+            background: var(--danger);
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 4px;
+        }
+        .mode-btn {
+            display: flex; align-items: center; gap: 4px;
+            padding: 4px 10px;
+            border-radius: 16px;
+            border: 1px solid var(--primary);
+            background: var(--surface2);
+            color: var(--primary);
+            font-size: 12px; font-weight: bold;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Progress bar */
+        .progress-bar {
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .progress-bar.loading { width: 70%; }
+        .progress-bar.done { width: 100%; transition: width 0.2s; }
+        .progress-bar.hide { width: 0%; opacity: 0; transition: opacity 0.3s; }
+
+        /* Tab bar */
+        .tab-bar {
+            display: flex;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px;
+            min-width: 120px; max-width: 200px;
+            background: transparent;
+            border: none; border-right: 1px solid var(--border);
+            color: var(--text2);
+            font-size: 13px;
+            cursor: pointer;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .tab.active {
+            background: var(--bg);
+            color: var(--text);
+            border-bottom: 2px solid var(--primary);
+        }
+        .tab .tab-title {
+            flex: 1;
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+        .tab .tab-close {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; opacity: 0.6;
+        }
+        .tab .tab-close:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+        .tab-new {
+            padding: 8px 12px;
+            border: none; background: transparent;
+            color: var(--primary);
+            font-size: 20px; cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        /* Content area */
+        .content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        .iframe-container {
+            position: absolute; inset: 0;
+            display: none;
+        }
+        .iframe-container.active { display: block; }
+        .iframe-container iframe {
+            width: 100%; height: 100%;
+            border: none;
+            background: #fff;
+        }
+
+        /* Bottom nav */
+        .bottom-nav {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 52px;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+        }
+        .bottom-nav .btn {
+            width: 48px; height: 48px;
+            font-size: 22px;
+        }
+        .bottom-nav .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Panels */
+        .panel-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+        }
+        .panel-overlay.show { display: flex; }
+        .panel {
+            width: 100%;
+            max-height: 70vh;
+            background: var(--surface);
+            border-radius: 20px 20px 0 0;
+            overflow-y: auto;
+            animation: slideUp 0.2s ease;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .panel-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; background: var(--surface); z-index: 10;
+        }
+        .panel-header h3 { font-size: 18px; }
+        .panel-header .btn { width: 32px; height: 32px; }
+        .panel-body { padding: 12px; }
+
+        /* History items */
+        .history-item {
+            display: flex; flex-direction: column;
+            padding: 12px 16px;
+            margin: 4px 8px;
+            border-radius: 12px;
+            background: var(--surface2);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .history-item:hover { background: rgba(34,197,94,0.1); }
+        .history-item .title {
+            font-size: 15px; color: var(--text);
+            overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+        }
+        .history-item .meta {
+            font-size: 12px; color: var(--text3);
+            margin-top: 4px;
+        }
+        .history-empty {
+            text-align: center; padding: 40px;
+            color: var(--text3); font-size: 16px;
+        }
+        .clear-btn {
+            width: 100%; padding: 12px;
+            background: var(--danger); color: #fff;
+            border: none; border-radius: 12px;
+            font-size: 15px; cursor: pointer; margin: 8px;
+        }
+
+        /* UA mode panel */
+        .mode-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px; padding: 8px;
+        }
+        .mode-card {
+            padding: 16px 8px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--surface2);
+            text-align: center; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .mode-card:hover { border-color: var(--primary); }
+        .mode-card.selected {
+            border-color: var(--primary);
+            background: rgba(34,197,94,0.15);
+        }
+        .mode-card .icon { font-size: 28px; margin-bottom: 6px; }
+        .mode-card .name { font-size: 14px; font-weight: bold; }
+        .mode-card .desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+        .ua-options {
+            padding: 8px 16px;
+        }
+        .ua-option {
+            display: flex; align-items: center;
+            padding: 12px;
+            margin: 4px 0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .ua-option:hover { background: rgba(255,255,255,0.05); }
+        .ua-option input { margin-right: 12px; }
+        .ua-option label { flex: 1; font-size: 14px; cursor: pointer; }
+
+        .apply-btn {
+            width: calc(100% - 32px); margin: 16px;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 16px; font-weight: bold; cursor: pointer;
+        }
+
+        /* Menu items */
+        .menu-item {
+            display: flex; align-items: center; gap: 16px;
+            padding: 14px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.05); }
+        .menu-item .icon { font-size: 22px; width: 28px; text-align: center; }
+        .menu-item .label { font-size: 15px; flex: 1; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <!-- Toolbar -->
+    <div class="toolbar">
+        <div class="url-bar">
+            <span style="color:var(--text3);font-size:16px;">🔒</span>
+            <input type="text" id="urlInput" placeholder="搜索或输入网址" value="https://www.bing.com">
+        </div>
+        <button class="mode-btn" id="modeBtn" onclick="showModePanel()">
+            <span>📱</span>
+            <span id="modeLabel">手机</span>
+        </button>
+        <button class="btn btn-badge" id="tabsBtn" onclick="showTabsPanel()">
+            <span style="font-size:20px;">🗂️</span>
+            <span class="badge" id="tabBadge">1</span>
+        </button>
+        <button class="btn" onclick="showMenuPanel()">⋮</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-bar" id="progressBar"></div>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar" id="tabBar"></div>
+
+    <!-- Content -->
+    <div class="content" id="content"></div>
+
+    <!-- Bottom Nav -->
+    <div class="bottom-nav">
+        <button class="btn" id="btnBack" onclick="goBack()" disabled>←</button>
+        <button class="btn" id="btnForward" onclick="goForward()" disabled>→</button>
+        <button class="btn" onclick="goHome()">🏠</button>
+        <button class="btn" onclick="reload()">🔄</button>
+    </div>
+
+    <!-- History Panel -->
+    <div class="panel-overlay" id="historyPanel" onclick="closePanel(event)">
+        <div class="panel" onclick="event.stopPropagation()">
+            <div class="panel-header">
+                <h3>📜 历史记录</h3>
+                <button class="btn" onclick="hidePanel('historyPanel')">✕</button>
+            </div>
+            <div class="panel-body">
+                <button class="clear-btn" onclick="clearHistory()">🗑️ 清除全部历史</button>
+                <div id="historyList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UA Mode Panel -->
+    <div class="panel-overlay" id="modePanel" onclick="closePanel(event)">
+        <div class="panel" onclick="event.stopPropagation()">
+            <div class="panel-header">
+                <h3>🌐 浏览器模式</h3>
+                <button class="btn" onclick="hidePanel('modePanel')">✕</button>
+            </div>
+            <div class="panel-body">
+                <div class="mode-grid">
+                    <div class="mode-card selected" data-mode="phone" onclick="selectMode('phone')">
+                        <div class="icon">📱</div>
+                        <div class="name">手机</div>
+                        <div class="desc">手机版网页</div>
+                    </div>
+                    <div class="mode-card" data-mode="tablet" onclick="selectMode('tablet')">
+                        <div class="icon">📲</div>
+                        <div class="name">平板</div>
+                        <div class="desc">iPad 体验</div>
+                    </div>
+                    <div class="mode-card" data-mode="desktop" onclick="selectMode('desktop')">
+                        <div class="icon">💻</div>
+                        <div class="name">电脑</div>
+                        <div class="desc">桌面版网页</div>
+                    </div>
+                </div>
+                <div class="ua-options" id="uaOptions"></div>
+                <button class="apply-btn" onclick="applyMode()">✓ 应用并刷新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Panel -->
+    <div class="panel-overlay" id="menuPanel" onclick="closePanel(event)">
+        <div class="panel" onclick="event.stopPropagation()">
+            <div class="panel-header">
+                <h3>☰ 菜单</h3>
+                <button class="btn" onclick="hidePanel('menuPanel')">✕</button>
+            </div>
+            <div class="panel-body">
+                <div class="menu-item" onclick="sharePage()">
+                    <span class="icon">📤</span>
+                    <span class="label">分享</span>
+                </div>
+                <div class="menu-item" onclick="copyUrl()">
+                    <span class="icon">📋</span>
+                    <span class="label">复制链接</span>
+                </div>
+                <div class="menu-item" onclick="showHistory()">
+                    <span class="icon">📜</span>
+                    <span class="label">历史记录</span>
+                </div>
+                <div class="menu-item" onclick="showModePanel()">
+                    <span class="icon">🌐</span>
+                    <span class="label">浏览器模式</span>
+                </div>
+                <div class="menu-item" onclick="about()">
+                    <span class="icon">ℹ️</span>
+                    <span class="label">关于 LimeBrowser</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs Panel -->
+    <div class="panel-overlay" id="tabsPanel" onclick="closePanel(event)">
+        <div class="panel" onclick="event.stopPropagation()">
+            <div class="panel-header">
+                <h3>🗂️ 标签页</h3>
+                <button class="btn" onclick="hidePanel('tabsPanel')">✕</button>
+            </div>
+            <div class="panel-body" id="tabsList"></div>
+        </div>
+    </div>
+
+<script>
+// === State ===
+let tabs = [];
+let activeTabId = 0;
+let nextTabId = 1;
+let history = JSON.parse(localStorage.getItem('lb_history') || '[]');
+
+const UA_PRESETS = {
+    phone: {
+        chrome: 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+    },
+    tablet: {
+        ipad: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+        android: 'Mozilla/5.0 (Linux; Android 13; SM-T870) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    },
+    desktop: {
+        chrome: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        edge: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+        firefox: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0',
+        ie: 'Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko'
+    }
+};
+
+const UA_NAMES = {
+    phone: { chrome: 'Chrome 手机', safari: 'Safari iPhone' },
+    tablet: { ipad: 'iPad Safari', android: 'Android 平板' },
+    desktop: { chrome: 'Chrome 电脑', edge: 'Edge 电脑', firefox: 'Firefox 电脑', ie: 'IE 11 兼容' }
+};
+
+const MODE_ICONS = { phone: '📱', tablet: '📲', desktop: '💻' };
+const MODE_NAMES = { phone: '手机', tablet: '平板', desktop: '电脑' };
+
+let currentMode = localStorage.getItem('lb_mode') || 'phone';
+let currentUAKey = localStorage.getItem('lb_ua') || 'chrome';
+let currentUA = UA_PRESETS[currentMode][currentUAKey];
+
+// === Tab Management ===
+function createTab(url = 'https://www.bing.com') {
+    const id = nextTabId++;
+    const container = document.createElement('div');
+    container.className = 'iframe-container';
+    container.id = 'tab-' + id;
+    container.innerHTML = `<iframe sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox" src="${url}" title="tab"></iframe>`;
+    document.getElementById('content').appendChild(container);
+
+    const iframe = container.querySelector('iframe');
+    iframe.addEventListener('load', () => onTabLoad(id));
+
+    tabs.push({ id, url, title: url, iframe, container });
+    switchToTab(id);
+    renderTabsBar();
+    return id;
+}
+
+function switchToTab(id) {
+    tabs.forEach(t => {
+        t.container.classList.toggle('active', t.id === id);
+    });
+    activeTabId = id;
+    const tab = tabs.find(t => t.id === id);
+    if (tab) {
+        document.getElementById('urlInput').value = tab.url;
+        updateNavButtons();
+    }
+    renderTabsBar();
+}
+
+function closeTab(id) {
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx === -1) return;
+    tabs[idx].container.remove();
+    tabs.splice(idx, 1);
+    if (tabs.length === 0) {
+        createTab();
+    } else if (activeTabId === id) {
+        switchToTab(tabs[Math.min(idx, tabs.length - 1)].id);
+    }
+    renderTabsBar();
+    updateBadge();
+}
+
+function renderTabsBar() {
+    const bar = document.getElementById('tabBar');
+    bar.innerHTML = '';
+    tabs.forEach(tab => {
+        const el = document.createElement('div');
+        el.className = 'tab' + (tab.id === activeTabId ? ' active' : '');
+        el.innerHTML = `
+            <span class="tab-title">${escapeHtml(tab.title || '标签页')}</span>
+            <span class="tab-close" onclick="event.stopPropagation(); closeTab(${tab.id})">✕</span>
+        `;
+        el.onclick = () => { switchToTab(tab.id); hidePanel('tabsPanel'); };
+        bar.appendChild(el);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tab-new';
+    addBtn.textContent = '+';
+    addBtn.onclick = () => createTab();
+    bar.appendChild(addBtn);
+    updateBadge();
+}
+
+function updateBadge() {
+    document.getElementById('tabBadge').textContent = tabs.length;
+}
+
+function onTabLoad(id) {
+    const tab = tabs.find(t => t.id === id);
+    if (!tab) return;
+    try {
+        const iframe = tab.iframe;
+        // Try to get title
+        setTimeout(() => {
+            try {
+                const title = iframe.contentDocument?.title || iframe.contentWindow?.document?.title;
+                if (title) tab.title = title;
+            } catch(e) {}
+            // Update URL from iframe if same-origin
+            try {
+                const href = iframe.contentWindow?.location?.href;
+                if (href && href !== 'about:blank') {
+                    tab.url = href;
+                    if (id === activeTabId) {
+                        document.getElementById('urlInput').value = href;
+                        addHistory(tab.title || href, href);
+                    }
+                }
+            } catch(e) {}
+            renderTabsBar();
+            updateNavButtons();
+        }, 500);
+    } catch(e) {}
+    document.getElementById('progressBar').className = 'progress-bar done';
+    setTimeout(() => {
+        document.getElementById('progressBar').className = 'progress-bar hide';
+    }, 300);
+}
+
+// === Navigation ===
+function loadUrl(url) {
+    if (!url.match(/^https?:\/\//)) {
+        if (url.includes('.') && !url.includes(' ')) url = 'https://' + url;
+        else url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+    }
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) {
+        document.getElementById('progressBar').className = 'progress-bar loading';
+        tab.iframe.src = url;
+        tab.url = url;
+    }
+}
+
+function goBack() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) try { tab.iframe.contentWindow.history.back(); } catch(e) {}
+}
+function goForward() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) try { tab.iframe.contentWindow.history.forward(); } catch(e) {}
+}
+function goHome() { loadUrl('https://www.bing.com'); }
+function reload() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) tab.iframe.src = tab.iframe.src;
+}
+
+function updateNavButtons() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    document.getElementById('btnBack').disabled = !tab;
+    document.getElementById('btnForward').disabled = !tab;
+}
+
+// === History ===
+function addHistory(title, url) {
+    if (!url || url === 'about:blank') return;
+    const existing = history.findIndex(h => h.url === url);
+    if (existing !== -1) {
+        history[existing].title = title;
+        history[existing].time = Date.now();
+        history[existing].count = (history[existing].count || 1) + 1;
+    } else {
+        history.unshift({ title, url, time: Date.now(), count: 1 });
+    }
+    if (history.length > 500) history = history.slice(0, 500);
+    localStorage.setItem('lb_history', JSON.stringify(history));
+}
+
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (history.length === 0) {
+        list.innerHTML = '<div class="history-empty">暂无浏览历史</div>';
+        return;
+    }
+    list.innerHTML = history.map((h, i) => `
+        <div class="history-item" onclick="openHistory(${i})" oncontextmenu="event.preventDefault(); deleteHistory(${i})">
+            <div class="title">${escapeHtml(h.title || h.url)}</div>
+            <div class="meta">${getDomain(h.url)} · ${formatTime(h.time)} ${h.count > 1 ? '· 访问' + h.count + '次' : ''}</div>
+        </div>
+    `).join('');
+}
+
+function openHistory(idx) {
+    loadUrl(history[idx].url);
+    hidePanel('historyPanel');
+}
+function deleteHistory(idx) {
+    history.splice(idx, 1);
+    localStorage.setItem('lb_history', JSON.stringify(history));
+    renderHistory();
+}
+function clearHistory() {
+    if (!confirm('确定要清除所有浏览历史吗？')) return;
+    history = [];
+    localStorage.removeItem('lb_history');
+    renderHistory();
+}
+function showHistory() {
+    hidePanel('menuPanel');
+    renderHistory();
+    document.getElementById('historyPanel').classList.add('show');
+}
+
+// === UA Mode ===
+function selectMode(mode) {
+    currentMode = mode;
+    currentUAKey = Object.keys(UA_PRESETS[mode])[0];
+    document.querySelectorAll('.mode-card').forEach(c => c.classList.toggle('selected', c.dataset.mode === mode));
+    renderUAOptions();
+}
+
+function renderUAOptions() {
+    const opts = UA_PRESETS[currentMode];
+    const names = UA_NAMES[currentMode];
+    document.getElementById('uaOptions').innerHTML = Object.keys(opts).map((key, i) => `
+        <div class="ua-option" onclick="selectUA('${key}')">
+            <input type="radio" name="ua" ${key === currentUAKey ? 'checked' : ''}>
+            <label>${names[key]}</label>
+        </div>
+    `).join('');
+}
+
+function selectUA(key) {
+    currentUAKey = key;
+    document.querySelectorAll('.ua-option input').forEach((inp, i) => {
+        inp.checked = Object.keys(UA_PRESETS[currentMode])[i] === key;
+    });
+}
+
+function applyMode() {
+    currentUA = UA_PRESETS[currentMode][currentUAKey];
+    localStorage.setItem('lb_mode', currentMode);
+    localStorage.setItem('lb_ua', currentUAKey);
+    document.getElementById('modeLabel').textContent = MODE_NAMES[currentMode];
+    document.querySelector('#modeBtn span:first-child').textContent = MODE_ICONS[currentMode];
+    // Reload current tab with new UA
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) {
+        // Note: changing UA in iframe requires recreating it
+        const url = tab.url;
+        tab.iframe.src = 'about:blank';
+        setTimeout(() => {
+            tab.iframe.src = url;
+        }, 100);
+    }
+    hidePanel('modePanel');
+}
+
+function showModePanel() {
+    hidePanel('menuPanel');
+    selectMode(currentMode);
+    document.getElementById('modePanel').classList.add('show');
+}
+
+// === Menu ===
+function showMenuPanel() {
+    document.getElementById('menuPanel').classList.add('show');
+}
+function sharePage() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    const url = tab ? tab.url : '';
+    if (navigator.share) {
+        navigator.share({ title: 'LimeBrowser', url });
+    } else {
+        copyToClipboard(url);
+        alert('链接已复制');
+    }
+    hidePanel('menuPanel');
+}
+function copyUrl() {
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (tab) { copyToClipboard(tab.url); alert('链接已复制'); }
+    hidePanel('menuPanel');
+}
+function about() {
+    alert('LimeBrowser Web v1.0\n基于 iframe 的网页浏览器\n支持多标签 / 历史记录 / UA切换\nLimeOS Project 2026');
+    hidePanel('menuPanel');
+}
+function showTabsPanel() {
+    const list = document.getElementById('tabsList');
+    list.innerHTML = `
+        <button class="clear-btn" onclick="createTab(); hidePanel('tabsPanel')">➕ 新建标签页</button>
+    `;
+    tabs.forEach(tab => {
+        const el = document.createElement('div');
+        el.className = 'history-item';
+        el.innerHTML = `
+            <div class="title">${escapeHtml(tab.title || '标签页')}</div>
+            <div class="meta">${getDomain(tab.url)}</div>
+        `;
+        el.onclick = () => { switchToTab(tab.id); hidePanel('tabsPanel'); };
+        list.appendChild(el);
+    });
+    document.getElementById('tabsPanel').classList.add('show');
+}
+
+// === Utils ===
+function hidePanel(id) {
+    document.getElementById(id).classList.remove('show');
+}
+function closePanel(e) {
+    if (e.target.classList.contains('panel-overlay')) {
+        e.target.classList.remove('show');
+    }
+}
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+function getDomain(url) {
+    try { return new URL(url).hostname; } catch { return url; }
+}
+function formatTime(ts) {
+    const diff = Date.now() - ts;
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+    if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+    return new Date(ts).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+function copyToClipboard(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+}
+
+// === URL Input ===
+document.getElementById('urlInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        loadUrl(this.value.trim());
+        this.blur();
+    }
+});
+
+// === Init ===
+window.onload = () => {
+    document.getElementById('modeLabel').textContent = MODE_NAMES[currentMode];
+    document.querySelector('#modeBtn span:first-child').textContent = MODE_ICONS[currentMode];
+    createTab('https://www.bing.com');
+};
+</script>
+</body>
+</html>
