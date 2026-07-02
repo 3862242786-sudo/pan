@@ -27,22 +27,11 @@ jobs:
       run: |
         cd lime-browser
         gradle assembleDebug --stacktrace
+        ls -lh app/build/outputs/apk/debug/
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: LimeBrowser-APK
         path: lime-browser/app/build/outputs/apk/debug/*.apk
-
-    - name: Release APK
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: LimeBrowser-v1.0.0
-        name: LimeBrowser v1.0.0
-        body: |
-          LimeBrowser 青柠浏览器 APK
-          - 基于 Chromium WebView
-          - 支持 IE/Edge/Firefox 兼容模式
-        files: lime-browser/app/build/outputs/apk/debug/*.apk
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        retention-days: 30
