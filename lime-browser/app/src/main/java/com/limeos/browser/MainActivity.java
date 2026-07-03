@@ -40,6 +40,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+
 import com.limeos.browser.db.HistoryDbHelper;
 import com.limeos.browser.model.Tab;
 
@@ -166,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2.4");
+        s.setUserAgentString(currentUA + " LimeBrowser/1.2.5");
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
@@ -514,40 +516,48 @@ public class MainActivity extends AppCompatActivity {
         try {
             Tab t = getActiveTab();
             String url = t != null && t.webView != null ? t.webView.getUrl() : "";
-            String[] items = {"分享", "复制链接", "历史记录", "浏览器模式", "关于 LimeBrowser"};
-            new AlertDialog.Builder(this)
-                    .setTitle("菜单")
-                    .setItems(items, (dialog, which) -> {
-                        switch (which) {
-                            case 0:
-                                Intent share = new Intent(Intent.ACTION_SEND);
-                                share.setType("text/plain");
-                                share.putExtra(Intent.EXTRA_TEXT, url);
-                                try {
-                                    startActivity(Intent.createChooser(share, "分享"));
-                                } catch (Exception e) {
-                                    Toast.makeText(this, "无法分享", Toast.LENGTH_SHORT).show();
-                                }
-                                break;
-                            case 1:
-                                copyToClipboard(url);
-                                break;
-                            case 2:
-                                startActivity(new Intent(this, HistoryActivity.class));
-                                break;
-                            case 3:
-                                showUAModePage();
-                                break;
-                            case 4:
-                                new AlertDialog.Builder(this)
-                                        .setTitle("关于 LimeBrowser")
-                                        .setMessage("LimeBrowser v1.2.4\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
-                                        .setPositiveButton("确定", null)
-                                        .show();
-                                break;
-                        }
-                    })
-                    .show();
+
+            BottomSheetDialog dialog = new BottomSheetDialog(this);
+            View sheet = getLayoutInflater().inflate(R.layout.bottom_sheet_menu, null);
+
+            sheet.findViewById(R.id.menuShare).setOnClickListener(v -> {
+                dialog.dismiss();
+                Intent share = new Intent(Intent.ACTION_SEND);
+                share.setType("text/plain");
+                share.putExtra(Intent.EXTRA_TEXT, url);
+                try {
+                    startActivity(Intent.createChooser(share, "分享"));
+                } catch (Exception e) {
+                    Toast.makeText(this, "无法分享", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            sheet.findViewById(R.id.menuCopy).setOnClickListener(v -> {
+                dialog.dismiss();
+                copyToClipboard(url);
+            });
+
+            sheet.findViewById(R.id.menuHistory).setOnClickListener(v -> {
+                dialog.dismiss();
+                startActivity(new Intent(this, HistoryActivity.class));
+            });
+
+            sheet.findViewById(R.id.menuMode).setOnClickListener(v -> {
+                dialog.dismiss();
+                showUAModePage();
+            });
+
+            sheet.findViewById(R.id.menuAbout).setOnClickListener(v -> {
+                dialog.dismiss();
+                new AlertDialog.Builder(this)
+                        .setTitle("关于 LimeBrowser")
+                        .setMessage("LimeBrowser v1.2.5\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
+                        .setPositiveButton("确定", null)
+                        .show();
+            });
+
+            dialog.setContentView(sheet);
+            dialog.show();
         } catch (Exception e) {
             Toast.makeText(this, "打开菜单失败", Toast.LENGTH_SHORT).show();
         }
@@ -620,7 +630,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.4");
+                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.5");
                                 if (t.isActive) t.webView.reload();
                             }
                         }
