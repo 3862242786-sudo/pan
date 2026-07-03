@@ -53,7 +53,8 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout webViewContainer;
     private EditText urlInput;
     private ProgressBar progressBar;
-    private ImageButton btnBack, btnForward, btnRefresh, btnHome, btnTabs, btnMenu;
+    private ImageButton btnBack, btnForward, btnRefresh, btnHome, btnMenu;
+    private View btnTabs, btnUAMode;
     private TextView tvTabCount;
     private TextView tvUAModeLabel;
     private SharedPreferences prefs;
@@ -393,7 +394,6 @@ public class MainActivity extends AppCompatActivity {
             btnMenu.setOnClickListener(v -> showMenu());
         }
 
-        View btnUAMode = findViewById(R.id.btnUAMode);
         if (btnUAMode != null) {
             btnUAMode.setOnClickListener(v -> showUAModePage());
         }
