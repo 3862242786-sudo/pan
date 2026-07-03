@@ -62,13 +62,12 @@ public class MainActivity extends AppCompatActivity {
     private ExecutorService dbExecutor;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
-    private List<Tab> tabs = new ArrayList<>();
+    private final List<Tab> tabs = new ArrayList<>();
     private int activeTabId = 0;
     private int nextTabId = 1;
     private static final String HOME_URL = "https://3862242786-sudo.github.io/pan/lime-start/";
     private static final String PREFS_NAME = "lime_browser_prefs";
 
-    // UA presets
     private static final String UA_DESKTOP_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
     private static final String UA_DESKTOP_EDGE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0";
     private static final String UA_DESKTOP_FIREFOX = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0";
@@ -79,17 +78,17 @@ public class MainActivity extends AppCompatActivity {
     private static final String UA_PHONE_SAFARI = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
 
     private static final int MODE_PHONE = 0, MODE_TABLET = 1, MODE_DESKTOP = 2;
-    private String[][] modeUANames = {
+    private final String[][] modeUANames = {
         {"Chrome 手机", "Safari iPhone"},
         {"iPad Safari", "Android 平板"},
         {"Chrome 电脑", "Edge 电脑", "Firefox 电脑", "IE 11 兼容"}
     };
-    private String[][] modeUAValues = {
+    private final String[][] modeUAValues = {
         {UA_PHONE_CHROME, UA_PHONE_SAFARI},
         {UA_TABLET_IPAD, UA_TABLET_ANDROID},
         {UA_DESKTOP_CHROME, UA_DESKTOP_EDGE, UA_DESKTOP_FIREFOX, UA_DESKTOP_IE}
     };
-    private String[] modeNames = {"手机", "平板", "电脑"};
+    private final String[] modeNames = {"手机", "平板", "电脑"};
     private int currentMode = MODE_PHONE;
     private int currentUaIndex = 0;
     private String currentUA = UA_PHONE_CHROME;
@@ -130,18 +129,20 @@ public class MainActivity extends AppCompatActivity {
             tvUAModeLabel.setText(modeNames[currentMode]);
         }
 
-        String startUrl = HOME_URL;
-        Intent intent = getIntent();
-        if (intent != null) {
-            if (Intent.ACTION_VIEW.equals(intent.getAction())) {
-                Uri data = intent.getData();
-                if (data != null) startUrl = data.toString();
-            } else if (intent.hasExtra("url")) {
-                startUrl = intent.getStringExtra("url");
+        // 只在首次创建时新建标签，避免Activity重建重复创建
+        if (savedInstanceState == null) {
+            String startUrl = HOME_URL;
+            Intent intent = getIntent();
+            if (intent != null) {
+                if (Intent.ACTION_VIEW.equals(intent.getAction())) {
+                    Uri data = intent.getData();
+                    if (data != null) startUrl = data.toString();
+                } else if (intent.hasExtra("url")) {
+                    startUrl = intent.getStringExtra("url");
+                }
             }
+            addTab(startUrl);
         }
-
-        addTab(startUrl);
 
         setupListeners();
         updateUI();
@@ -165,13 +166,13 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2.1");
+        s.setUserAgentString(currentUA + " LimeBrowser/1.2.4");
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
             CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true);
         } catch (Exception e) {
-            // Ignore cookie manager errors
+            // Ignore
         }
 
         wv.setWebViewClient(new SafeWebViewClient());
@@ -262,7 +263,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     historyDb.addHistory(title, url);
                 } catch (Exception e) {
-                    // Ignore DB errors to prevent crashes
+                    // Ignore
                 }
             });
         }
@@ -285,33 +286,36 @@ public class MainActivity extends AppCompatActivity {
 
     private void switchToTab(int tabId) {
         if (webViewContainer == null) return;
+        Tab target = getTabById(tabId);
+        if (target == null) return;
+
         for (Tab t : tabs) {
-            if (t.id == tabId) {
-                t.isActive = true;
-                activeTabId = tabId;
-                webViewContainer.removeAllViews();
-                if (t.webView != null) {
-                    webViewContainer.addView(t.webView);
-                    try {
-                        String url = t.webView.getUrl();
-                        if (url != null && urlInput != null) urlInput.setText(url);
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-            } else {
-                t.isActive = false;
+            t.isActive = (t.id == tabId);
+        }
+        activeTabId = tabId;
+
+        webViewContainer.removeAllViews();
+        if (target.webView != null) {
+            webViewContainer.addView(target.webView);
+            try {
+                String url = target.webView.getUrl();
+                if (url != null && urlInput != null) urlInput.setText(url);
+            } catch (Exception e) {
+                // Ignore
             }
         }
         updateUI();
     }
 
+    /**
+     * 关闭标签。关键修复：清空后不再自动新建标签。
+     */
     private void closeTab(int tabId) {
-        Tab toClose = null;
-        for (Tab t : tabs) {
-            if (t.id == tabId) { toClose = t; break; }
-        }
+        Tab toClose = getTabById(tabId);
         if (toClose == null) return;
+
+        // 先标记为非活动，防止回调中误判
+        toClose.isActive = false;
 
         try {
             if (toClose.webView != null) {
@@ -322,24 +326,26 @@ public class MainActivity extends AppCompatActivity {
                 toClose.webView.destroy();
             }
         } catch (Exception e) {
-            // Ignore destroy errors
+            // Ignore
         }
 
         tabs.remove(toClose);
+
         if (tabs.isEmpty()) {
-            addTab(HOME_URL);
+            // 清空后不自动新建，显示空状态
+            activeTabId = 0;
+            if (webViewContainer != null) webViewContainer.removeAllViews();
+            if (urlInput != null) urlInput.setText("");
         } else {
-            int switchTo = activeTabId;
-            if (activeTabId == tabId || getTabById(activeTabId) == null) {
-                switchTo = tabs.get(tabs.size() - 1).id;
-            }
-            switchToTab(switchTo);
+            // 切换到剩余标签中最后一个
+            Tab last = tabs.get(tabs.size() - 1);
+            switchToTab(last.id);
         }
+        updateUI();
     }
 
     private Tab getActiveTab() {
-        for (Tab t : tabs) if (t.isActive) return t;
-        return null;
+        return getTabById(activeTabId);
     }
 
     private Tab getTabById(int id) {
@@ -399,6 +405,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 关键修复：无活动标签时自动新建标签
+     */
     private void loadUrl(String url) {
         if (url == null || url.isEmpty()) return;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -406,7 +415,12 @@ public class MainActivity extends AppCompatActivity {
             else url = "https://www.bing.com/search?q=" + Uri.encode(url);
         }
         Tab t = getActiveTab();
-        if (t != null && t.webView != null) t.webView.loadUrl(url);
+        if (t != null && t.webView != null) {
+            t.webView.loadUrl(url);
+        } else {
+            // 没有活动标签时，自动新建一个
+            addTab(url);
+        }
     }
 
     private void updateUI() {
@@ -414,6 +428,16 @@ public class MainActivity extends AppCompatActivity {
         if (t != null && t.webView != null) {
             if (btnBack != null) btnBack.setAlpha(t.webView.canGoBack() ? 1.0f : 0.4f);
             if (btnForward != null) btnForward.setAlpha(t.webView.canGoForward() ? 1.0f : 0.4f);
+            if (btnBack != null) btnBack.setEnabled(true);
+            if (btnForward != null) btnForward.setEnabled(true);
+            if (btnRefresh != null) btnRefresh.setEnabled(true);
+            if (btnHome != null) btnHome.setEnabled(true);
+        } else {
+            // 无标签时禁用导航按钮
+            if (btnBack != null) { btnBack.setAlpha(0.3f); btnBack.setEnabled(false); }
+            if (btnForward != null) { btnForward.setAlpha(0.3f); btnForward.setEnabled(false); }
+            if (btnRefresh != null) btnRefresh.setEnabled(false);
+            if (btnHome != null) btnHome.setEnabled(false);
         }
         if (tvTabCount != null) tvTabCount.setText(String.valueOf(tabs.size()));
     }
@@ -425,6 +449,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 关键修复：TabAdapter直接使用tabs列表，避免数据不同步
+     */
     private void showTabSwitcher() {
         try {
             View view = LayoutInflater.from(this).inflate(R.layout.dialog_tabs, null);
@@ -437,7 +464,13 @@ public class MainActivity extends AppCompatActivity {
 
             View btnNewTab = view.findViewById(R.id.btnNewTab);
             if (btnNewTab != null) {
-                btnNewTab.setOnClickListener(v -> addTab(HOME_URL));
+                btnNewTab.setOnClickListener(v -> {
+                    addTab(HOME_URL);
+                    // 刷新Dialog中的列表
+                    if (rv != null && rv.getAdapter() != null) {
+                        rv.getAdapter().notifyDataSetChanged();
+                    }
+                });
             }
 
             new AlertDialog.Builder(this)
@@ -451,31 +484,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     class TabAdapter extends RecyclerView.Adapter<TabAdapter.VH> {
-        private final List<Tab> adapterTabs = new ArrayList<>(tabs);
-
-        TabAdapter() {
-            adapterTabs.addAll(tabs);
-        }
-
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_tab, p, false));
         }
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
-            Tab t = adapterTabs.get(pos);
+            // 直接从tabs列表读取，确保数据同步
+            if (pos < 0 || pos >= tabs.size()) return;
+            Tab t = tabs.get(pos);
             h.tvTitle.setText(t.title != null ? t.title : "标签页");
             h.tvUrl.setText(t.url != null ? t.url : "");
             h.itemView.setAlpha(t.isActive ? 1.0f : 0.6f);
-            h.itemView.setOnClickListener(v -> {
-                switchToTab(t.id);
-            });
-            h.btnClose.setOnClickListener(v -> {
-                int id = t.id;
-                adapterTabs.remove(h.getAdapterPosition());
-                notifyItemRemoved(h.getAdapterPosition());
-                closeTab(id);
-            });
+            h.itemView.setOnClickListener(v -> switchToTab(t.id));
+            h.btnClose.setOnClickListener(v -> closeTab(t.id));
         }
-        @Override public int getItemCount() { return adapterTabs.size(); }
+        @Override public int getItemCount() { return tabs.size(); }
         class VH extends RecyclerView.ViewHolder {
             TextView tvTitle, tvUrl;
             ImageButton btnClose;
@@ -519,7 +541,7 @@ public class MainActivity extends AppCompatActivity {
                             case 4:
                                 new AlertDialog.Builder(this)
                                         .setTitle("关于 LimeBrowser")
-                                        .setMessage("LimeBrowser v1.2.1\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
+                                        .setMessage("LimeBrowser v1.2.4\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
                                         .setPositiveButton("确定", null)
                                         .show();
                                 break;
@@ -598,7 +620,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.1");
+                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.4");
                                 if (t.isActive) t.webView.reload();
                             }
                         }
