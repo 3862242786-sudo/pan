@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2.5");
+        s.setUserAgentString(currentUA + " LimeBrowser/1.2.6");
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
@@ -518,6 +518,9 @@ public class MainActivity extends AppCompatActivity {
             String url = t != null && t.webView != null ? t.webView.getUrl() : "";
 
             BottomSheetDialog dialog = new BottomSheetDialog(this);
+            if (dialog.getWindow() != null) {
+                dialog.getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT));
+            }
             View sheet = getLayoutInflater().inflate(R.layout.bottom_sheet_menu, null);
 
             sheet.findViewById(R.id.menuShare).setOnClickListener(v -> {
@@ -551,7 +554,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 new AlertDialog.Builder(this)
                         .setTitle("关于 LimeBrowser")
-                        .setMessage("LimeBrowser v1.2.5\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
+                        .setMessage("LimeBrowser v1.2.6\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
                         .setPositiveButton("确定", null)
                         .show();
             });
@@ -630,7 +633,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.5");
+                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.6");
                                 if (t.isActive) t.webView.reload();
                             }
                         }
