@@ -10,6 +10,8 @@ import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -43,6 +45,8 @@ import com.limeos.browser.model.Tab;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -54,6 +58,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvUAModeLabel;
     private SharedPreferences prefs;
     private HistoryDbHelper historyDb;
+    private ExecutorService dbExecutor;
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private List<Tab> tabs = new ArrayList<>();
     private int activeTabId = 0;
@@ -94,9 +100,17 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        historyDb = HistoryDbHelper.getInstance(this);
+        try {
+            historyDb = HistoryDbHelper.getInstance(this);
+        } catch (Exception e) {
+            historyDb = null;
+        }
+        dbExecutor = Executors.newSingleThreadExecutor();
+
         currentMode = prefs.getInt("ua_mode", MODE_PHONE);
         currentUaIndex = prefs.getInt("ua_index_" + currentMode, 0);
+        if (currentMode < 0 || currentMode > 2) currentMode = MODE_PHONE;
+        if (currentUaIndex < 0 || currentUaIndex >= modeUAValues[currentMode].length) currentUaIndex = 0;
         currentUA = modeUAValues[currentMode][currentUaIndex];
 
         webViewContainer = findViewById(R.id.webViewContainer);
@@ -111,9 +125,10 @@ public class MainActivity extends AppCompatActivity {
         tvTabCount = findViewById(R.id.tvTabCount);
         tvUAModeLabel = findViewById(R.id.tvUAModeLabel);
 
-        tvUAModeLabel.setText(modeNames[currentMode]);
+        if (tvUAModeLabel != null) {
+            tvUAModeLabel.setText(modeNames[currentMode]);
+        }
 
-        // Handle intent
         String startUrl = HOME_URL;
         Intent intent = getIntent();
         if (intent != null) {
@@ -125,11 +140,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        if (intent != null && intent.getBooleanExtra("new_tab", false) && !tabs.isEmpty()) {
-            addTab(startUrl);
-        } else {
-            addTab(startUrl);
-        }
+        addTab(startUrl);
 
         setupListeners();
         updateUI();
@@ -153,77 +164,140 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2");
+        s.setUserAgentString(currentUA + " LimeBrowser/1.2.1");
 
-        CookieManager.getInstance().setAcceptCookie(true);
-        CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true);
+        try {
+            CookieManager.getInstance().setAcceptCookie(true);
+            CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true);
+        } catch (Exception e) {
+            // Ignore cookie manager errors
+        }
 
-        wv.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                String url = request.getUrl().toString();
-                if (url.startsWith("http://") || url.startsWith("https://")) return false;
-                try { startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl())); }
-                catch (Exception e) { Toast.makeText(MainActivity.this, "无法打开", Toast.LENGTH_SHORT).show(); }
-                return true;
-            }
-            @Override
-            public void onPageStarted(WebView view, String url, Bitmap favicon) {
-                urlInput.setText(url);
-                progressBar.setVisibility(View.VISIBLE);
-                updateUI();
-            }
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                progressBar.setVisibility(View.GONE);
-                Tab t = getActiveTab();
-                if (t != null) {
-                    t.title = view.getTitle() != null ? view.getTitle() : url;
-                    t.url = url;
-                }
-                historyDb.addHistory(view.getTitle(), url);
-                updateUI();
-            }
-        });
-
-        wv.setWebChromeClient(new WebChromeClient() {
-            @Override
-            public void onProgressChanged(WebView view, int newProgress) {
-                progressBar.setProgress(newProgress);
-            }
-        });
-
-        wv.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
-            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            req.setMimeType(mimeType);
-            req.addRequestHeader("User-Agent", userAgent);
-            req.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
-            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
-                    URLUtil.guessFileName(url, contentDisposition, mimeType));
-            DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
-            if (dm != null) { dm.enqueue(req); Toast.makeText(this, "开始下载", Toast.LENGTH_SHORT).show(); }
-        });
+        wv.setWebViewClient(new SafeWebViewClient());
+        wv.setWebChromeClient(new SafeWebChromeClient());
+        wv.setDownloadListener(new SafeDownloadListener());
 
         return wv;
     }
 
+    private class SafeWebViewClient extends WebViewClient {
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+            String url = request.getUrl().toString();
+            if (url.startsWith("http://") || url.startsWith("https://")) return false;
+            try {
+                startActivity(new Intent(Intent.ACTION_VIEW, request.getUrl()));
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, "无法打开", Toast.LENGTH_SHORT).show();
+            }
+            return true;
+        }
+
+        @Override
+        public void onPageStarted(WebView view, String url, Bitmap favicon) {
+            if (isFinishing() || isDestroyed()) return;
+            if (urlInput != null) urlInput.setText(url);
+            if (progressBar != null) progressBar.setVisibility(View.VISIBLE);
+            updateUI();
+        }
+
+        @Override
+        public void onPageFinished(WebView view, String url) {
+            if (isFinishing() || isDestroyed()) return;
+            if (progressBar != null) progressBar.setVisibility(View.GONE);
+            if (url == null || url.equals("about:blank")) return;
+
+            Tab t = getActiveTab();
+            if (t != null && t.webView == view) {
+                String title = view.getTitle();
+                t.title = title != null && !title.isEmpty() ? title : url;
+                t.url = url;
+                safeAddHistory(t.title, url);
+            }
+            updateUI();
+        }
+
+        @Override
+        public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+            if (isFinishing() || isDestroyed()) return;
+            if (progressBar != null) progressBar.setVisibility(View.GONE);
+        }
+    }
+
+    private class SafeWebChromeClient extends WebChromeClient {
+        @Override
+        public void onProgressChanged(WebView view, int newProgress) {
+            if (isFinishing() || isDestroyed()) return;
+            if (progressBar != null) progressBar.setProgress(newProgress);
+        }
+    }
+
+    private class SafeDownloadListener implements DownloadListener {
+        @Override
+        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+            try {
+                DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+                req.setMimeType(mimeType);
+                req.addRequestHeader("User-Agent", userAgent);
+                req.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+                req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                req.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                        URLUtil.guessFileName(url, contentDisposition, mimeType));
+                DownloadManager dm = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
+                if (dm != null) {
+                    dm.enqueue(req);
+                    Toast.makeText(MainActivity.this, "开始下载", Toast.LENGTH_SHORT).show();
+                }
+            } catch (Exception e) {
+                Toast.makeText(MainActivity.this, "下载失败", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    private void safeAddHistory(String title, String url) {
+        if (historyDb == null || url == null || url.isEmpty()) return;
+        if (dbExecutor != null && !dbExecutor.isShutdown()) {
+            dbExecutor.execute(() -> {
+                try {
+                    historyDb.addHistory(title, url);
+                } catch (Exception e) {
+                    // Ignore DB errors to prevent crashes
+                }
+            });
+        }
+    }
+
     private void addTab(String url) {
         Tab tab = new Tab(nextTabId++, url);
-        tab.webView = createWebView();
+        try {
+            tab.webView = createWebView();
+        } catch (Exception e) {
+            Toast.makeText(this, "创建标签失败", Toast.LENGTH_SHORT).show();
+            return;
+        }
         tabs.add(tab);
         switchToTab(tab.id);
-        tab.webView.loadUrl(url);
+        if (tab.webView != null) {
+            tab.webView.loadUrl(url);
+        }
     }
 
     private void switchToTab(int tabId) {
+        if (webViewContainer == null) return;
         for (Tab t : tabs) {
             if (t.id == tabId) {
                 t.isActive = true;
                 activeTabId = tabId;
                 webViewContainer.removeAllViews();
-                webViewContainer.addView(t.webView);
-                urlInput.setText(t.webView.getUrl());
+                if (t.webView != null) {
+                    webViewContainer.addView(t.webView);
+                    try {
+                        String url = t.webView.getUrl();
+                        if (url != null && urlInput != null) urlInput.setText(url);
+                    } catch (Exception e) {
+                        // Ignore
+                    }
+                }
             } else {
                 t.isActive = false;
             }
@@ -237,12 +311,28 @@ public class MainActivity extends AppCompatActivity {
             if (t.id == tabId) { toClose = t; break; }
         }
         if (toClose == null) return;
-        toClose.webView.destroy();
+
+        try {
+            if (toClose.webView != null) {
+                toClose.webView.stopLoading();
+                toClose.webView.loadUrl("about:blank");
+                toClose.webView.clearHistory();
+                toClose.webView.removeAllViews();
+                toClose.webView.destroy();
+            }
+        } catch (Exception e) {
+            // Ignore destroy errors
+        }
+
         tabs.remove(toClose);
         if (tabs.isEmpty()) {
             addTab(HOME_URL);
         } else {
-            switchToTab(tabs.get(tabs.size() - 1).id);
+            int switchTo = activeTabId;
+            if (activeTabId == tabId || getTabById(activeTabId) == null) {
+                switchTo = tabs.get(tabs.size() - 1).id;
+            }
+            switchToTab(switchTo);
         }
     }
 
@@ -251,191 +341,274 @@ public class MainActivity extends AppCompatActivity {
         return null;
     }
 
+    private Tab getTabById(int id) {
+        for (Tab t : tabs) if (t.id == id) return t;
+        return null;
+    }
+
     private void setupListeners() {
-        urlInput.setOnEditorActionListener((v, actionId, event) -> {
-            if (actionId == EditorInfo.IME_ACTION_GO ||
-                    (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
-                String text = urlInput.getText().toString().trim();
-                loadUrl(text);
-                hideKeyboard();
-                return true;
-            }
-            return false;
-        });
+        if (urlInput != null) {
+            urlInput.setOnEditorActionListener((v, actionId, event) -> {
+                if (actionId == EditorInfo.IME_ACTION_GO ||
+                        (event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER)) {
+                    String text = urlInput.getText() != null ? urlInput.getText().toString().trim() : "";
+                    loadUrl(text);
+                    hideKeyboard();
+                    return true;
+                }
+                return false;
+            });
+        }
 
-        btnBack.setOnClickListener(v -> {
-            Tab t = getActiveTab();
-            if (t != null && t.webView.canGoBack()) t.webView.goBack();
-        });
+        if (btnBack != null) {
+            btnBack.setOnClickListener(v -> {
+                Tab t = getActiveTab();
+                if (t != null && t.webView != null && t.webView.canGoBack()) t.webView.goBack();
+            });
+        }
 
-        btnForward.setOnClickListener(v -> {
-            Tab t = getActiveTab();
-            if (t != null && t.webView.canGoForward()) t.webView.goForward();
-        });
+        if (btnForward != null) {
+            btnForward.setOnClickListener(v -> {
+                Tab t = getActiveTab();
+                if (t != null && t.webView != null && t.webView.canGoForward()) t.webView.goForward();
+            });
+        }
 
-        btnRefresh.setOnClickListener(v -> {
-            Tab t = getActiveTab();
-            if (t != null) t.webView.reload();
-        });
+        if (btnRefresh != null) {
+            btnRefresh.setOnClickListener(v -> {
+                Tab t = getActiveTab();
+                if (t != null && t.webView != null) t.webView.reload();
+            });
+        }
 
-        btnHome.setOnClickListener(v -> loadUrl(HOME_URL));
+        if (btnHome != null) {
+            btnHome.setOnClickListener(v -> loadUrl(HOME_URL));
+        }
 
-        btnTabs.setOnClickListener(v -> showTabSwitcher());
+        if (btnTabs != null) {
+            btnTabs.setOnClickListener(v -> showTabSwitcher());
+        }
 
-        btnMenu.setOnClickListener(v -> showMenu());
+        if (btnMenu != null) {
+            btnMenu.setOnClickListener(v -> showMenu());
+        }
 
-        findViewById(R.id.btnUAMode).setOnClickListener(v -> showUAModePage());
+        View btnUAMode = findViewById(R.id.btnUAMode);
+        if (btnUAMode != null) {
+            btnUAMode.setOnClickListener(v -> showUAModePage());
+        }
     }
 
     private void loadUrl(String url) {
+        if (url == null || url.isEmpty()) return;
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             if (url.contains(".") && !url.contains(" ")) url = "https://" + url;
             else url = "https://www.bing.com/search?q=" + Uri.encode(url);
         }
         Tab t = getActiveTab();
-        if (t != null) t.webView.loadUrl(url);
+        if (t != null && t.webView != null) t.webView.loadUrl(url);
     }
 
     private void updateUI() {
         Tab t = getActiveTab();
-        if (t != null) {
-            btnBack.setAlpha(t.webView.canGoBack() ? 1.0f : 0.4f);
-            btnForward.setAlpha(t.webView.canGoForward() ? 1.0f : 0.4f);
+        if (t != null && t.webView != null) {
+            if (btnBack != null) btnBack.setAlpha(t.webView.canGoBack() ? 1.0f : 0.4f);
+            if (btnForward != null) btnForward.setAlpha(t.webView.canGoForward() ? 1.0f : 0.4f);
         }
-        tvTabCount.setText(String.valueOf(tabs.size()));
+        if (tvTabCount != null) tvTabCount.setText(String.valueOf(tabs.size()));
     }
 
     private void hideKeyboard() {
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        if (imm != null) imm.hideSoftInputFromWindow(urlInput.getWindowToken(), 0);
+        if (imm != null && urlInput != null) {
+            imm.hideSoftInputFromWindow(urlInput.getWindowToken(), 0);
+        }
     }
 
     private void showTabSwitcher() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_tabs, null);
-        RecyclerView rv = view.findViewById(R.id.recyclerTabs);
-        rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        try {
+            View view = LayoutInflater.from(this).inflate(R.layout.dialog_tabs, null);
+            RecyclerView rv = view.findViewById(R.id.recyclerTabs);
+            if (rv != null) {
+                rv.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+                TabAdapter adapter = new TabAdapter();
+                rv.setAdapter(adapter);
+            }
 
-        TabAdapter adapter = new TabAdapter();
-        rv.setAdapter(adapter);
+            View btnNewTab = view.findViewById(R.id.btnNewTab);
+            if (btnNewTab != null) {
+                btnNewTab.setOnClickListener(v -> addTab(HOME_URL));
+            }
 
-        view.findViewById(R.id.btnNewTab).setOnClickListener(v -> {
-            addTab(HOME_URL);
-        });
-
-        new AlertDialog.Builder(this)
-                .setTitle("标签页 (" + tabs.size() + ")")
-                .setView(view)
-                .setNegativeButton("关闭", null)
-                .show();
+            new AlertDialog.Builder(this)
+                    .setTitle("标签页 (" + tabs.size() + ")")
+                    .setView(view)
+                    .setNegativeButton("关闭", null)
+                    .show();
+        } catch (Exception e) {
+            Toast.makeText(this, "打开标签页失败", Toast.LENGTH_SHORT).show();
+        }
     }
 
     class TabAdapter extends RecyclerView.Adapter<TabAdapter.VH> {
+        private final List<Tab> adapterTabs = new ArrayList<>(tabs);
+
+        TabAdapter() {
+            adapterTabs.addAll(tabs);
+        }
+
         @NonNull @Override public VH onCreateViewHolder(@NonNull ViewGroup p, int vt) {
             return new VH(LayoutInflater.from(p.getContext()).inflate(R.layout.item_tab, p, false));
         }
         @Override public void onBindViewHolder(@NonNull VH h, int pos) {
-            Tab t = tabs.get(pos);
-            h.tvTitle.setText(t.title);
-            h.tvUrl.setText(t.url);
+            Tab t = adapterTabs.get(pos);
+            h.tvTitle.setText(t.title != null ? t.title : "标签页");
+            h.tvUrl.setText(t.url != null ? t.url : "");
             h.itemView.setAlpha(t.isActive ? 1.0f : 0.6f);
             h.itemView.setOnClickListener(v -> {
                 switchToTab(t.id);
             });
-            h.btnClose.setOnClickListener(v -> closeTab(t.id));
+            h.btnClose.setOnClickListener(v -> {
+                int id = t.id;
+                adapterTabs.remove(h.getAdapterPosition());
+                notifyItemRemoved(h.getAdapterPosition());
+                closeTab(id);
+            });
         }
-        @Override public int getItemCount() { return tabs.size(); }
+        @Override public int getItemCount() { return adapterTabs.size(); }
         class VH extends RecyclerView.ViewHolder {
             TextView tvTitle, tvUrl;
             ImageButton btnClose;
-            VH(View v) { super(v); tvTitle = v.findViewById(R.id.tvTitle); tvUrl = v.findViewById(R.id.tvUrl); btnClose = v.findViewById(R.id.btnClose); }
+            VH(View v) {
+                super(v);
+                tvTitle = v.findViewById(R.id.tvTitle);
+                tvUrl = v.findViewById(R.id.tvUrl);
+                btnClose = v.findViewById(R.id.btnClose);
+            }
         }
     }
 
     private void showMenu() {
-        Tab t = getActiveTab();
-        String url = t != null ? t.webView.getUrl() : "";
-        String[] items = {"分享", "复制链接", "历史记录", "浏览器模式", "关于 LimeBrowser"};
-        new AlertDialog.Builder(this)
-                .setTitle("菜单")
-                .setItems(items, (dialog, which) -> {
-                    switch (which) {
-                        case 0:
-                            Intent share = new Intent(Intent.ACTION_SEND);
-                            share.setType("text/plain");
-                            share.putExtra(Intent.EXTRA_TEXT, url);
-                            startActivity(Intent.createChooser(share, "分享"));
-                            break;
-                        case 1:
-                            android.content.ClipboardManager cb = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-                            if (cb != null) { cb.setPrimaryClip(android.content.ClipData.newPlainText("URL", url)); Toast.makeText(this, "链接已复制", Toast.LENGTH_SHORT).show(); }
-                            break;
-                        case 2:
-                            startActivity(new Intent(this, HistoryActivity.class));
-                            break;
-                        case 3:
-                            showUAModePage();
-                            break;
-                        case 4:
-                            new AlertDialog.Builder(this)
-                                    .setTitle("关于 LimeBrowser")
-                                    .setMessage("LimeBrowser v1.2.0\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
-                                    .setPositiveButton("确定", null)
-                                    .show();
-                            break;
-                    }
-                })
-                .show();
+        try {
+            Tab t = getActiveTab();
+            String url = t != null && t.webView != null ? t.webView.getUrl() : "";
+            String[] items = {"分享", "复制链接", "历史记录", "浏览器模式", "关于 LimeBrowser"};
+            new AlertDialog.Builder(this)
+                    .setTitle("菜单")
+                    .setItems(items, (dialog, which) -> {
+                        switch (which) {
+                            case 0:
+                                Intent share = new Intent(Intent.ACTION_SEND);
+                                share.setType("text/plain");
+                                share.putExtra(Intent.EXTRA_TEXT, url);
+                                try {
+                                    startActivity(Intent.createChooser(share, "分享"));
+                                } catch (Exception e) {
+                                    Toast.makeText(this, "无法分享", Toast.LENGTH_SHORT).show();
+                                }
+                                break;
+                            case 1:
+                                copyToClipboard(url);
+                                break;
+                            case 2:
+                                startActivity(new Intent(this, HistoryActivity.class));
+                                break;
+                            case 3:
+                                showUAModePage();
+                                break;
+                            case 4:
+                                new AlertDialog.Builder(this)
+                                        .setTitle("关于 LimeBrowser")
+                                        .setMessage("LimeBrowser v1.2.1\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
+                                        .setPositiveButton("确定", null)
+                                        .show();
+                                break;
+                        }
+                    })
+                    .show();
+        } catch (Exception e) {
+            Toast.makeText(this, "打开菜单失败", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void copyToClipboard(String text) {
+        try {
+            android.content.ClipboardManager cb = (android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cb != null && text != null) {
+                cb.setPrimaryClip(android.content.ClipData.newPlainText("URL", text));
+                Toast.makeText(this, "链接已复制", Toast.LENGTH_SHORT).show();
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "复制失败", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void showUAModePage() {
-        View view = LayoutInflater.from(this).inflate(R.layout.dialog_ua_mode, null);
-        RadioGroup rgMode = view.findViewById(R.id.rgMode);
-        RadioGroup rgBrowser = view.findViewById(R.id.rgBrowser);
-        TextView tvDesc = view.findViewById(R.id.tvModeDesc);
-        TextView tvCurrentUA = view.findViewById(R.id.tvCurrentUA);
+        try {
+            View view = LayoutInflater.from(this).inflate(R.layout.dialog_ua_mode, null);
+            RadioGroup rgMode = view.findViewById(R.id.rgMode);
+            RadioGroup rgBrowser = view.findViewById(R.id.rgBrowser);
+            TextView tvDesc = view.findViewById(R.id.tvModeDesc);
+            TextView tvCurrentUA = view.findViewById(R.id.tvCurrentUA);
 
-        for (int i = 0; i < 3; i++) {
-            RadioButton rb = new RadioButton(this);
-            rb.setText(modeNames[i] + "模式");
-            rb.setTextSize(16);
-            rb.setId(i);
-            rb.setPadding(32, 16, 16, 16);
-            if (i == currentMode) rb.setChecked(true);
-            rgMode.addView(rb);
-        }
-        loadBrowserOptions(rgBrowser, currentMode);
-        tvDesc.setText(getModeDesc(currentMode));
-        tvCurrentUA.setText("当前: " + modeUANames[currentMode][currentUaIndex]);
+            for (int i = 0; i < 3; i++) {
+                RadioButton rb = new RadioButton(this);
+                rb.setText(modeNames[i] + "模式");
+                rb.setTextSize(16);
+                rb.setId(i);
+                rb.setPadding(32, 16, 16, 16);
+                if (i == currentMode) rb.setChecked(true);
+                if (rgMode != null) rgMode.addView(rb);
+            }
+            if (rgBrowser != null) loadBrowserOptions(rgBrowser, currentMode);
+            if (tvDesc != null) tvDesc.setText(getModeDesc(currentMode));
+            if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[currentMode][currentUaIndex]);
 
-        rgMode.setOnCheckedChangeListener((group, checkedId) -> {
-            currentMode = checkedId;
-            currentUaIndex = 0;
-            tvDesc.setText(getModeDesc(currentMode));
-            rgBrowser.removeAllViews();
-            loadBrowserOptions(rgBrowser, currentMode);
-            if (rgBrowser.getChildCount() > 0) ((RadioButton) rgBrowser.getChildAt(0)).setChecked(true);
-            tvCurrentUA.setText("当前: " + modeUANames[currentMode][currentUaIndex]);
-        });
-        rgBrowser.setOnCheckedChangeListener((group, checkedId) -> {
-            currentUaIndex = checkedId;
-            tvCurrentUA.setText("当前: " + modeUANames[currentMode][currentUaIndex]);
-        });
+            final int[] tempMode = {currentMode};
+            final int[] tempUaIndex = {currentUaIndex};
 
-        new AlertDialog.Builder(this)
-                .setTitle("浏览器模式")
-                .setView(view)
-                .setPositiveButton("应用并刷新", (dialog, which) -> {
-                    currentUA = modeUAValues[currentMode][currentUaIndex];
-                    prefs.edit().putInt("ua_mode", currentMode).putInt("ua_index_" + currentMode, currentUaIndex).apply();
-                    tvUAModeLabel.setText(modeNames[currentMode]);
-                    for (Tab t : tabs) {
-                        t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2");
-                        if (t.isActive) t.webView.reload();
+            if (rgMode != null) {
+                rgMode.setOnCheckedChangeListener((group, checkedId) -> {
+                    tempMode[0] = checkedId;
+                    tempUaIndex[0] = 0;
+                    if (tvDesc != null) tvDesc.setText(getModeDesc(tempMode[0]));
+                    if (rgBrowser != null) {
+                        rgBrowser.removeAllViews();
+                        loadBrowserOptions(rgBrowser, tempMode[0]);
+                        if (rgBrowser.getChildCount() > 0) ((RadioButton) rgBrowser.getChildAt(0)).setChecked(true);
                     }
-                    Toast.makeText(this, "已切换到" + modeNames[currentMode] + "模式", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .show();
+                    if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[tempMode[0]][tempUaIndex[0]]);
+                });
+            }
+            if (rgBrowser != null) {
+                rgBrowser.setOnCheckedChangeListener((group, checkedId) -> {
+                    tempUaIndex[0] = checkedId;
+                    if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[tempMode[0]][tempUaIndex[0]]);
+                });
+            }
+
+            new AlertDialog.Builder(this)
+                    .setTitle("浏览器模式")
+                    .setView(view)
+                    .setPositiveButton("应用并刷新", (dialog, which) -> {
+                        currentMode = tempMode[0];
+                        currentUaIndex = tempUaIndex[0];
+                        currentUA = modeUAValues[currentMode][currentUaIndex];
+                        prefs.edit().putInt("ua_mode", currentMode).putInt("ua_index_" + currentMode, currentUaIndex).apply();
+                        if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
+                        for (Tab t : tabs) {
+                            if (t.webView != null) {
+                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.1");
+                                if (t.isActive) t.webView.reload();
+                            }
+                        }
+                        Toast.makeText(this, "已切换到" + modeNames[currentMode] + "模式", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("取消", null)
+                    .show();
+        } catch (Exception e) {
+            Toast.makeText(this, "打开模式设置失败", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private String getModeDesc(int mode) {
@@ -463,17 +636,46 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         Tab t = getActiveTab();
-        if (t != null && t.webView.canGoBack()) {
+        if (t != null && t.webView != null && t.webView.canGoBack()) {
             t.webView.goBack();
         } else {
             super.onBackPressed();
         }
     }
 
-    @Override protected void onPause() { super.onPause(); for (Tab t : tabs) t.webView.onPause(); }
-    @Override protected void onResume() { super.onResume(); for (Tab t : tabs) t.webView.onResume(); }
+    @Override protected void onPause() {
+        super.onPause();
+        for (Tab t : tabs) {
+            if (t.webView != null) {
+                try { t.webView.onPause(); } catch (Exception e) { /* ignore */ }
+            }
+        }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        for (Tab t : tabs) {
+            if (t.webView != null) {
+                try { t.webView.onResume(); } catch (Exception e) { /* ignore */ }
+            }
+        }
+    }
+
     @Override protected void onDestroy() {
-        for (Tab t : tabs) t.webView.destroy();
+        for (Tab t : tabs) {
+            if (t.webView != null) {
+                try {
+                    t.webView.stopLoading();
+                    t.webView.loadUrl("about:blank");
+                    t.webView.removeAllViews();
+                    t.webView.destroy();
+                } catch (Exception e) { /* ignore */ }
+            }
+        }
+        tabs.clear();
+        if (dbExecutor != null && !dbExecutor.isShutdown()) {
+            dbExecutor.shutdown();
+        }
         super.onDestroy();
     }
 }
