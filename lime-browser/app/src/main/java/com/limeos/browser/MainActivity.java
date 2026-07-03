@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private List<Tab> tabs = new ArrayList<>();
     private int activeTabId = 0;
     private int nextTabId = 1;
-    private static final String HOME_URL = "https://www.bing.com";
+    private static final String HOME_URL = "https://3862242786-sudo.github.io/pan/lime-start/";
     private static final String PREFS_NAME = "lime_browser_prefs";
 
     // UA presets

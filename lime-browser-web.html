@@ -314,7 +314,7 @@
     <div class="toolbar">
         <div class="url-bar">
             <span style="color:var(--text3);font-size:16px;">🔒</span>
-            <input type="text" id="urlInput" placeholder="搜索或输入网址" value="https://www.bing.com">
+            <input type="text" id="urlInput" placeholder="搜索或输入网址" value="https://3862242786-sudo.github.io/pan/lime-start/">
         </div>
         <button class="mode-btn" id="modeBtn" onclick="showModePanel()">
             <span>📱</span>
@@ -470,7 +470,7 @@ let currentUAKey = localStorage.getItem('lb_ua') || 'chrome';
 let currentUA = UA_PRESETS[currentMode][currentUAKey];
 
 // === Tab Management ===
-function createTab(url = 'https://www.bing.com') {
+function createTab(url = 'https://3862242786-sudo.github.io/pan/lime-start/') {
     const id = nextTabId++;
     const container = document.createElement('div');
     container.className = 'iframe-container';
@@ -575,7 +575,7 @@ function onTabLoad(id) {
 function loadUrl(url) {
     if (!url.match(/^https?:\/\//)) {
         if (url.includes('.') && !url.includes(' ')) url = 'https://' + url;
-        else url = 'https://www.bing.com/search?q=' + encodeURIComponent(url);
+        else url = 'https://3862242786-sudo.github.io/pan/lime-start//search?q=' + encodeURIComponent(url);
     }
     const tab = tabs.find(t => t.id === activeTabId);
     if (tab) {
@@ -593,7 +593,7 @@ function goForward() {
     const tab = tabs.find(t => t.id === activeTabId);
     if (tab) try { tab.iframe.contentWindow.history.forward(); } catch(e) {}
 }
-function goHome() { loadUrl('https://www.bing.com'); }
+function goHome() { loadUrl('https://3862242786-sudo.github.io/pan/lime-start/'); }
 function reload() {
     const tab = tabs.find(t => t.id === activeTabId);
     if (tab) tab.iframe.src = tab.iframe.src;
@@ -794,7 +794,7 @@ document.getElementById('urlInput').addEventListener('keydown', function(e) {
 window.onload = () => {
     document.getElementById('modeLabel').textContent = MODE_NAMES[currentMode];
     document.querySelector('#modeBtn span:first-child').textContent = MODE_ICONS[currentMode];
-    createTab('https://www.bing.com');
+    createTab('https://3862242786-sudo.github.io/pan/lime-start/');
 };
 </script>
 </body>
