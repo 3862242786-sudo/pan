@@ -12,6 +12,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.webkit.JavascriptInterface;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -168,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2.6");
+        s.setUserAgentString(currentUA + " LimeBrowser/1.2.7");
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
@@ -180,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         wv.setWebViewClient(new SafeWebViewClient());
         wv.setWebChromeClient(new SafeWebChromeClient());
         wv.setDownloadListener(new SafeDownloadListener());
+        wv.addJavascriptInterface(new LimeJsBridge(), "LimeBrowser");
 
         return wv;
     }
@@ -255,6 +257,60 @@ public class MainActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Toast.makeText(MainActivity.this, "下载失败", Toast.LENGTH_SHORT).show();
             }
+        }
+    }
+
+    // ========== LimeOS 网站联动 JS Bridge ==========
+    public class LimeJsBridge {
+        @JavascriptInterface
+        public String getUAMode() {
+            return String.valueOf(currentMode); // 0=手机 1=平板 2=电脑
+        }
+
+        @JavascriptInterface
+        public String getUAModeName() {
+            return modeNames[currentMode];
+        }
+
+        @JavascriptInterface
+        public boolean isPhoneDevice() {
+            // 通过屏幕尺寸判断是否是手机设备
+            return MainActivity.this.getResources().getBoolean(
+                    MainActivity.this.getResources().getIdentifier("isPhone", "bool", "android")
+            ) || (getResources().getConfiguration().screenLayout
+                    & android.content.res.Configuration.SCREENLAYOUT_SIZE_MASK)
+                    < android.content.res.Configuration.SCREENLAYOUT_SIZE_LARGE;
+        }
+
+        @JavascriptInterface
+        public void switchToMode(final int mode) {
+            if (mode < 0 || mode > 2) return;
+            mainHandler.post(() -> {
+                currentMode = mode;
+                currentUaIndex = prefs.getInt("ua_index_" + currentMode, 0);
+                if (currentUaIndex < 0 || currentUaIndex >= modeUAValues[currentMode].length) {
+                    currentUaIndex = 0;
+                }
+                currentUA = modeUAValues[currentMode][currentUaIndex];
+                prefs.edit().putInt("ua_mode", currentMode).apply();
+                prefs.edit().putInt("ua_index_" + currentMode, currentUaIndex).apply();
+                if (tvUAModeLabel != null) {
+                    tvUAModeLabel.setText(modeNames[currentMode]);
+                }
+                // 更新所有 WebView 的 UA 并刷新
+                for (Tab t : tabs) {
+                    if (t.webView != null) {
+                        t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.7");
+                        if (t.isActive) t.webView.reload();
+                    }
+                }
+                updateUI();
+            });
+        }
+
+        @JavascriptInterface
+        public String getAppVersion() {
+            return "1.2.7";
         }
     }
 
@@ -554,7 +610,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 new AlertDialog.Builder(this)
                         .setTitle("关于 LimeBrowser")
-                        .setMessage("LimeBrowser v1.2.6\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式\nLimeOS Project 2026")
+                        .setMessage("LimeBrowser v1.2.7\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式 / 青柠系网站智能适配\nLimeOS Project 2026")
                         .setPositiveButton("确定", null)
                         .show();
             });
@@ -633,7 +689,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.6");
+                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.7");
                                 if (t.isActive) t.webView.reload();
                             }
                         }
