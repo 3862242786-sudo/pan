@@ -777,6 +777,12 @@
 
     // === 页面加载时获取数据 ===
     (async function() {
+        // 等待 supabaseClient 初始化完成（auth2.js 使用延迟重试机制）
+        var waitCount = 0;
+        while (typeof supabaseClient === 'undefined' && waitCount < 20) {
+            await new Promise(function(r) { setTimeout(r, 300); });
+            waitCount++;
+        }
         if (typeof supabaseClient === 'undefined') {
             document.getElementById('postList').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Supabase 未加载，请检查网络连接</div>';
             document.getElementById('hotTopics').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;font-size:13px;">加载失败</div>';
