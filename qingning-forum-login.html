@@ -280,6 +280,7 @@
         }
     </style>
     <script src="site-check.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 </head>
 <body>
     <div class="auth-page">
@@ -367,11 +368,11 @@
         </div>
     </div>
 
+    <script src="auth2.js"></script>
     <script>
         function switchTab(tab) {
             document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.form-section').forEach(f => f.classList.remove('active'));
-            
             if (tab === 'login') {
                 document.querySelectorAll('.auth-tab')[0].classList.add('active');
                 document.getElementById('loginForm').classList.add('active');
@@ -380,23 +381,191 @@
                 document.getElementById('registerForm').classList.add('active');
             }
         }
-        
-        function handleLogin(e) {
-            e.preventDefault();
-            alert('登录功能演示 - 实际开发需要后端支持');
-            location.href = 'qingning-forum.html';
+
+        async function waitForSupabase() {
+            var count = 0;
+            while (typeof supabaseClient === 'undefined' && count < 20) {
+                await new Promise(function(r) { setTimeout(r, 300); });
+                count++;
+            }
+            return typeof supabaseClient !== 'undefined';
         }
-        
-        function handleRegister(e) {
+
+        async function handleLogin(e) {
             e.preventDefault();
-            alert('注册功能演示 - 实际开发需要后端支持');
-            location.href = 'qingning-forum.html';
+            var btn = e.target.querySelector('.auth-submit');
+            var originalText = btn.textContent;
+            btn.textContent = '登录中...';
+            btn.disabled = true;
+            
+            try {
+                var ready = await waitForSupabase();
+                if (!ready) throw new Error('网络连接失败');
+                
+                // 获取表单值 - 注意用 querySelectorAll 获取 loginForm 里的 input
+                var inputs = document.querySelectorAll('#loginForm .form-input');
+                var account = inputs[0].value.trim();
+                var password = inputs[1].value;
+                
+                // 如果输入的不是邮箱格式，提示用户
+                if (!account.includes('@')) {
+                    alert('请输入邮箱地址登录');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                var { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: account,
+                    password: password
+                });
+                
+                if (error) {
+                    if (error.message.includes('Invalid login credentials')) {
+                        alert('邮箱或密码错误');
+                    } else if (error.message.includes('Email not confirmed')) {
+                        alert('请先到邮箱完成验证');
+                    } else {
+                        alert('登录失败：' + error.message);
+                    }
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                // 登录成功，保存状态
+                var email = data.user.email;
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_user_id', data.user.id);
+                localStorage.setItem('qn_token', data.access_token);
+                localStorage.setItem('qn_refresh_token', data.refresh_token);
+                
+                // 获取用户名（从 email 取）
+                var username = email.split('@')[0];
+                localStorage.setItem('qn_profile_' + email, JSON.stringify({
+                    username: username,
+                    email: email,
+                    is_admin: (email === '3862242786@qq.com')
+                }));
+                
+                // 获取来源页
+                var from = new URLSearchParams(window.location.search).get('from');
+                alert('登录成功！');
+                location.href = from || 'qingning-forum.html';
+            } catch(err) {
+                alert('登录失败：' + (err.message || '网络错误'));
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
-        
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            var btn = e.target.querySelector('.auth-submit');
+            var originalText = btn.textContent;
+            btn.textContent = '注册中...';
+            btn.disabled = true;
+            
+            try {
+                var ready = await waitForSupabase();
+                if (!ready) throw new Error('网络连接失败');
+                
+                var inputs = document.querySelectorAll('#registerForm .form-input');
+                var username = inputs[0].value.trim();
+                var email = inputs[1].value.trim();
+                var password = inputs[2].value;
+                var confirmPassword = inputs[3].value;
+                
+                if (username.length < 2 || username.length > 20) {
+                    alert('用户名需要2-20位');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(username)) {
+                    alert('用户名只能包含字母、数字、下划线或中文');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    alert('密码至少6位');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                if (password !== confirmPassword) {
+                    alert('两次密码不一致');
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                var { data, error } = await supabaseClient.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            username: username
+                        }
+                    }
+                });
+                
+                if (error) {
+                    if (error.message.includes('already registered')) {
+                        alert('该邮箱已被注册');
+                    } else {
+                        alert('注册失败：' + error.message);
+                    }
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                    return;
+                }
+                
+                // 注册成功
+                if (data.session) {
+                    // 自动登录
+                    localStorage.setItem('qn_logged_in', 'true');
+                    localStorage.setItem('qn_user_email', email);
+                    localStorage.setItem('qn_user_id', data.user.id);
+                    localStorage.setItem('qn_token', data.session.access_token);
+                    localStorage.setItem('qn_refresh_token', data.session.refresh_token);
+                    localStorage.setItem('qn_profile_' + email, JSON.stringify({
+                        username: username,
+                        email: email,
+                        is_admin: false
+                    }));
+                    alert('注册成功！');
+                    var from = new URLSearchParams(window.location.search).get('from');
+                    location.href = from || 'qingning-forum.html';
+                } else {
+                    alert('注册成功！请到邮箱完成验证后登录。');
+                    switchTab('login');
+                }
+                
+                btn.textContent = originalText;
+                btn.disabled = false;
+            } catch(err) {
+                alert('注册失败：' + (err.message || '网络错误'));
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
         // URL参数判断
-        const urlParams = new URLSearchParams(window.location.search);
+        var urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('register') === '1') {
             switchTab('register');
+        }
+
+        // 检查是否已登录，已登录则跳转
+        if (localStorage.getItem('qn_logged_in') === 'true') {
+            var from = urlParams.get('from') || 'qingning-forum.html';
+            // 不自动跳转，让用户可以切换账号
         }
     </script>
 

@@ -461,6 +461,79 @@
             color: #94a3b8;
             font-size: 13px;
         }
+
+        /* 手机端安全区 */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            body {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .forum-footer, .footer, .auth-footer {
+                padding-bottom: calc(40px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 手机端适配 */
+        @media (max-width: 768px) {
+            body {
+                -webkit-tap-highlight-color: transparent;
+            }
+            .nav-links { display: none; }
+            .forum-container {
+                grid-template-columns: 1fr !important;
+                padding: 12px;
+            }
+            .forum-sidebar-left, .forum-sidebar-right {
+                display: none;
+            }
+            .post-list {
+                padding: 0;
+            }
+            .post-card {
+                margin-bottom: 12px;
+                padding: 16px;
+                border-radius: 8px;
+            }
+            .nav-actions .btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+            .forum-header {
+                padding: 16px;
+                border-radius: 8px;
+            }
+            .forum-tabs {
+                gap: 16px;
+            }
+            .forum-tab {
+                font-size: 14px;
+            }
+            .forum-post-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 12px;
+            }
+            .post-title {
+                font-size: 15px;
+            }
+            .post-summary {
+                font-size: 13px;
+                -webkit-line-clamp: 2;
+            }
+            .post-header {
+                flex-wrap: wrap;
+            }
+            .post-tag {
+                margin-left: 0;
+            }
+            .migration-banner {
+                padding: 8px 12px !important;
+                font-size: 12px !important;
+            }
+            .migration-banner span,
+            .migration-banner a {
+                font-size: 12px !important;
+            }
+        }
     </style>
     <script src="site-check.js"></script>
 </head>
@@ -492,7 +565,7 @@
     </nav>
 
     <!-- 迁移提示横幅 -->
-    <div style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-bottom:1px solid #f59e0b;padding:12px 20px;text-align:center;">
+    <div class="migration-banner" style="background:linear-gradient(135deg,#fef3c7,#fde68a);border-bottom:1px solid #f59e0b;padding:12px 20px;text-align:center;">
         <span style="color:#92400e;font-size:14px;font-weight:500;">此页面已迁移到青柠社区，</span>
         <a href="qingning-community.html" style="color:#16a34a;font-size:14px;font-weight:600;text-decoration:underline;">点击前往</a>
     </div>

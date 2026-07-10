@@ -460,6 +460,67 @@
             font-size: 12px;
             color: #94a3b8;
         }
+
+        /* 手机端安全区 */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            body {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .footer, .auth-footer {
+                padding-bottom: calc(24px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 手机端通用 */
+        @media (max-width: 768px) {
+            body {
+                -webkit-tap-highlight-color: transparent;
+            }
+            .detail-container {
+                padding: 12px;
+            }
+            .detail-header {
+                padding: 16px;
+                border-radius: 8px;
+            }
+            .detail-title {
+                font-size: 18px;
+            }
+            .comment-section {
+                padding: 16px;
+                border-radius: 8px;
+            }
+            .comment-input-area {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .comment-input-avatar {
+                display: none;
+            }
+            .comment-textarea {
+                min-height: 100px;
+                font-size: 16px;
+            }
+            .detail-post-header {
+                flex-wrap: wrap;
+            }
+            .detail-tag {
+                margin-left: 0;
+            }
+            .detail-actions {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .detail-action {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .nav-links { display: none; }
+            .nav-actions .btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
     </style>
     <script src="site-check.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
@@ -560,6 +621,15 @@
             return tagStyles[tag] || 'background:#f1f5f9;color:#64748b;';
         }
 
+        // 英文分类映射到中文
+        var categoryMap = {
+            'tech': '技术讨论',
+            'news': '新闻资讯',
+            'help': '求助问答',
+            'discuss': '综合讨论',
+            'announcement': '公告'
+        };
+
         // ===== 渲染徽章 =====
         function renderBadges(authorEmail) {
             var html = '';
@@ -584,6 +654,10 @@
         // ===== 渲染帖子 =====
         function renderPost(post) {
             var tag = post.tag || post.category || '综合讨论';
+            // 如果 tag 是英文，映射为中文
+            if (categoryMap[tag]) {
+                tag = categoryMap[tag];
+            }
             var initial = getInitial(post.author_name || '匿');
             var color = getAvatarColor(post.author_name || '匿名');
 

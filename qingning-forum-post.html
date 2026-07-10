@@ -168,6 +168,61 @@
             color: #94a3b8;
             margin-top: 8px;
         }
+
+        /* 手机端安全区 */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            body {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .footer, .auth-footer {
+                padding-bottom: calc(24px + env(safe-area-inset-bottom));
+            }
+        }
+
+        /* 手机端适配 */
+        @media (max-width: 768px) {
+            body {
+                -webkit-tap-highlight-color: transparent;
+            }
+            .post-page {
+                padding: 12px;
+            }
+            .post-editor {
+                padding: 16px;
+                border-radius: 8px;
+            }
+            .post-editor-title {
+                font-size: 18px;
+                margin-bottom: 16px;
+            }
+            .post-form-textarea {
+                min-height: 240px;
+                font-size: 16px;
+            }
+            .post-form-input {
+                font-size: 16px;
+            }
+            .post-tag-select {
+                gap: 8px;
+            }
+            .post-tag-option {
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+            .post-actions {
+                flex-direction: column;
+            }
+            .post-btn {
+                width: 100%;
+                text-align: center;
+                padding: 12px;
+            }
+            .nav-links { display: none; }
+            .nav-actions .btn {
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+        }
     </style>
     <script src="site-check.js"></script>
 </head>
