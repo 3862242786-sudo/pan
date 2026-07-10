@@ -462,6 +462,8 @@
         }
     </style>
     <script src="site-check.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth2.js"></script>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -489,93 +491,478 @@
 
     <div style="padding-top: 72px;">
         <div class="detail-container">
-            <!-- 帖子内容 -->
-            <div class="detail-header">
-                <div class="detail-post-header">
-                    <div class="detail-avatar">A</div>
-                    <div class="detail-meta">
-                        <div class="detail-author">Alex<span class="station-master-icon">站</span></div>
-                        <div class="detail-time">刚刚 · 公告</div>
-                    </div>
-                    <span class="detail-tag">公告</span>
-                    <span class="detail-badge official">官方</span>
-                    <span class="detail-badge station-master">站长</span>
-                </div>
-                
-                <h1 class="detail-title">关于移除青柠OS/ROM项目代码的说明</h1>
-                
-                <div class="detail-content">
-                    <p>各位用户：</p>
-                    <p>经过团队评估，我们决定从代码库中彻底移除青柠OS（QingningOS）和 LimeOS ROM 相关的所有代码和文件。以下是本次变更的详细说明。</p>
-                    <p><strong>移除内容：</strong></p>
-                    <p>1. 青柠OS 官网页面及使用教程</p>
-                    <p>2. 青柠OS Web 模拟器（浏览器端）</p>
-                    <p>3. LimeOS ROM 官网及下载页面</p>
-                    <p>4. ROM 构建工具链（AOSP 同步、内核编译、设备配置等全部脚本）</p>
-                    <p>5. ROM 下载文件及构建产物</p>
-                    <p>6. 各页面中所有相关的链接和引用</p>
-                    <p>共计删除 <strong>49 个文件</strong>，减少约 <strong>9300 行代码</strong>。</p>
-                    <p><strong>原因：</strong></p>
-                    <p>青柠OS/ROM 项目已不再维护，相关代码长期未更新，保留在代码库中会增加维护成本并可能造成用户困惑。移除后，团队将更专注于青柠网盘、青柠浏览器、青柠杀毒等核心产品。</p>
-                    <p><strong>影响：</strong></p>
-                    <p>- 所有 OS/ROM 相关页面将返回 404</p>
-                    <p>- 论坛中与此相关的旧帖已归档处理</p>
-                    <p>- 青柠网盘、浏览器、杀毒等功能不受任何影响</p>
-                    <p>如有疑问，欢迎在社区讨论或通过网盘首页的联系方式联系站长。</p>
-                </div>
-                
-                <div class="detail-actions">
-                    <div class="detail-action" onclick="this.classList.toggle('active')">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
-                        <span>128</span>
-                    </div>
-                    <div class="detail-action">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
-                        <span>收藏</span>
-                    </div>
-                    <div class="detail-action">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                        <span>分享</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 评论区 -->
-            <div class="comment-section">
-                <div class="comment-header">
-                    评论 <span class="comment-count">(0)</span>
-                </div>
-                
-                <!-- 登录提示（未登录时显示） -->
-                <div class="login-to-comment">
-                    <div class="login-to-comment-text">登录后即可发表评论</div>
-                    <a href="qingning-forum-login.html" class="login-to-comment-btn">登录</a>
-                </div>
-                
-                <!-- 评论列表 -->
-                <div class="comment-list">
-                </div>
-            </div>
-            
-            <!-- 相关推荐 -->
-            <div class="related-posts">
-                <div class="related-title">相关推荐</div>
-
-                <div class="related-item" onclick="location.href='qingning-forum-detail.html?id=4'">
-                    <div class="related-item-title">青柠社区正式上线！欢迎所有用户加入讨论</div>
-                    <div class="related-item-meta">MinGW开发者 · 256赞 · 128评论</div>
-                </div>
-
-            </div>
+            <div id="postDetail" style="text-align:center;padding:40px;color:#94a3b8;">加载中...</div>
         </div>
     </div>
 
     <script>
-        function toggleReply(el) {
-            const commentBody = el.closest('.comment-body');
-            const replyBox = commentBody.querySelector('.reply-box');
-            replyBox.classList.toggle('show');
+    (function() {
+        'use strict';
+
+        // ===== 时间格式化 =====
+        function timeAgo(dateStr) {
+            var now = new Date();
+            var date = new Date(dateStr);
+            var diff = Math.floor((now - date) / 1000);
+            if (diff < 60) return '刚刚';
+            if (diff < 3600) return Math.floor(diff / 60) + ' 分钟前';
+            if (diff < 86400) return Math.floor(diff / 3600) + ' 小时前';
+            if (diff < 2592000) return Math.floor(diff / 86400) + ' 天前';
+            if (diff < 31536000) return Math.floor(diff / 2592000) + ' 个月前';
+            return Math.floor(diff / 31536000) + ' 年前';
         }
+
+        // ===== 获取用户信息 =====
+        function getUserInfo() {
+            var email = localStorage.getItem('qn_user_email') || '';
+            var profileKey = 'qn_profile_' + email;
+            var profile = null;
+            try { profile = JSON.parse(localStorage.getItem(profileKey)); } catch(e) {}
+            var name = (profile && profile.username) ? profile.username : (email ? email.split('@')[0] : '匿名用户');
+            var isLoggedIn = localStorage.getItem('qn_logged_in') === 'true';
+            return { email: email, name: name, isLoggedIn: isLoggedIn };
+        }
+
+        // ===== 头像颜色 =====
+        var avatarColors = [
+            'linear-gradient(135deg, #22c55e, #16a34a)',
+            'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+            'linear-gradient(135deg, #f59e0b, #d97706)',
+            'linear-gradient(135deg, #ef4444, #dc2626)',
+            'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+            'linear-gradient(135deg, #ec4899, #db2777)',
+            'linear-gradient(135deg, #14b8a6, #0d9488)',
+            'linear-gradient(135deg, #f97316, #ea580c)'
+        ];
+
+        function getAvatarColor(name) {
+            var hash = 0;
+            for (var i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return avatarColors[Math.abs(hash) % avatarColors.length];
+        }
+
+        function getInitial(name) {
+            return name ? name.charAt(0).toUpperCase() : '?';
+        }
+
+        // ===== 标签颜色 =====
+        var tagStyles = {
+            '技术讨论': 'background:#dbeafe;color:#2563eb;',
+            '新闻资讯': 'background:#fef3c7;color:#d97706;',
+            '求助问答': 'background:#fce7f3;color:#db2777;',
+            '综合讨论': 'background:#f0fdf4;color:#16a34a;',
+            '公告': 'background:#fef3c7;color:#d97706;'
+        };
+
+        function getTagStyle(tag) {
+            return tagStyles[tag] || 'background:#f1f5f9;color:#64748b;';
+        }
+
+        // ===== 渲染徽章 =====
+        function renderBadges(authorEmail) {
+            var html = '';
+            var isAdmin = authorEmail === '3862242786@qq.com';
+            // 可以根据数据库字段判断，这里先用邮箱推断
+            if (isAdmin) {
+                html += '<span class="detail-badge official">官方</span>';
+                html += '<span class="detail-badge station-master">站长</span>';
+            }
+            return html;
+        }
+
+        // ===== 渲染帖子头部作者名 =====
+        function renderAuthorName(authorName, authorEmail) {
+            var html = authorName || '匿名用户';
+            if (authorEmail === '3862242786@qq.com') {
+                html += '<span class="station-master-icon">站</span>';
+            }
+            return html;
+        }
+
+        // ===== 渲染帖子 =====
+        function renderPost(post) {
+            var tag = post.tag || post.category || '综合讨论';
+            var initial = getInitial(post.author_name || '匿');
+            var color = getAvatarColor(post.author_name || '匿名');
+
+            return '<div class="detail-header">' +
+                '<div class="detail-post-header">' +
+                    '<div class="detail-avatar" style="background:' + color + '">' + initial + '</div>' +
+                    '<div class="detail-meta">' +
+                        '<div class="detail-author">' + renderAuthorName(post.author_name, post.author_email) + '</div>' +
+                        '<div class="detail-time">' + timeAgo(post.created_at) + ' · ' + tag + '</div>' +
+                    '</div>' +
+                    '<span class="detail-tag" style="' + getTagStyle(tag) + '">' + tag + '</span>' +
+                    renderBadges(post.author_email) +
+                '</div>' +
+                '<h1 class="detail-title">' + escapeHtml(post.title) + '</h1>' +
+                '<div class="detail-content">' + formatContent(post.content) + '</div>' +
+                '<div class="detail-actions">' +
+                    '<div class="detail-action" id="likeBtn" onclick="handleLike()">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' +
+                        '<span id="likeCount">' + (post.likes || 0) + '</span>' +
+                    '</div>' +
+                    '<div class="detail-action">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+                        '<span>收藏</span>' +
+                    '</div>' +
+                    '<div class="detail-action" onclick="handleShare()">' +
+                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
+                        '<span>分享</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        // ===== 格式化内容（换行转段落） =====
+        function formatContent(content) {
+            if (!content) return '';
+            var escaped = escapeHtml(content);
+            // 将双换行分段，单换行转 <br>
+            var paragraphs = escaped.split(/\n\n+/);
+            var html = paragraphs.map(function(p) {
+                p = p.trim();
+                if (!p) return '';
+                return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+            }).join('');
+            return html || '<p>' + escaped + '</p>';
+        }
+
+        // ===== HTML 转义 =====
+        function escapeHtml(str) {
+            if (!str) return '';
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        // ===== 渲染评论区 =====
+        function renderCommentSection(comments, postId) {
+            var user = getUserInfo();
+            var html = '<div class="comment-section">' +
+                '<div class="comment-header">评论 <span class="comment-count">(' + comments.length + ')</span></div>';
+
+            if (user.isLoggedIn) {
+                html += '<div class="comment-input-area">' +
+                    '<div class="comment-input-avatar" style="background:' + getAvatarColor(user.name) + '">' + getInitial(user.name) + '</div>' +
+                    '<div class="comment-input-wrapper">' +
+                        '<textarea id="commentInput" class="comment-textarea" placeholder="写下你的评论..." maxlength="1000"></textarea>' +
+                        '<button class="comment-submit-btn" onclick="submitComment()">发表评论</button>' +
+                    '</div>' +
+                '</div>';
+            } else {
+                html += '<div class="login-to-comment">' +
+                    '<div class="login-to-comment-text">登录后即可发表评论</div>' +
+                    '<a href="qingning-forum-login.html" class="login-to-comment-btn">登录</a>' +
+                '</div>';
+            }
+
+            html += '<div class="comment-list" id="commentList">';
+            if (comments.length === 0) {
+                html += '<div style="text-align:center;padding:32px 0;color:#94a3b8;font-size:14px;">暂无评论，快来抢沙发吧</div>';
+            } else {
+                comments.forEach(function(c) {
+                    html += renderCommentItem(c);
+                });
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        // ===== 渲染单条评论 =====
+        function renderCommentItem(comment) {
+            var name = comment.author_name || '匿名用户';
+            var initial = getInitial(name);
+            var color = getAvatarColor(name);
+            var likes = comment.likes || 0;
+
+            return '<div class="comment-item">' +
+                '<div class="comment-avatar" style="background:' + color + '">' + initial + '</div>' +
+                '<div class="comment-body">' +
+                    '<div class="comment-author-row">' +
+                        '<span class="comment-author">' + escapeHtml(name) + '</span>' +
+                        '<span class="comment-time">' + timeAgo(comment.created_at) + '</span>' +
+                    '</div>' +
+                    '<div class="comment-text">' + escapeHtml(comment.content) + '</div>' +
+                    '<div class="comment-actions">' +
+                        '<div class="comment-action">' +
+                            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>' +
+                            likes +
+                        '</div>' +
+                        '<div class="comment-action" onclick="toggleReply(this)">' +
+                            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
+                            '回复' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="reply-box">' +
+                        '<textarea class="reply-textarea" placeholder="回复 ' + escapeHtml(name) + '..." maxlength="500"></textarea>' +
+                        '<div class="reply-btns">' +
+                            '<button class="reply-btn cancel" onclick="toggleReply(this.closest(\'.comment-actions\'))">取消</button>' +
+                            '<button class="reply-btn submit" onclick="submitReply(this)">回复</button>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+        }
+
+        // ===== 渲染相关推荐 =====
+        function renderRelatedPosts(posts) {
+            if (!posts || posts.length === 0) return '';
+            var html = '<div class="related-posts"><div class="related-title">相关推荐</div>';
+            posts.forEach(function(p) {
+                var authorName = p.author_name || '匿名用户';
+                html += '<div class="related-item" onclick="location.href=\'qingning-forum-detail.html?id=' + p.id + '\'">' +
+                    '<div class="related-item-title">' + escapeHtml(p.title) + '</div>' +
+                    '<div class="related-item-meta">' + escapeHtml(authorName) + ' · ' + (p.likes || 0) + '赞 · ' + (p.comment_count || 0) + '评论</div>' +
+                '</div>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        // ===== 全局状态 =====
+        var currentPostId = null;
+        var currentPost = null;
+
+        // ===== 切换回复框 =====
+        window.toggleReply = function(el) {
+            var commentBody = el.closest('.comment-body');
+            if (!commentBody) return;
+            var replyBox = commentBody.querySelector('.reply-box');
+            if (replyBox) replyBox.classList.toggle('show');
+        };
+
+        // ===== 点赞 =====
+        window.handleLike = function() {
+            if (!currentPost || !currentPostId) return;
+            var btn = document.getElementById('likeBtn');
+            var countEl = document.getElementById('likeCount');
+            if (btn && btn.classList.contains('active')) return;
+            if (btn) btn.classList.add('active');
+            var newLikes = (currentPost.likes || 0) + 1;
+            if (countEl) countEl.textContent = newLikes;
+            currentPost.likes = newLikes;
+            supabaseClient.from('forum_posts').update({ likes: newLikes }).eq('id', currentPostId).then(function() {
+                // 成功
+            }).catch(function(err) {
+                console.error('点赞失败:', err);
+                if (btn) btn.classList.remove('active');
+                newLikes = newLikes - 1;
+                if (countEl) countEl.textContent = newLikes;
+                currentPost.likes = newLikes;
+            });
+        };
+
+        // ===== 分享 =====
+        window.handleShare = function() {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(window.location.href).then(function() {
+                    showToast('链接已复制到剪贴板');
+                });
+            } else {
+                showToast('请手动复制页面链接分享');
+            }
+        };
+
+        // ===== Toast 提示 =====
+        function showToast(msg) {
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:10px 24px;border-radius:8px;font-size:14px;z-index:9999;opacity:0;transition:opacity 0.3s;';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            requestAnimationFrame(function() { toast.style.opacity = '1'; });
+            setTimeout(function() {
+                toast.style.opacity = '0';
+                setTimeout(function() { toast.remove(); }, 300);
+            }, 2500);
+        }
+
+        // ===== 提交评论 =====
+        window.submitComment = function() {
+            var input = document.getElementById('commentInput');
+            if (!input) return;
+            var content = input.value.trim();
+            if (!content) {
+                showToast('请输入评论内容');
+                return;
+            }
+            var user = getUserInfo();
+            if (!user.isLoggedIn) {
+                showToast('请先登录');
+                return;
+            }
+            var btn = document.querySelector('.comment-submit-btn');
+            if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
+
+            supabaseClient.from('forum_comments').insert({
+                post_id: currentPostId,
+                author_email: user.email,
+                author_name: user.name,
+                content: content
+            }).then(function() {
+                input.value = '';
+                // 更新评论数
+                var newCount = (currentPost.comment_count || 0) + 1;
+                currentPost.comment_count = newCount;
+                supabaseClient.from('forum_posts').update({ comment_count: newCount }).eq('id', currentPostId);
+                // 刷新评论列表
+                loadComments();
+                showToast('评论成功');
+            }).catch(function(err) {
+                console.error('评论失败:', err);
+                showToast('评论失败，请稍后重试');
+            }).finally(function() {
+                if (btn) { btn.disabled = false; btn.textContent = '发表评论'; }
+            });
+        };
+
+        // ===== 提交回复（作为新评论插入） =====
+        window.submitReply = function(btnEl) {
+            var replyBox = btnEl.closest('.reply-box');
+            if (!replyBox) return;
+            var textarea = replyBox.querySelector('.reply-textarea');
+            if (!textarea) return;
+            var content = textarea.value.trim();
+            if (!content) {
+                showToast('请输入回复内容');
+                return;
+            }
+            var user = getUserInfo();
+            if (!user.isLoggedIn) {
+                showToast('请先登录');
+                return;
+            }
+
+            // 获取被回复的评论作者
+            var commentBody = replyBox.closest('.comment-body');
+            var authorSpan = commentBody ? commentBody.querySelector('.comment-author') : null;
+            var replyTo = authorSpan ? authorSpan.textContent : '';
+            var finalContent = replyTo ? '回复 @' + replyTo + '：' + content : content;
+
+            var submitBtn = replyBox.querySelector('.reply-btn.submit');
+            if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '提交中...'; }
+
+            supabaseClient.from('forum_comments').insert({
+                post_id: currentPostId,
+                author_email: user.email,
+                author_name: user.name,
+                content: finalContent
+            }).then(function() {
+                textarea.value = '';
+                replyBox.classList.remove('show');
+                var newCount = (currentPost.comment_count || 0) + 1;
+                currentPost.comment_count = newCount;
+                supabaseClient.from('forum_posts').update({ comment_count: newCount }).eq('id', currentPostId);
+                loadComments();
+                showToast('回复成功');
+            }).catch(function(err) {
+                console.error('回复失败:', err);
+                showToast('回复失败，请稍后重试');
+            }).finally(function() {
+                if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '回复'; }
+            });
+        };
+
+        // ===== 加载评论 =====
+        function loadComments() {
+            supabaseClient.from('forum_comments').select('*').eq('post_id', currentPostId).order('created_at', { ascending: true }).then(function(result) {
+                var comments = result.data || [];
+                var section = document.querySelector('.comment-section');
+                if (section) {
+                    var tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = renderCommentSection(comments, currentPostId);
+                    var newSection = tempDiv.firstElementChild;
+                    section.replaceWith(newSection);
+                }
+            }).catch(function(err) {
+                console.error('加载评论失败:', err);
+            });
+        }
+
+        // ===== 主加载函数 =====
+        async function loadPostDetail() {
+            var params = new URLSearchParams(window.location.search);
+            var id = params.get('id');
+            if (!id) {
+                document.getElementById('postDetail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">帖子不存在或ID无效</div>';
+                return;
+            }
+            currentPostId = id;
+
+            // 等待 supabaseClient 初始化
+            var waitCount = 0;
+            while (typeof supabaseClient === 'undefined' && waitCount < 20) {
+                await new Promise(function(r) { setTimeout(r, 300); });
+                waitCount++;
+            }
+            if (typeof supabaseClient === 'undefined') {
+                document.getElementById('postDetail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ef4444;">加载失败，请检查网络连接后刷新页面</div>';
+                return;
+            }
+
+            // 并行加载帖子、评论、相关推荐
+            var postPromise = supabaseClient.from('forum_posts').select('*').eq('id', id).single();
+            var tag = ''; // 用于加载相关推荐
+            postPromise.then(function(result) {
+                if (result.data) {
+                    tag = result.data.tag || result.data.category || '';
+                }
+            });
+
+            try {
+                var postResult = await postPromise;
+                if (postResult.error || !postResult.data) {
+                    document.getElementById('postDetail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">帖子不存在</div>';
+                    return;
+                }
+                currentPost = postResult.data;
+
+                // 更新页面标题
+                document.title = (currentPost.title || '帖子详情') + ' - 青柠社区';
+
+                // 加载评论
+                var commentsResult = await supabaseClient.from('forum_comments').select('*').eq('post_id', id).order('created_at', { ascending: true });
+                var comments = commentsResult.data || [];
+
+                // 加载相关推荐
+                var relatedHtml = '';
+                if (tag) {
+                    var relatedResult = await supabaseClient.from('forum_posts').select('id, title, author_name, likes, comment_count').eq('tag', tag).neq('id', id).limit(3);
+                    if (relatedResult.data && relatedResult.data.length > 0) {
+                        relatedHtml = renderRelatedPosts(relatedResult.data);
+                    }
+                }
+                // 如果按 tag 没有找到，尝试 category 字段
+                if (!relatedHtml && tag) {
+                    var cat = currentPost.category || tag;
+                    var relatedResult2 = await supabaseClient.from('forum_posts').select('id, title, author_name, likes, comment_count').eq('category', cat).neq('id', id).limit(3);
+                    if (relatedResult2.data && relatedResult2.data.length > 0) {
+                        relatedHtml = renderRelatedPosts(relatedResult2.data);
+                    }
+                }
+
+                // 组装页面
+                var container = document.getElementById('postDetail');
+                container.innerHTML = renderPost(currentPost) +
+                    renderCommentSection(comments, id) +
+                    relatedHtml;
+
+            } catch (err) {
+                console.error('加载帖子失败:', err);
+                document.getElementById('postDetail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#ef4444;">加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 页面加载完成后执行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadPostDetail);
+        } else {
+            loadPostDetail();
+        }
+
+    })();
     </script>
 
     <!-- 页脚 -->

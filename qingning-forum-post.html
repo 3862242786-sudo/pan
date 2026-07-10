@@ -238,17 +238,125 @@
         </div>
     </div>
 
+    <script src="auth2.js"></script>
     <script>
+        var selectedCategory = 'tech';
+
         function selectTag(el) {
             document.querySelectorAll('.post-tag-option').forEach(t => t.classList.remove('selected'));
             el.classList.add('selected');
+            var map = { '技术讨论': 'tech', '新闻资讯': 'news', '求助问答': 'help', '综合讨论': 'discuss', '公告': 'news' };
+            selectedCategory = map[el.textContent.trim()] || 'discuss';
         }
-        
-        function handlePost(e) {
+
+        async function handlePost(e) {
             e.preventDefault();
-            alert('发帖功能演示 - 实际开发需要后端支持');
-            location.href = 'qingning-forum.html';
+
+            // 检查登录
+            var loggedIn = localStorage.getItem('qn_logged_in');
+            var email = localStorage.getItem('qn_user_email');
+            if (!loggedIn || !email) {
+                alert('请先登录后再发帖');
+                location.href = 'auth.html';
+                return;
+            }
+
+            var title = document.querySelector('.post-form-input').value.trim();
+            var content = document.querySelector('.post-form-textarea').value.trim();
+
+            if (title.length < 5) { alert('标题至少5个字'); return; }
+            if (content.length < 10) { alert('内容至少10个字'); return; }
+
+            // 获取用户名
+            var profile = JSON.parse(localStorage.getItem('qn_profile_' + email) || '{}');
+            var authorName = profile.username || email.split('@')[0];
+
+            // 随机头像颜色
+            var colors = [
+                'linear-gradient(135deg, #22c55e, #16a34a)',
+                'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                'linear-gradient(135deg, #f59e0b, #d97706)',
+                'linear-gradient(135deg, #ec4899, #db2777)',
+                'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                'linear-gradient(135deg, #06b6d4, #0891b2)'
+            ];
+            var avatarColor = colors[Math.floor(Math.random() * colors.length)];
+
+            // 检查是否是站长
+            var isStationMaster = (email === '3862242786@qq.com' || profile.is_admin);
+
+            var submitBtn = document.querySelector('.post-btn.submit');
+            submitBtn.textContent = '发布中...';
+            submitBtn.disabled = true;
+
+            try {
+                if (typeof supabaseClient === 'undefined') throw new Error('Supabase 未加载');
+
+                var { data, error } = await supabaseClient.from('forum_posts').insert({
+                    title: title,
+                    content: content,
+                    category: selectedCategory,
+                    author_email: email,
+                    author_name: authorName,
+                    author_avatar_color: avatarColor,
+                    is_official: isStationMaster,
+                    is_sticky: false,
+                    likes: 0,
+                    comment_count: 0
+                }).select();
+
+                if (error) throw error;
+
+                alert('发布成功！');
+                location.href = 'qingning-forum-detail.html?id=' + data[0].id;
+            } catch(err) {
+                alert('发布失败：' + (err.message || '网络错误'));
+                submitBtn.textContent = '发布帖子';
+                submitBtn.disabled = false;
+            }
         }
+
+        // 页面加载时检查登录状态
+        (function() {
+            var loggedIn = localStorage.getItem('qn_logged_in');
+            var email = localStorage.getItem('qn_user_email');
+            var editor = document.querySelector('.post-editor');
+
+            if (!loggedIn || !email) {
+                // 未登录：显示提示
+                var hint = document.createElement('div');
+                hint.style.cssText = 'background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;';
+                hint.innerHTML = '<span style="color:#92400e;font-size:14px;">请先登录后再发帖</span><a href="auth.html" style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:8px 20px;border-radius:6px;text-decoration:none;font-size:14px;">去登录</a>';
+                editor.insertBefore(hint, editor.firstChild);
+
+                // 禁用表单
+                document.querySelector('.post-form-input').disabled = true;
+                document.querySelector('.post-form-textarea').disabled = true;
+                document.querySelector('.post-btn.submit').disabled = true;
+                document.querySelectorAll('.post-tag-option').forEach(function(t) {
+                    t.style.pointerEvents = 'none';
+                    t.style.opacity = '0.5';
+                });
+            } else {
+                // 已登录：显示用户信息
+                var profile = JSON.parse(localStorage.getItem('qn_profile_' + email) || '{}');
+                var authorName = profile.username || email.split('@')[0];
+                var avatarColors = [
+                    'linear-gradient(135deg, #22c55e, #16a34a)',
+                    'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                    'linear-gradient(135deg, #f59e0b, #d97706)',
+                    'linear-gradient(135deg, #ec4899, #db2777)',
+                    'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                    'linear-gradient(135deg, #06b6d4, #0891b2)'
+                ];
+                var avatarColor = avatarColors[(email.charCodeAt(0) + email.length) % avatarColors.length];
+
+                var userInfo = document.createElement('div');
+                userInfo.style.cssText = 'display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:12px 16px;background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;';
+                userInfo.innerHTML = '<div style="width:36px;height:36px;border-radius:50%;background:' + avatarColor + ';display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px;">' + authorName.charAt(0).toUpperCase() + '</div><div><div style="font-size:14px;font-weight:500;color:#1e293b;">' + authorName + '</div><div style="font-size:12px;color:#64748b;">' + email + '</div></div>';
+                editor.insertBefore(userInfo, editor.querySelector('h1').nextSibling);
+            }
+        })();
     </script>
 
     <!-- 页脚 -->
