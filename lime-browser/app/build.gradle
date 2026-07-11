@@ -8,8 +8,8 @@ android {
         applicationId "com.limeos.browser"
         minSdk 21
         targetSdk 34
-        versionCode 8
-        versionName "1.2.7"
+        versionCode 9
+        versionName "1.2.8"
     }
 
     buildTypes {

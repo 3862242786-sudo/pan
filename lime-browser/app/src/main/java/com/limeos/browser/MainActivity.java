@@ -169,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
         s.setUserAgentString(ua);
 
         try {
@@ -301,7 +301,7 @@ public class MainActivity extends AppCompatActivity {
                 // 更新所有 WebView 的 UA 并强制重新加载（loadUrl 才会重新发请求）
                 for (Tab t : tabs) {
                     if (t.webView != null) {
-                        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+                        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
                         t.webView.getSettings().setUserAgentString(ua);
                         if (t.isActive) {
                             String url = t.webView.getUrl();
@@ -319,7 +319,7 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "1.2.7";
+            return "1.2.8";
         }
     }
 
@@ -619,7 +619,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 new AlertDialog.Builder(this)
                         .setTitle("关于 LimeBrowser")
-                        .setMessage("LimeBrowser v1.2.7\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式 / 青柠系网站智能适配\nLimeOS Project 2026")
+                        .setMessage("LimeBrowser v1.2.8\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式 / 青柠系网站智能适配\nLimeOS Project 2026")
                         .setPositiveButton("确定", null)
                         .show();
             });
@@ -698,7 +698,7 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+                                String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
                                 t.webView.getSettings().setUserAgentString(ua);
                                 if (t.isActive) {
                                     String url = t.webView.getUrl();
