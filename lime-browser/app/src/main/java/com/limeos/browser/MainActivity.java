@@ -169,7 +169,8 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        s.setUserAgentString(currentUA + " LimeBrowser/1.2.7");
+        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+        s.setUserAgentString(ua);
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
@@ -297,11 +298,19 @@ public class MainActivity extends AppCompatActivity {
                 if (tvUAModeLabel != null) {
                     tvUAModeLabel.setText(modeNames[currentMode]);
                 }
-                // 更新所有 WebView 的 UA 并刷新
+                // 更新所有 WebView 的 UA 并强制重新加载（loadUrl 才会重新发请求）
                 for (Tab t : tabs) {
                     if (t.webView != null) {
-                        t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.7");
-                        if (t.isActive) t.webView.reload();
+                        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+                        t.webView.getSettings().setUserAgentString(ua);
+                        if (t.isActive) {
+                            String url = t.webView.getUrl();
+                            if (url != null && !url.isEmpty()) {
+                                t.webView.loadUrl(url);
+                            } else {
+                                t.webView.reload();
+                            }
+                        }
                     }
                 }
                 updateUI();
@@ -689,8 +698,16 @@ public class MainActivity extends AppCompatActivity {
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
                         for (Tab t : tabs) {
                             if (t.webView != null) {
-                                t.webView.getSettings().setUserAgentString(currentUA + " LimeBrowser/1.2.7");
-                                if (t.isActive) t.webView.reload();
+                                String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.7" : currentUA;
+                                t.webView.getSettings().setUserAgentString(ua);
+                                if (t.isActive) {
+                                    String url = t.webView.getUrl();
+                                    if (url != null && !url.isEmpty()) {
+                                        t.webView.loadUrl(url);
+                                    } else {
+                                        t.webView.reload();
+                                    }
+                                }
                             }
                         }
                         Toast.makeText(this, "已切换到" + modeNames[currentMode] + "模式", Toast.LENGTH_SHORT).show();
