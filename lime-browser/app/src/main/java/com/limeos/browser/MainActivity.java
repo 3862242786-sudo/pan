@@ -321,6 +321,11 @@ public class MainActivity extends AppCompatActivity {
         public String getAppVersion() {
             return "1.2.8";
         }
+
+        @JavascriptInterface
+        public String getDeviceArch() {
+            return android.os.Build.SUPPORTED_ABIS[0]; // 如 arm64-v8a, armeabi-v7a, x86_64
+        }
     }
 
     private void safeAddHistory(String title, String url) {

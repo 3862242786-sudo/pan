@@ -16,13 +16,14 @@
     if (sessionStorage.getItem('qn_site_unlocked') === 'true') return;
 
     // ===== 青柠浏览器 UA 模式检测 =====
-    // 检测是否在 LimeBrowser 中，且 UA 模式与真实设备不匹配
-    if (typeof LimeBrowser !== 'undefined' && LimeBrowser.isPhoneDevice && LimeBrowser.getUAMode) {
+    // 通过 CPU 架构判断是否为移动设备，与 UA 模式对比
+    if (typeof LimeBrowser !== 'undefined' && LimeBrowser.getDeviceArch && LimeBrowser.getUAMode) {
         try {
-            var isPhone = LimeBrowser.isPhoneDevice();
+            var arch = LimeBrowser.getDeviceArch();
+            var isMobileArch = (arch.indexOf('arm') !== -1);
             var uaMode = parseInt(LimeBrowser.getUAMode()); // 0=手机 1=平板 2=电脑
-            // 真实是手机，但 UA 模式是电脑或平板
-            if (isPhone && uaMode !== 0 && !sessionStorage.getItem('qn_ua_mismatch_confirmed')) {
+            // ARM 架构（手机/平板）但 UA 模式是电脑
+            if (isMobileArch && uaMode === 2 && !sessionStorage.getItem('qn_ua_mismatch_confirmed')) {
                 showUAMismatchDialog(uaMode);
             }
         } catch(e) {}
