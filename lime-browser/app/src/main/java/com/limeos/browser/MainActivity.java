@@ -70,31 +70,52 @@ public class MainActivity extends AppCompatActivity {
     private int nextTabId = 1;
     private static final String HOME_URL = "https://3862242786-sudo.github.io/pan/lime-start/";
     private static final String PREFS_NAME = "lime_browser_prefs";
+    private static final String APP_VERSION = "1.3.0";
 
-    private static final String UA_DESKTOP_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final String UA_DESKTOP_EDGE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0";
-    private static final String UA_DESKTOP_FIREFOX = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0";
-    private static final String UA_DESKTOP_IE = "Mozilla/5.0 (Windows NT 10.0; WOW64; Trident/7.0; rv:11.0) like Gecko";
-    private static final String UA_TABLET_IPAD = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
-    private static final String UA_TABLET_ANDROID = "Mozilla/5.0 (Linux; Android 13; SM-T870) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-    private static final String UA_PHONE_CHROME = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
-    private static final String UA_PHONE_SAFARI = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1";
+    // UA 模式常量
+    private static final int MODE_PHONE = 0, MODE_TABLET = 1, MODE_DESKTOP = 2, MODE_CUSTOM = 3;
 
-    private static final int MODE_PHONE = 0, MODE_TABLET = 1, MODE_DESKTOP = 2;
-    private final String[][] modeUANames = {
+    // 从系统 WebView 提取的版本信息（运行时填充）
+    private String defaultUA = "";
+    private String chromeVer = "120";
+    private String androidVer = "13";
+
+    // 模式名称
+    private final String[] modeNames = {"手机", "平板", "电脑", "自定义"};
+
+    // 每种模式的 UA 模板（{chrome} 和 {android} 在运行时替换）
+    private final String[][] uaTemplates = {
+        // 手机模式
+        {
+            "Mozilla/5.0 (Linux; Android {android}; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}.0.0.0 Mobile Safari/537.36",
+            "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        },
+        // 平板模式
+        {
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+            "Mozilla/5.0 (Linux; Android {android}; SM-T870) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}.0.0.0 Safari/537.36"
+        },
+        // 电脑模式
+        {
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{chrome}.0.0.0 Safari/537.36 Edg/{chrome}.0.0.0",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0"
+        },
+        // 自定义模式（运行时从存储读取）
+        {""}
+    };
+
+    // 每种模式的 UA 显示名称
+    private final String[][] uaDisplayNames = {
         {"Chrome 手机", "Safari iPhone"},
         {"iPad Safari", "Android 平板"},
-        {"Chrome 电脑", "Edge 电脑", "Firefox 电脑", "IE 11 兼容"}
+        {"Chrome 电脑", "Edge 电脑", "Firefox 电脑"},
+        {"自定义"}
     };
-    private final String[][] modeUAValues = {
-        {UA_PHONE_CHROME, UA_PHONE_SAFARI},
-        {UA_TABLET_IPAD, UA_TABLET_ANDROID},
-        {UA_DESKTOP_CHROME, UA_DESKTOP_EDGE, UA_DESKTOP_FIREFOX, UA_DESKTOP_IE}
-    };
-    private final String[] modeNames = {"手机", "平板", "电脑"};
+
     private int currentMode = MODE_PHONE;
     private int currentUaIndex = 0;
-    private String currentUA = UA_PHONE_CHROME;
+    private String currentUA = "";
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -110,11 +131,18 @@ public class MainActivity extends AppCompatActivity {
         }
         dbExecutor = Executors.newSingleThreadExecutor();
 
+        // 从系统 WebView 获取默认 UA，提取版本号
+        initUAFromSystem();
+
         currentMode = prefs.getInt("ua_mode", MODE_PHONE);
+        if (currentMode < 0 || currentMode > 3) currentMode = MODE_PHONE;
         currentUaIndex = prefs.getInt("ua_index_" + currentMode, 0);
-        if (currentMode < 0 || currentMode > 2) currentMode = MODE_PHONE;
-        if (currentUaIndex < 0 || currentUaIndex >= modeUAValues[currentMode].length) currentUaIndex = 0;
-        currentUA = modeUAValues[currentMode][currentUaIndex];
+        if (currentMode == MODE_CUSTOM) {
+            currentUA = prefs.getString("ua_custom", defaultUA);
+        } else {
+            if (currentUaIndex < 0 || currentUaIndex >= uaTemplates[currentMode].length) currentUaIndex = 0;
+            currentUA = resolveTemplate(uaTemplates[currentMode][currentUaIndex]);
+        }
 
         webViewContainer = findViewById(R.id.webViewContainer);
         urlInput = findViewById(R.id.urlInput);
@@ -151,6 +179,59 @@ public class MainActivity extends AppCompatActivity {
         updateUI();
     }
 
+    // 从系统 WebView 提取默认 UA 和版本信息
+    private void initUAFromSystem() {
+        try {
+            WebView tmp = new WebView(this);
+            defaultUA = tmp.getSettings().getUserAgentString();
+            // 提取 Chrome 版本号
+            int idx = defaultUA.indexOf("Chrome/");
+            if (idx >= 0) {
+                int end = defaultUA.indexOf(".", idx + 7);
+                if (end > 0) chromeVer = defaultUA.substring(idx + 7, end);
+            }
+            // 提取 Android 版本号
+            idx = defaultUA.indexOf("Android ");
+            if (idx >= 0) {
+                int end = defaultUA.indexOf(";", idx + 8);
+                if (end > 0) androidVer = defaultUA.substring(idx + 8, end);
+            }
+        } catch (Exception e) {
+            defaultUA = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36";
+        }
+    }
+
+    // 将模板中的 {chrome} 和 {android} 替换为实际版本
+    private String resolveTemplate(String template) {
+        return template.replace("{chrome}", chromeVer).replace("{android}", androidVer);
+    }
+
+    // 获取最终要设置的 UA 字符串
+    private String getEffectiveUA() {
+        if (currentMode == MODE_PHONE) {
+            return currentUA + " LimeBrowser/" + APP_VERSION;
+        }
+        return currentUA;
+    }
+
+    // 应用 UA 到所有 WebView 并刷新当前页
+    private void applyUAAndReload() {
+        String ua = getEffectiveUA();
+        for (Tab t : tabs) {
+            if (t.webView != null) {
+                t.webView.getSettings().setUserAgentString(ua);
+                if (t.isActive) {
+                    String url = t.webView.getUrl();
+                    if (url != null && !url.isEmpty()) {
+                        t.webView.loadUrl(url);
+                    } else {
+                        t.webView.reload();
+                    }
+                }
+            }
+        }
+    }
+
     @SuppressLint("SetJavaScriptEnabled")
     private WebView createWebView() {
         WebView wv = new WebView(this);
@@ -169,8 +250,7 @@ public class MainActivity extends AppCompatActivity {
         s.setLoadWithOverviewMode(true);
         s.setUseWideViewPort(true);
         s.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
-        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
-        s.setUserAgentString(ua);
+        s.setUserAgentString(getEffectiveUA());
 
         try {
             CookieManager.getInstance().setAcceptCookie(true);
@@ -265,7 +345,7 @@ public class MainActivity extends AppCompatActivity {
     public class LimeJsBridge {
         @JavascriptInterface
         public String getUAMode() {
-            return String.valueOf(currentMode); // 0=手机 1=平板 2=电脑
+            return String.valueOf(currentMode); // 0=手机 1=平板 2=电脑 3=自定义
         }
 
         @JavascriptInterface
@@ -275,7 +355,6 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public boolean isPhoneDevice() {
-            // 通过屏幕尺寸判断是否是手机设备
             return MainActivity.this.getResources().getBoolean(
                     MainActivity.this.getResources().getIdentifier("isPhone", "bool", "android")
             ) || (getResources().getConfiguration().screenLayout
@@ -285,46 +364,56 @@ public class MainActivity extends AppCompatActivity {
 
         @JavascriptInterface
         public void switchToMode(final int mode) {
-            if (mode < 0 || mode > 2) return;
+            if (mode < 0 || mode > 3) return;
             mainHandler.post(() -> {
                 currentMode = mode;
                 currentUaIndex = prefs.getInt("ua_index_" + currentMode, 0);
-                if (currentUaIndex < 0 || currentUaIndex >= modeUAValues[currentMode].length) {
-                    currentUaIndex = 0;
+                if (currentMode == MODE_CUSTOM) {
+                    currentUA = prefs.getString("ua_custom", defaultUA);
+                } else {
+                    if (currentUaIndex < 0 || currentUaIndex >= uaTemplates[currentMode].length) currentUaIndex = 0;
+                    currentUA = resolveTemplate(uaTemplates[currentMode][currentUaIndex]);
                 }
-                currentUA = modeUAValues[currentMode][currentUaIndex];
                 prefs.edit().putInt("ua_mode", currentMode).apply();
-                prefs.edit().putInt("ua_index_" + currentMode, currentUaIndex).apply();
-                if (tvUAModeLabel != null) {
-                    tvUAModeLabel.setText(modeNames[currentMode]);
-                }
-                // 更新所有 WebView 的 UA 并强制重新加载（loadUrl 才会重新发请求）
-                for (Tab t : tabs) {
-                    if (t.webView != null) {
-                        String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
-                        t.webView.getSettings().setUserAgentString(ua);
-                        if (t.isActive) {
-                            String url = t.webView.getUrl();
-                            if (url != null && !url.isEmpty()) {
-                                t.webView.loadUrl(url);
-                            } else {
-                                t.webView.reload();
-                            }
-                        }
-                    }
-                }
+                if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
+                applyUAAndReload();
                 updateUI();
             });
         }
 
         @JavascriptInterface
         public String getAppVersion() {
-            return "1.2.8";
+            return APP_VERSION;
         }
 
         @JavascriptInterface
         public String getDeviceArch() {
-            return android.os.Build.SUPPORTED_ABIS[0]; // 如 arm64-v8a, armeabi-v7a, x86_64
+            return android.os.Build.SUPPORTED_ABIS[0];
+        }
+
+        @JavascriptInterface
+        public String getDefaultUA() {
+            return defaultUA;
+        }
+
+        @JavascriptInterface
+        public String getCurrentUA() {
+            return getEffectiveUA();
+        }
+
+        @JavascriptInterface
+        public void setCustomUA(final String ua) {
+            mainHandler.post(() -> {
+                currentMode = MODE_CUSTOM;
+                currentUA = ua;
+                prefs.edit()
+                    .putInt("ua_mode", MODE_CUSTOM)
+                    .putString("ua_custom", ua)
+                    .apply();
+                if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
+                applyUAAndReload();
+                updateUI();
+            });
         }
     }
 
@@ -624,7 +713,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 new AlertDialog.Builder(this)
                         .setTitle("关于 LimeBrowser")
-                        .setMessage("LimeBrowser v1.2.8\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式 / 青柠系网站智能适配\nLimeOS Project 2026")
+                        .setMessage("LimeBrowser v1.3.0\n基于 Chromium WebView\n支持多标签 / 历史记录 / 电脑模式 / 自定义 UA / 青柠系网站智能适配\nLimeOS Project 2026")
                         .setPositiveButton("确定", null)
                         .show();
             });
@@ -656,7 +745,8 @@ public class MainActivity extends AppCompatActivity {
             TextView tvDesc = view.findViewById(R.id.tvModeDesc);
             TextView tvCurrentUA = view.findViewById(R.id.tvCurrentUA);
 
-            for (int i = 0; i < 3; i++) {
+            // 4 个模式按钮
+            for (int i = 0; i < 4; i++) {
                 RadioButton rb = new RadioButton(this);
                 rb.setText(modeNames[i] + "模式");
                 rb.setTextSize(16);
@@ -665,9 +755,26 @@ public class MainActivity extends AppCompatActivity {
                 if (i == currentMode) rb.setChecked(true);
                 if (rgMode != null) rgMode.addView(rb);
             }
+
+            // 自定义 UA 输入框
+            final EditText etCustomUA = new EditText(this);
+            etCustomUA.setHint("输入自定义 User-Agent");
+            etCustomUA.setTextSize(14);
+            etCustomUA.setSingleLine(false);
+            etCustomUA.setMinLines(2);
+            etCustomUA.setMaxLines(4);
+            etCustomUA.setText(currentMode == MODE_CUSTOM ? currentUA : defaultUA);
+            etCustomUA.setVisibility(currentMode == MODE_CUSTOM ? View.VISIBLE : View.GONE);
+            if (rgBrowser != null && rgBrowser.getParent() instanceof android.widget.LinearLayout) {
+                ((android.widget.LinearLayout) rgBrowser.getParent()).addView(etCustomUA);
+            }
+
             if (rgBrowser != null) loadBrowserOptions(rgBrowser, currentMode);
             if (tvDesc != null) tvDesc.setText(getModeDesc(currentMode));
-            if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[currentMode][currentUaIndex]);
+            if (tvCurrentUA != null) {
+                tvCurrentUA.setText("当前 UA:\n" + getEffectiveUA());
+                tvCurrentUA.setTextSize(12);
+            }
 
             final int[] tempMode = {currentMode};
             final int[] tempUaIndex = {currentUaIndex};
@@ -677,20 +784,48 @@ public class MainActivity extends AppCompatActivity {
                     tempMode[0] = checkedId;
                     tempUaIndex[0] = 0;
                     if (tvDesc != null) tvDesc.setText(getModeDesc(tempMode[0]));
+                    // 自定义输入框可见性
+                    etCustomUA.setVisibility(tempMode[0] == MODE_CUSTOM ? View.VISIBLE : View.GONE);
                     if (rgBrowser != null) {
                         rgBrowser.removeAllViews();
-                        loadBrowserOptions(rgBrowser, tempMode[0]);
-                        if (rgBrowser.getChildCount() > 0) ((RadioButton) rgBrowser.getChildAt(0)).setChecked(true);
+                        if (tempMode[0] != MODE_CUSTOM) {
+                            loadBrowserOptions(rgBrowser, tempMode[0]);
+                            if (rgBrowser.getChildCount() > 0) ((RadioButton) rgBrowser.getChildAt(0)).setChecked(true);
+                            rgBrowser.setVisibility(View.VISIBLE);
+                        } else {
+                            rgBrowser.setVisibility(View.GONE);
+                        }
                     }
-                    if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[tempMode[0]][tempUaIndex[0]]);
+                    if (tvCurrentUA != null) {
+                        if (tempMode[0] == MODE_CUSTOM) {
+                            tvCurrentUA.setText("自定义 UA:\n" + etCustomUA.getText().toString());
+                        } else {
+                            String ua = resolveTemplate(uaTemplates[tempMode[0]][0]);
+                            tvCurrentUA.setText("当前 UA:\n" + ua);
+                        }
+                    }
                 });
             }
             if (rgBrowser != null) {
                 rgBrowser.setOnCheckedChangeListener((group, checkedId) -> {
                     tempUaIndex[0] = checkedId;
-                    if (tvCurrentUA != null) tvCurrentUA.setText("当前: " + modeUANames[tempMode[0]][tempUaIndex[0]]);
+                    if (tvCurrentUA != null && tempMode[0] < 3) {
+                        String ua = resolveTemplate(uaTemplates[tempMode[0]][tempUaIndex[0]]);
+                        tvCurrentUA.setText("当前 UA:\n" + ua);
+                    }
                 });
             }
+
+            // 自定义输入框内容变化时更新预览
+            etCustomUA.addTextChangedListener(new android.text.TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (tvCurrentUA != null && tempMode[0] == MODE_CUSTOM) {
+                        tvCurrentUA.setText("自定义 UA:\n" + s.toString());
+                    }
+                }
+                @Override public void afterTextChanged(android.text.Editable s) {}
+            });
 
             new AlertDialog.Builder(this)
                     .setTitle("浏览器模式")
@@ -698,23 +833,20 @@ public class MainActivity extends AppCompatActivity {
                     .setPositiveButton("应用并刷新", (dialog, which) -> {
                         currentMode = tempMode[0];
                         currentUaIndex = tempUaIndex[0];
-                        currentUA = modeUAValues[currentMode][currentUaIndex];
+                        if (currentMode == MODE_CUSTOM) {
+                            String customUA = etCustomUA.getText().toString().trim();
+                            if (customUA.isEmpty()) {
+                                Toast.makeText(this, "请输入自定义 UA", Toast.LENGTH_SHORT).show();
+                                return;
+                            }
+                            currentUA = customUA;
+                            prefs.edit().putString("ua_custom", customUA).apply();
+                        } else {
+                            currentUA = resolveTemplate(uaTemplates[currentMode][currentUaIndex]);
+                        }
                         prefs.edit().putInt("ua_mode", currentMode).putInt("ua_index_" + currentMode, currentUaIndex).apply();
                         if (tvUAModeLabel != null) tvUAModeLabel.setText(modeNames[currentMode]);
-                        for (Tab t : tabs) {
-                            if (t.webView != null) {
-                                String ua = currentMode == MODE_PHONE ? currentUA + " LimeBrowser/1.2.8" : currentUA;
-                                t.webView.getSettings().setUserAgentString(ua);
-                                if (t.isActive) {
-                                    String url = t.webView.getUrl();
-                                    if (url != null && !url.isEmpty()) {
-                                        t.webView.loadUrl(url);
-                                    } else {
-                                        t.webView.reload();
-                                    }
-                                }
-                            }
-                        }
+                        applyUAAndReload();
                         Toast.makeText(this, "已切换到" + modeNames[currentMode] + "模式", Toast.LENGTH_SHORT).show();
                     })
                     .setNegativeButton("取消", null)
@@ -728,13 +860,16 @@ public class MainActivity extends AppCompatActivity {
         switch (mode) {
             case MODE_PHONE: return "显示手机版网页，适合日常浏览";
             case MODE_TABLET: return "显示平板版网页，类似 iPad 体验";
-            default: return "显示桌面版网页，像电脑一样浏览";
+            case MODE_DESKTOP: return "显示桌面版网页，像电脑一样浏览";
+            case MODE_CUSTOM: return "输入任意 User-Agent 字符串";
+            default: return "";
         }
     }
 
     private void loadBrowserOptions(RadioGroup rg, int mode) {
         rg.removeAllViews();
-        String[] names = modeUANames[mode];
+        if (mode == MODE_CUSTOM) return;
+        String[] names = uaDisplayNames[mode];
         for (int i = 0; i < names.length; i++) {
             RadioButton rb = new RadioButton(this);
             rb.setText(names[i]);
