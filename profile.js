@@ -502,7 +502,7 @@
                 return;
             }
             saveProfileData(currentEmail, profileData);
-            if (window.QNCloud) {
+            if (window.QNCloud && /^https?:/.test(avatarUrl)) {
                 QNCloud.saveProfile(currentEmail, { username: profileData.username, avatar_url: avatarUrl });
             }
             profileAvatar.innerHTML = '<img src="' + avatarUrl + '" alt="头像">';
@@ -534,7 +534,7 @@
             }
             profileData.banner_url = bannerUrl;
             saveProfileData(currentEmail, profileData);
-            if (window.QNCloud) {
+            if (window.QNCloud && /^https?:/.test(bannerUrl)) {
                 QNCloud.saveProfile(currentEmail, { banner_url: bannerUrl });
             }
             profileBanner.style.backgroundImage = 'url(' + bannerUrl + ')';

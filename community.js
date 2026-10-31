@@ -1135,6 +1135,11 @@
         }
 
         saveFollows(follows);
+        // 关注关系同步到云端，换设备/换页面也能看到
+        if (window.QNCloud) {
+            var mine = follows.filter(function (f) { return f.follower_email === currentUser.email; });
+            QNCloud.saveRelations(currentUser.email, { follows: mine });
+        }
         renderSidebar();
     };
 
@@ -1552,6 +1557,18 @@
                 currentUser.username = fresh.username;
                 currentUser.avatar_url = fresh.avatar_url;
                 currentUser.bio = fresh.bio;
+                // 同步关注关系，保证换设备后关注的作者一致
+                try {
+                    var rel = await QNCloud.getRelations(currentUser.email);
+                    var localMine = loadFollows().filter(function (f) { return f.follower_email === currentUser.email; });
+                    if ((rel.follows || []).length === 0 && localMine.length > 0) {
+                        rel.follows = localMine;
+                        QNCloud.saveRelations(currentUser.email, rel);
+                    } else if (rel.follows && rel.follows.length) {
+                        var others = loadFollows().filter(function (f) { return f.follower_email !== currentUser.email; });
+                        saveFollows(others.concat(rel.follows));
+                    }
+                } catch (e) { }
                 showLoggedInUI();
             }
             renderFeed();

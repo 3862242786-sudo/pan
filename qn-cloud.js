@@ -179,7 +179,7 @@
             var res = await window.supabaseClient.storage.from(BUCKET).upload(filePath, blob, {
                 upsert: true,
                 contentType: blob.type,
-                cacheControl: '3600'
+                cacheControl: '0'
             });
             if (res.error) {
                 console.warn('[QNCloud] 图片上传失败', res.error);
@@ -284,6 +284,30 @@
         return ok;
     }
 
+    // ===== 关注关系 =====
+    function relationsPath(email) {
+        return 'userdata/' + encodeURIComponent(norm(email)) + '/relations.json';
+    }
+
+    async function getRelations(email) {
+        var e = norm(email);
+        if (!e) return { follows: [] };
+        var doc = await readDoc(relationsPath(e)) || {};
+        if (!doc.follows) doc.follows = [];
+        try { localStorage.setItem('qn_relations_' + e, JSON.stringify(doc)); } catch (err) { }
+        return doc;
+    }
+
+    async function saveRelations(email, data) {
+        var e = norm(email);
+        if (!e || !(await waitClient())) return false;
+        var ok = await writeDoc(relationsPath(e), data);
+        if (ok) {
+            try { localStorage.setItem('qn_relations_' + e, JSON.stringify(data)); } catch (err) { }
+        }
+        return ok;
+    }
+
     // ===== 展示辅助 =====
     function displayName(email, fallbackName) {
         var p = cachedProfile(email);
@@ -294,7 +318,9 @@
         var p = cachedProfile(email);
         var name = p.username || fallbackName || '匿名用户';
         if (p.avatar_url && /^https?:/.test(p.avatar_url)) {
-            return '<img src="' + p.avatar_url + '" alt="' + name + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">';
+            var v = p.updated_at ? ('?v=' + encodeURIComponent(p.updated_at)) : '';
+            var sep = p.avatar_url.indexOf('?') === -1 ? v : '';
+            return '<img src="' + p.avatar_url + sep + '" alt="' + name + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block">';
         }
         return (name.charAt(0) || '?').toUpperCase();
     }
@@ -329,6 +355,8 @@
         uploadWorkImage: uploadWorkImage,
         getWorks: getWorks,
         addWork: addWork,
+        getRelations: getRelations,
+        saveRelations: saveRelations,
         displayName: displayName,
         avatarHtml: avatarHtml,
         onProfileReady: null

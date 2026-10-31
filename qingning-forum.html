@@ -932,9 +932,19 @@
                 query = supabaseClient.from('forum_posts').select('*').eq('is_official', true).order('created_at', { ascending: false }).limit(20);
             } else if (currentForumTab === 'following') {
                 var following = [];
-                try { following = JSON.parse(localStorage.getItem('qn_following') || '[]') || []; } catch (e) {}
+                try {
+                    // 社区页的关注记录存在 qn_follows，这里优先读取，保证社区关注后论坛也能看到
+                    var me = localStorage.getItem('qn_user_email');
+                    var rawFollows = JSON.parse(localStorage.getItem('qn_follows') || '[]') || [];
+                    rawFollows.forEach(function (f) {
+                        if (f && f.following_email && (!me || f.follower_email === me)) following.push(f.following_email);
+                    });
+                    if (following.length === 0) {
+                        following = JSON.parse(localStorage.getItem('qn_following') || '[]') || [];
+                    }
+                } catch (e) { following = []; }
                 if (following.length === 0) {
-                    postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">还没有关注的用户，去帖子详情页关注作者吧</div>';
+                    postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">还没有关注的用户，去青柠社区关注作者吧</div>';
                     return;
                 }
                 query = supabaseClient.from('forum_posts').select('*').in('author_email', following).order('created_at', { ascending: false }).limit(20);
