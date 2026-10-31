@@ -144,8 +144,8 @@
         <div id="loginScreen">
             <div class="card">
                 <div class="tabs">
-                    <div class="tab active" onclick="switchLoginTab('account')">账户登录</div>
-                    <div class="tab" onclick="switchLoginTab('token')">令牌登录</div>
+                    <div class="tab active" onclick="switchLoginTab('account', this)">账户登录</div>
+                    <div class="tab" onclick="switchLoginTab('token', this)">令牌登录</div>
                 </div>
                 <div id="accountLogin">
                     <input type="email" id="email" class="input" placeholder="青柠账户邮箱">
@@ -168,8 +168,8 @@
                     <span class="token-placeholder">--------</span>
                 </div>
                 <div class="expire-info" id="expireInfo">有效期至: --</div>
-                <button class="btn btn-primary" onclick="copyToken()">复制令牌</button>
-                <button class="btn btn-secondary" onclick="refreshToken()">刷新令牌</button>
+                <button class="btn btn-primary" onclick="copyToken(this)">复制令牌</button>
+                <button class="btn btn-secondary" onclick="refreshToken(this)">刷新令牌</button>
             </div>
 
             <div class="card">
@@ -244,9 +244,9 @@
             }
         }
 
-        function switchLoginTab(tab) {
+        function switchLoginTab(tab, el) {
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            if (el) el.classList.add('active');
             if (tab === 'account') {
                 document.getElementById('accountLogin').classList.remove('hidden');
                 document.getElementById('tokenLogin').classList.add('hidden');
@@ -266,7 +266,16 @@
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) {
-                    showMsg('登录失败: ' + error.message, 'error');
+                    const errMsg = String(error.message || '');
+                    if (errMsg.includes('Invalid login') || errMsg.includes('Invalid credentials')) {
+                        showMsg('邮箱或密码错误', 'error');
+                    } else if (errMsg.includes('Email not confirmed')) {
+                        showMsg('邮箱未确认，请查收确认邮件', 'error');
+                    } else if (/rate ?limit|too many requests|429/i.test(errMsg)) {
+                        showMsg('请求过于频繁，请稍后再试', 'error');
+                    } else {
+                        showMsg('登录失败，请稍后重试', 'error');
+                    }
                     return;
                 }
                 currentUser = { email: data.user.email, name: data.user.email.split('@')[0] };
@@ -276,7 +285,12 @@
                 showMsg('登录成功!', 'success');
                 setTimeout(() => { showMainScreen(); updateTokenDisplay(); }, 500);
             } catch (err) {
-                showMsg('登录失败,请检查网络', 'error');
+                const msg = String((err && err.message) || '');
+                if (/rate ?limit|too many requests|429/i.test(msg)) {
+                    showMsg('请求过于频繁，请稍后再试', 'error');
+                } else {
+                    showMsg('网络错误，请检查网络连接', 'error');
+                }
             }
         }
 
@@ -373,19 +387,30 @@
             }
         }
 
-        function copyToken() {
+        function copyToken(btn) {
             const token = document.getElementById('tokenDisplay').textContent.trim();
             if (token && token !== '--------') {
-                navigator.clipboard.writeText(token).then(() => {
-                    const btn = event.target;
-                    btn.textContent = '已复制';
-                    setTimeout(() => btn.textContent = '复制令牌', 2000);
-                });
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(token).then(() => {
+                        if (btn) { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制令牌', 2000); }
+                    }).catch(() => {
+                        // fallback
+                        const ta = document.createElement('textarea');
+                        ta.value = token; document.body.appendChild(ta); ta.select();
+                        document.execCommand('copy'); document.body.removeChild(ta);
+                        if (btn) { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制令牌', 2000); }
+                    });
+                } else {
+                    const ta = document.createElement('textarea');
+                    ta.value = token; document.body.appendChild(ta); ta.select();
+                    document.execCommand('copy'); document.body.removeChild(ta);
+                    if (btn) { btn.textContent = '已复制'; setTimeout(() => btn.textContent = '复制令牌', 2000); }
+                }
             }
         }
 
         // 刷新令牌：版本号+1，旧令牌失效
-        function refreshToken() {
+        function refreshToken(btn) {
             if (!currentUser) return;
 
             // 将旧令牌加入失效列表
@@ -393,7 +418,6 @@
             if (oldToken) {
                 let revoked = JSON.parse(localStorage.getItem('qn_revoked_tokens') || '[]');
                 revoked.push({ token: oldToken, revokedAt: Date.now() });
-                // 只保留最近100条
                 if (revoked.length > 100) revoked = revoked.slice(-100);
                 localStorage.setItem('qn_revoked_tokens', JSON.stringify(revoked));
             }
@@ -403,9 +427,7 @@
             localStorage.setItem('qn_token_version', tokenVersion.toString());
             updateTokenDisplay();
 
-            const btn = event.target;
-            btn.textContent = '已刷新';
-            setTimeout(() => btn.textContent = '刷新令牌', 2000);
+            if (btn) { btn.textContent = '已刷新'; setTimeout(() => btn.textContent = '刷新令牌', 2000); }
         }
 
         // ===== 扫码登录 =====
@@ -415,23 +437,54 @@
                 return;
             }
 
+            // 检查环境是否支持相机
+            const isSecure = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
+            if (!isSecure) {
+                showScanMsg('相机需要在 HTTPS 环境下使用，请使用 https 访问', 'error');
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showScanMsg('当前浏览器不支持相机，请使用手动输入会话ID', 'error');
+                return;
+            }
+
             const overlay = document.getElementById('scanOverlay');
             overlay.classList.remove('hidden');
+            showScanMsg('正在启动相机...', 'success');
 
             try {
                 const video = document.getElementById('scanVideo');
                 scanStream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' }
+                    video: { facingMode: { ideal: 'environment' } }
                 });
                 video.srcObject = scanStream;
                 await video.play();
 
-                // 使用 jsQR 解析
+                if (typeof jsQR === 'undefined') {
+                    showScanMsg('二维码识别库加载失败，请刷新页面重试', 'error');
+                    stopScanQR();
+                    return;
+                }
+
+                showScanMsg('请将二维码放入框内', 'success');
                 scanInterval = setInterval(() => {
                     parseQRFrameWithJsQR();
                 }, 300);
             } catch (err) {
-                showScanMsg('无法访问摄像头: ' + err.message, 'error');
+                const name = err && err.name ? err.name : '';
+                let msg = '无法访问相机';
+                if (name === 'NotAllowedError' || name === 'SecurityError') {
+                    msg = '相机权限被拒绝，请在浏览器设置中允许相机访问';
+                } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+                    msg = '未检测到可用的摄像头设备';
+                } else if (name === 'NotReadableError') {
+                    msg = '摄像头被其他应用占用，请关闭后重试';
+                } else if (name === 'NotSupportedError') {
+                    msg = '当前浏览器不支持摄像头';
+                } else {
+                    msg = '无法启动相机：' + (err.message || '未知错误');
+                }
+                showScanMsg(msg, 'error');
                 stopScanQR();
             }
         }
@@ -523,7 +576,7 @@
                     showScanMsg('二维码已过期，请刷新网站重新获取', 'error');
                 }
             } catch (e) {
-                showScanMsg('提交失败: ' + e.message, 'error');
+                showScanMsg('提交失败，请稍后重试', 'error');
             }
         }
 
