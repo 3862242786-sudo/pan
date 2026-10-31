@@ -122,6 +122,13 @@ function qnIsNetworkError(err) {
     return /network|fetch|timeout|timed ?out|failed to|load failed|abort|econn|unreachable|connection/i.test(msg);
 }
 
+// 是否为限流错误（429）
+function qnIsRateLimitError(err) {
+    if (!err) return false;
+    var msg = String(err.message || err.name || err.error_description || err || '');
+    return /rate ?limit|too many requests|429|over ?rate/i.test(msg);
+}
+
 // 生成当日令牌（与令牌 APP 的算法一致：邮箱 + 日期 + 版本 + 密钥）
 function qnGenerateLocalToken(email, version) {
     var now = new Date();
@@ -269,14 +276,17 @@ async function handleRegister(e) {
     }
 
     if (!cloudRegistered) {
-        // 云端不可达 → 使用本机账户兜底
-        if (qnIsNetworkError(cloudError) || !supabaseClient) {
+        // 云端不可达或被限流 → 使用本机账户兜底
+        if (qnIsNetworkError(cloudError) || qnIsRateLimitError(cloudError) || !supabaseClient) {
             var localReg = qnRegisterLocal(email, password);
             if (!localReg.ok) {
                 showMessage('registerMessage', localReg.reason, true);
                 return;
             }
-            showMessage('registerMessage', '云端暂不可用，已在本机注册并登录', false);
+            var tip = qnIsRateLimitError(cloudError)
+                ? '云端注册请求过于频繁，已在本机注册并登录'
+                : '云端暂不可用，已在本机注册并登录';
+            showMessage('registerMessage', tip, false);
             await finishLogin(qnNormalizeEmail(email), true);
             return;
         }
@@ -284,8 +294,10 @@ async function handleRegister(e) {
         var errMsg = String((cloudError && cloudError.message) || '');
         if (errMsg.indexOf('already registered') !== -1 || errMsg.indexOf('already been registered') !== -1) {
             showMessage('registerMessage', '该邮箱已被注册，请直接登录', true);
+        } else if (qnIsRateLimitError(cloudError)) {
+            showMessage('registerMessage', '注册请求过于频繁，请稍后再试', true);
         } else {
-            showMessage('registerMessage', '注册失败：' + errMsg, true);
+            showMessage('registerMessage', '注册失败，请稍后重试', true);
         }
         return;
     }
@@ -348,13 +360,16 @@ async function handleLogin(e) {
         return;
     }
 
-    // 云端不可达 → 本机账户兜底
-    if (qnIsNetworkError(cloudError) || !supabaseClient) {
+    // 云端不可达或被限流 → 本机账户兜底
+    if (qnIsNetworkError(cloudError) || qnIsRateLimitError(cloudError) || !supabaseClient) {
         if (qnLoginLocal(email, password)) {
             showMessage('loginMessage', '云端暂不可用，已使用本机账户登录', false);
             await finishLogin(qnNormalizeEmail(email), true);
         } else {
-            showMessage('loginMessage', '云端暂不可用；本机没有该账户，请先注册本机账户或稍后重试', true);
+            var tip2 = qnIsRateLimitError(cloudError)
+                ? '云端请求过于频繁；本机没有该账户，请稍后重试'
+                : '云端暂不可用；本机没有该账户，请先注册本机账户或稍后重试';
+            showMessage('loginMessage', tip2, true);
         }
         return;
     }
@@ -374,10 +389,10 @@ async function handleLogin(e) {
         } catch (resendErr) {
             showMessage('loginMessage', '邮箱未确认，请检查邮箱或联系站长', true);
         }
-    } else if (errMsg.indexOf('Too many requests') !== -1) {
+    } else if (qnIsRateLimitError(cloudError)) {
         showMessage('loginMessage', '请求过于频繁，请稍后再试', true);
     } else {
-        showMessage('loginMessage', '登录失败：' + errMsg, true);
+        showMessage('loginMessage', '登录失败，请稍后重试', true);
     }
 }
 
@@ -409,7 +424,11 @@ async function handleResetPassword(e) {
         });
 
         if (error) {
-            showMessage('forgotMessage', '发送失败：' + error.message, true);
+            if (qnIsRateLimitError(error)) {
+                showMessage('forgotMessage', '请求过于频繁，请稍后再试', true);
+            } else {
+                showMessage('forgotMessage', '发送失败，请稍后重试', true);
+            }
             return;
         }
 

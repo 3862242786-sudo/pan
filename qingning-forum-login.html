@@ -462,16 +462,16 @@
                     return;
                 }
                 
-                // 云端不可达 → 使用本机离线账户登录
-                if (!ready || qnIsNetworkError(cloudError)) {
+                // 云端不可达或被限流 → 使用本机离线账户登录
+                if (!ready || qnIsNetworkError(cloudError) || qnIsRateLimitError(cloudError)) {
                     if (qnLoginLocal(account, password)) {
                         var localEmail = qnNormalizeEmail(account);
                         qnSaveLocalSession(localEmail);
                         saveForumLogin(localEmail, true, '', '');
-                        alert('云端暂不可用，已使用本机账户登录');
+                        alert(qnIsRateLimitError(cloudError) ? '云端请求过于频繁，已使用本机账户登录' : '云端暂不可用，已使用本机账户登录');
                         forumRedirect();
                     } else {
-                        alert('云端暂不可用；本机没有该账户，请先注册本机账户或稍后重试');
+                        alert(qnIsRateLimitError(cloudError) ? '云端请求过于频繁；本机没有该账户，请稍后重试' : '云端暂不可用；本机没有该账户，请先注册本机账户或稍后重试');
                         btn.textContent = originalText;
                         btn.disabled = false;
                     }
@@ -484,8 +484,10 @@
                     alert('邮箱或密码错误');
                 } else if (errMsg.indexOf('Email not confirmed') !== -1) {
                     alert('请先到邮箱完成验证');
+                } else if (qnIsRateLimitError(cloudError)) {
+                    alert('请求过于频繁，请稍后再试');
                 } else {
-                    alert('登录失败：' + (errMsg || '未知错误'));
+                    alert('登录失败，请稍后重试');
                 }
                 btn.textContent = originalText;
                 btn.disabled = false;
@@ -581,8 +583,8 @@
                     return;
                 }
                 
-                // 云端不可达 → 在本机注册并自动登录
-                if (!ready || qnIsNetworkError(cloudError)) {
+                // 云端不可达或被限流 → 在本机注册并自动登录
+                if (!ready || qnIsNetworkError(cloudError) || qnIsRateLimitError(cloudError)) {
                     var localRes = qnRegisterLocal(email, password);
                     if (localRes && localRes.ok) {
                         var localEmail = qnNormalizeEmail(email);
@@ -593,7 +595,7 @@
                             is_admin: (localEmail === '3862242786@qq.com')
                         }));
                         saveForumLogin(localEmail, true, '', '');
-                        alert('云端暂不可用，已在本机注册并登录（仅本机有效）');
+                        alert(qnIsRateLimitError(cloudError) ? '云端注册请求过于频繁，已在本机注册并登录（仅本机有效）' : '云端暂不可用，已在本机注册并登录（仅本机有效）');
                         forumRedirect();
                     } else {
                         alert('云端暂不可用，本机注册失败：' + ((localRes && localRes.reason) || '请稍后重试'));
@@ -607,8 +609,10 @@
                 var errMsg = String((cloudError && cloudError.message) || '');
                 if (errMsg.indexOf('already registered') !== -1) {
                     alert('该邮箱已被注册');
+                } else if (qnIsRateLimitError(cloudError)) {
+                    alert('注册请求过于频繁，请稍后再试');
                 } else {
-                    alert('注册失败：' + (errMsg || '未知错误'));
+                    alert('注册失败，请稍后重试');
                 }
                 btn.textContent = originalText;
                 btn.disabled = false;
