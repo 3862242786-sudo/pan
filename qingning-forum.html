@@ -80,6 +80,33 @@
             gap: 24px;
             border-bottom: 2px solid #f1f5f9;
             padding-bottom: 12px;
+            overflow-x: auto;
+        }
+
+        .forum-refresh-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background: white;
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .forum-refresh-btn:hover {
+            border-color: #22c55e;
+            color: #22c55e;
+        }
+
+        .forum-refresh-btn:disabled {
+            opacity: .6;
+            cursor: default;
         }
         
         .forum-tab {
@@ -605,13 +632,17 @@
 
             <!-- 中间内容区 -->
             <main class="forum-main">
-                <div class="forum-header">
-                    <div class="forum-tabs">
-                        <div class="forum-tab active">最新</div>
-                        <div class="forum-tab">热门</div>
-                        <div class="forum-tab">精华</div>
-                        <div class="forum-tab">关注</div>
+                <div class="forum-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <div class="forum-tabs" style="flex:1;">
+                        <div class="forum-tab active" data-tab="latest" onclick="switchForumTab('latest')">最新</div>
+                        <div class="forum-tab" data-tab="hot" onclick="switchForumTab('hot')">热门</div>
+                        <div class="forum-tab" data-tab="essence" onclick="switchForumTab('essence')">精华</div>
+                        <div class="forum-tab" data-tab="following" onclick="switchForumTab('following')">关注</div>
                     </div>
+                    <button type="button" class="forum-refresh-btn" id="forumRefreshBtn" onclick="refreshForum()" title="刷新帖子">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                        刷新
+                    </button>
                 </div>
 
                 <button class="forum-post-btn" onclick="location.href='qingning-forum-post.html'">
@@ -648,15 +679,15 @@
                     <div class="sidebar-title">社区统计</div>
                     <div class="user-stats">
                         <div class="user-stat">
-                            <div class="user-stat-value">1,234</div>
+                            <div class="user-stat-value" id="statUsers">--</div>
                             <div class="user-stat-label">用户</div>
                         </div>
                         <div class="user-stat">
-                            <div class="user-stat-value">5,678</div>
+                            <div class="user-stat-value" id="statPosts">--</div>
                             <div class="user-stat-label">帖子</div>
                         </div>
                         <div class="user-stat">
-                            <div class="user-stat-value">12k</div>
+                            <div class="user-stat-value" id="statComments">--</div>
                             <div class="user-stat-label">评论</div>
                         </div>
                     </div>
@@ -672,14 +703,6 @@
     </div>
 
     <script>
-        // 标签切换
-        document.querySelectorAll('.forum-tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                document.querySelectorAll('.forum-tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-
         // 左侧导航切换
         document.querySelectorAll('.forum-nav-item').forEach(item => {
             item.addEventListener('click', function() {
@@ -848,31 +871,60 @@
         return html;
     }
 
-    // === 页面加载时获取数据 ===
-    (async function() {
-        // 等待 supabaseClient 初始化完成（auth2.js 使用延迟重试机制）
+    // === 当前标签 ===
+    var currentForumTab = 'latest';
+
+    // 等待 supabaseClient 初始化完成
+    async function waitSupabaseClient() {
         var waitCount = 0;
         while (typeof supabaseClient === 'undefined' && waitCount < 20) {
             await new Promise(function(r) { setTimeout(r, 300); });
             waitCount++;
         }
-        if (typeof supabaseClient === 'undefined') {
-            document.getElementById('postList').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Supabase 未加载，请检查网络连接</div>';
-            document.getElementById('hotTopics').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;font-size:13px;">加载失败</div>';
+        return typeof supabaseClient !== 'undefined';
+    }
+
+    // 切换标签：真正重新加载对应内容
+    function switchForumTab(tab) {
+        if (tab === currentForumTab) { refreshForum(); return; }
+        currentForumTab = tab;
+        document.querySelectorAll('.forum-tab').forEach(function(t) {
+            t.classList.toggle('active', t.getAttribute('data-tab') === tab);
+        });
+        loadPosts();
+    }
+
+    // 加载帖子列表（按当前标签查询）
+    async function loadPosts() {
+        var postListEl = document.getElementById('postList');
+        postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">加载中...</div>';
+
+        if (!(await waitSupabaseClient())) {
+            postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Supabase 未加载，请检查网络后点击刷新</div>';
             return;
         }
 
         try {
-            // 并行请求：最新帖子 & 热门帖子
-            var [postsRes, hotRes] = await Promise.all([
-                supabaseClient.from('forum_posts').select('*').order('created_at', { ascending: false }).limit(20),
-                supabaseClient.from('forum_posts').select('*').order('likes', { ascending: false }).limit(5)
-            ]);
+            var query;
+            if (currentForumTab === 'hot') {
+                query = supabaseClient.from('forum_posts').select('*').order('likes', { ascending: false }).limit(20);
+            } else if (currentForumTab === 'essence') {
+                query = supabaseClient.from('forum_posts').select('*').eq('is_official', true).order('created_at', { ascending: false }).limit(20);
+            } else if (currentForumTab === 'following') {
+                var following = [];
+                try { following = JSON.parse(localStorage.getItem('qn_following') || '[]') || []; } catch (e) {}
+                if (following.length === 0) {
+                    postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">还没有关注的用户，去帖子详情页关注作者吧</div>';
+                    return;
+                }
+                query = supabaseClient.from('forum_posts').select('*').in('author_email', following).order('created_at', { ascending: false }).limit(20);
+            } else {
+                query = supabaseClient.from('forum_posts').select('*').order('created_at', { ascending: false }).limit(20);
+            }
 
+            var postsRes = await query;
             if (postsRes.error) throw postsRes.error;
 
-            // 渲染帖子列表
-            var postListEl = document.getElementById('postList');
             if (postsRes.data && postsRes.data.length > 0) {
                 var postsHtml = '';
                 for (var i = 0; i < postsRes.data.length; i++) {
@@ -880,22 +932,81 @@
                 }
                 postListEl.innerHTML = postsHtml;
             } else {
-                postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">暂无帖子，快来发布第一篇吧！</div>';
+                var emptyText = currentForumTab === 'essence' ? '暂无精华帖' : (currentForumTab === 'hot' ? '暂无热门帖子' : '暂无帖子，快来发布第一篇吧！');
+                postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#94a3b8;">' + emptyText + '</div>';
             }
+        } catch (err) {
+            console.error('加载帖子失败:', err);
+            postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">加载失败，请稍后重试</div>';
+        }
+    }
 
-            // 渲染热门话题
+    // 加载侧栏（热门话题 + 统计）
+    async function loadSidebar() {
+        if (!(await waitSupabaseClient())) return;
+        try {
+            var hotRes = await supabaseClient.from('forum_posts').select('*').order('likes', { ascending: false }).limit(5);
             var hotTopicsEl = document.getElementById('hotTopics');
             if (!hotRes.error && hotRes.data && hotRes.data.length > 0) {
                 hotTopicsEl.innerHTML = buildHotTopics(hotRes.data);
             } else {
                 hotTopicsEl.innerHTML = '<div style="text-align:center;padding:20px;color:#94a3b8;font-size:13px;">暂无热门话题</div>';
             }
-        } catch (err) {
-            console.error('加载帖子失败:', err);
-            document.getElementById('postList').innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">加载失败，请稍后重试</div>';
-            document.getElementById('hotTopics').innerHTML = '<div style="text-align:center;padding:20px;color:#ef4444;font-size:13px;">加载失败</div>';
+        } catch (e) {
+            console.error('加载热门话题失败:', e);
         }
-    })();
+        await loadStats();
+    }
+
+    // 刷新全部内容（按钮 & 页面重新可见时调用）
+    async function refreshForum() {
+        var btn = document.getElementById('forumRefreshBtn');
+        if (btn) btn.disabled = true;
+        await Promise.all([loadPosts(), loadSidebar()]);
+        if (btn) btn.disabled = false;
+    }
+
+    // 加载社区统计
+    async function loadStats() {
+        if (typeof supabaseClient === 'undefined') return;
+        try {
+            var postsCountRes = await supabaseClient.from('forum_posts').select('*', { count: 'exact', head: true });
+            var commentsCountRes = await supabaseClient.from('forum_comments').select('*', { count: 'exact', head: true });
+            var usersRes = await supabaseClient.from('forum_posts').select('author_email');
+
+            var postCount = postsCountRes.count || 0;
+            var commentCount = commentsCountRes.count || 0;
+
+            var userSet = {};
+            if (usersRes.data) {
+                for (var i = 0; i < usersRes.data.length; i++) {
+                    if (usersRes.data[i].author_email) userSet[usersRes.data[i].author_email] = true;
+                }
+            }
+            var userCount = Object.keys(userSet).length;
+
+            var formatNum = function(n) {
+                if (n >= 10000) return (n / 10000).toFixed(1) + 'w';
+                if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+                return n.toString();
+            };
+
+            document.getElementById('statUsers').textContent = formatNum(userCount);
+            document.getElementById('statPosts').textContent = formatNum(postCount);
+            document.getElementById('statComments').textContent = formatNum(commentCount);
+        } catch (e) {
+            console.error('加载统计失败:', e);
+        }
+    }
+
+    // 初始化加载
+    loadPosts();
+    loadSidebar();
+
+    // 页面重新可见时自动刷新，保证内容不过期
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) refreshForum();
+    });
     </script>
 </body>
 </html>
