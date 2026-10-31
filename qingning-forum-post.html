@@ -243,9 +243,11 @@
                 <a href="qingning-guide.html">使用教程</a>
                 <a href="qingning-forum.html" class="active">社区</a>
             </div>
-            <div class="nav-actions">
-                <a href="qingning-forum-login.html" class="btn btn-secondary">登录</a>
-                <a href="qingning-forum-login.html?register=1" class="btn btn-primary">注册</a>
+            <div class="nav-actions" id="postNavActions">
+                <a href="qingning-forum-login.html" class="btn btn-secondary" id="postNavLogin">登录</a>
+                <a href="qingning-forum-login.html?register=1" class="btn btn-primary" id="postNavRegister">注册</a>
+                <a href="profile.html" class="btn btn-secondary" id="postNavProfile" style="display:none">我的</a>
+                <a href="javascript:void(0)" class="btn btn-secondary" id="postNavLogout" style="display:none" onclick="handleLogout()">退出</a>
             </div>
         </div>
     </nav>
@@ -274,11 +276,11 @@
                     <div class="post-form-group">
                         <label class="post-form-label">内容</label>
                         <div class="post-toolbar">
-                            <button type="button" class="toolbar-btn" title="加粗"><b>B</b></button>
-                            <button type="button" class="toolbar-btn" title="斜体"><i>I</i></button>
-                            <button type="button" class="toolbar-btn" title="链接">🔗</button>
-                            <button type="button" class="toolbar-btn" title="图片">🖼️</button>
-                            <button type="button" class="toolbar-btn" title="代码">&lt;/&gt;</button>
+                            <button type="button" class="toolbar-btn" title="加粗" onclick="insertMarkdown('bold')"><b>B</b></button>
+                            <button type="button" class="toolbar-btn" title="斜体" onclick="insertMarkdown('italic')"><i>I</i></button>
+                            <button type="button" class="toolbar-btn" title="链接" onclick="insertMarkdown('link')">🔗</button>
+                            <button type="button" class="toolbar-btn" title="图片" onclick="insertMarkdown('image')">🖼️</button>
+                            <button type="button" class="toolbar-btn" title="代码" onclick="insertMarkdown('code')">&lt;/&gt;</button>
                         </div>
                         <textarea class="post-form-textarea" placeholder="写下你的内容...&#10;&#10;支持 Markdown 格式&#10;- 列表项&#10;**粗体**&#10;`代码`" required></textarea>
                         <div class="post-hint">支持 Markdown 格式，最少 10 个字</div>
@@ -297,6 +299,52 @@
     <script src="auth2.js"></script>
     <script>
         var selectedCategory = 'tech';
+
+        // 工具栏插入 Markdown 标记
+        function insertMarkdown(type) {
+            var ta = document.querySelector('.post-form-textarea');
+            if (!ta || ta.disabled) return;
+            ta.focus();
+            var start = ta.selectionStart;
+            var end = ta.selectionEnd;
+            var val = ta.value;
+            var sel = val.slice(start, end);
+            var before = '', after = '', placeholder = '';
+            if (type === 'bold') { before = '**'; after = '**'; placeholder = '粗体文字'; }
+            else if (type === 'italic') { before = '*'; after = '*'; placeholder = '斜体文字'; }
+            else if (type === 'link') { before = '['; after = '](https://)'; placeholder = '链接文字'; }
+            else if (type === 'image') { before = '!['; after = '](图片链接)'; placeholder = '图片描述'; }
+            else if (type === 'code') { before = '`'; after = '`'; placeholder = '代码'; }
+            var text = sel || placeholder;
+            ta.value = val.slice(0, start) + before + text + after + val.slice(end);
+            ta.selectionStart = ta.selectionEnd = start + before.length + text.length;
+        }
+
+        // 根据登录状态更新导航栏按钮
+        function updatePostNav(loggedIn, email) {
+            var navLogin = document.getElementById('postNavLogin');
+            var navRegister = document.getElementById('postNavRegister');
+            var navProfile = document.getElementById('postNavProfile');
+            var navLogout = document.getElementById('postNavLogout');
+            if (!navLogin) return;
+            if (loggedIn && email) {
+                navLogin.style.display = 'none';
+                navRegister.style.display = 'none';
+                navProfile.style.display = 'inline-flex';
+                navLogout.style.display = 'inline-flex';
+                try {
+                    var p = JSON.parse(localStorage.getItem('qn_profile_' + email) || '{}');
+                    navProfile.textContent = p.username || email.split('@')[0];
+                } catch (e) {
+                    navProfile.textContent = email.split('@')[0];
+                }
+            } else {
+                navLogin.style.display = 'inline-flex';
+                navRegister.style.display = 'inline-flex';
+                navProfile.style.display = 'none';
+                navLogout.style.display = 'none';
+            }
+        }
 
         function selectTag(el) {
             document.querySelectorAll('.post-tag-option').forEach(t => t.classList.remove('selected'));
@@ -398,7 +446,9 @@
                     t.style.pointerEvents = 'none';
                     t.style.opacity = '0.5';
                 });
+                updatePostNav(false, null);
             } else {
+                updatePostNav(true, email);
                 // 已登录：显示用户信息
                 var profile = JSON.parse(localStorage.getItem('qn_profile_' + email) || '{}');
                 var authorName = profile.username || email.split('@')[0];

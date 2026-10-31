@@ -2277,3 +2277,212 @@ body {
         padding: 68px 0 40px;
     }
 }
+
+/* ===== 首页 Hero（响应式，替代内联写死尺寸） ===== */
+.home-hero {
+    min-height: auto;
+    padding: 80px 24px 60px;
+}
+
+.home-hero-content {
+    max-width: 640px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.home-hero-logo {
+    width: 72px;
+    height: 72px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    box-shadow: 0 12px 32px rgba(59, 130, 246, .3);
+}
+
+.home-hero-title {
+    font-size: 42px;
+    line-height: 1.2;
+    font-weight: 700;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #3b82f6, #6366f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.home-hero-subtitle {
+    font-size: 18px;
+    color: #94a3b8;
+    line-height: 1.7;
+    margin-bottom: 32px;
+}
+
+.home-cta {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+}
+
+.home-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+.home-cta-btn:hover {
+    transform: translateY(-2px);
+}
+
+.home-cta-btn.primary {
+    background: #3b82f6;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(59, 130, 246, .3);
+}
+
+.home-cta-btn.outline {
+    background: transparent;
+    color: #fff;
+    border: 1.5px solid rgba(255, 255, 255, .35);
+}
+
+.home-cta-btn.green {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(34, 197, 94, .3);
+}
+
+/* 导航栏按钮：登录按钮明确渲染为描边按钮 */
+#navLoginBtn {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    border: 1px solid #3b82f6;
+    border-radius: 8px;
+    color: #3b82f6;
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    transition: background .2s ease;
+}
+
+#navLoginBtn:hover {
+    background: #eff6ff;
+    color: #2563eb;
+}
+
+/* 桌面端导航宽度自适应，避免按钮挤压换行 */
+.nav-links {
+    flex-wrap: nowrap;
+}
+
+.nav-links a,
+.nav-links li {
+    white-space: nowrap;
+}
+
+@media (max-width: 1200px) {
+    .nav-links {
+        gap: 20px;
+    }
+
+    .nav-container {
+        padding: 0 20px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .nav-links {
+        gap: 14px;
+    }
+
+    .nav-links a {
+        font-size: 0.8rem;
+    }
+
+    .logo {
+        font-size: 1.02rem;
+    }
+
+    .nav-login-btn {
+        padding: 5px 12px !important;
+        font-size: 0.8rem !important;
+    }
+
+    #navLoginBtn {
+        padding: 5px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .home-hero {
+        padding: 52px 16px 40px;
+    }
+
+    .home-hero-logo {
+        width: 58px;
+        height: 58px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+    }
+
+    .home-hero-logo svg {
+        width: 30px;
+        height: 30px;
+    }
+
+    .home-hero-title {
+        font-size: 28px;
+    }
+
+    .home-hero-subtitle {
+        font-size: 15px;
+        margin-bottom: 24px;
+    }
+
+    .home-cta {
+        gap: 10px;
+        margin-bottom: 28px;
+    }
+
+    .home-cta-btn {
+        flex: 1 1 100%;
+        padding: 12px 18px;
+        font-size: 14px;
+    }
+
+    .home-hero .hero-stats {
+        flex-direction: row;
+        gap: 18px;
+    }
+
+    .home-hero .stat-num {
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .home-hero {
+        padding: 42px 14px 32px;
+    }
+
+    .home-hero-title {
+        font-size: 24px;
+    }
+
+    .home-hero-subtitle {
+        font-size: 14px;
+    }
+}
