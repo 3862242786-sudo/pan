@@ -342,7 +342,7 @@
 
                 let tokensData = { tokens: [] };
                 try {
-                    const { data } = await supabaseClient.storage.from('qingning-pan').download('active_tokens.json');
+                    const { data } = await supabaseClient.storage.from('files').download('active_tokens.json');
                     if (data) {
                         const text = await data.text();
                         tokensData = JSON.parse(text);
@@ -362,7 +362,7 @@
                 });
 
                 await supabaseClient.storage
-                    .from('qingning-pan')
+                    .from('files')
                     .upload('active_tokens.json', JSON.stringify(tokensData), {
                         cacheControl: '5',
                         upsert: true,
@@ -496,7 +496,7 @@
             try {
                 let sessions = {};
                 try {
-                    const { data } = await supabaseClient.storage.from('qingning-pan').download('qr_sessions.json');
+                    const { data } = await supabaseClient.storage.from('files').download('qr_sessions.json');
                     if (data) {
                         const text = await data.text();
                         sessions = JSON.parse(text);
@@ -511,7 +511,7 @@
                     };
 
                     await supabaseClient.storage
-                        .from('qingning-pan')
+                        .from('files')
                         .upload('qr_sessions.json', JSON.stringify(sessions), {
                             cacheControl: '5',
                             upsert: true,

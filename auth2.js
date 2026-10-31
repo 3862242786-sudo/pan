@@ -2,8 +2,10 @@
 const SUPABASE_URL = 'https://jbmymvpydycurynmxgbr.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpibXltdnB5ZHljdXJ5bm14Z2JyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNDA0NjYsImV4cCI6MjA5MzkxNjQ2Nn0.FpL-rWQHriqyuDA3l1vEiovZVcGhUbpOVCUS_X5h33E';
 
-// CDN 加载保护（延迟检查 + 超时重试）
-var supabaseClient;
+// CDN 加载保护（立即初始化 + 超时重试）
+// 注意：必须在脚本加载时同步初始化，否则页面内联脚本（导航栏登录状态等）
+// 会在 DOMContentLoaded 之前访问 supabaseClient，导致登录状态永远不更新。
+var supabaseClient = null;
 
 function initSupabase(retries) {
     if (typeof window.supabase !== 'undefined') {
@@ -13,21 +15,24 @@ function initSupabase(retries) {
         setTimeout(function() { initSupabase(retries - 1); }, 500);
     } else {
         // 所有重试都失败，显示错误提示（不替换整个页面）
-        document.addEventListener('DOMContentLoaded', function() {
+        var showInitError = function() {
             var errDiv = document.createElement('div');
             errDiv.style.cssText = 'text-align:center;padding:80px 20px;font-family:sans-serif;';
             errDiv.innerHTML = '<div style="font-size:48px;margin-bottom:16px;">&#9888;&#65039;</div>' +
                 '<h2 style="color:#1e293b;">加载失败</h2>' +
                 '<p style="color:#64748b;margin-top:8px;">无法加载登录组件，请检查网络连接后刷新页面。</p>';
-            document.body.prepend(errDiv);
-        });
+            if (document.body) document.body.prepend(errDiv);
+        };
+        if (document.body) {
+            showInitError();
+        } else {
+            document.addEventListener('DOMContentLoaded', showInitError);
+        }
     }
 }
 
-// 在 DOMContentLoaded 后初始化，给 CDN 足够加载时间
-document.addEventListener('DOMContentLoaded', function() {
-    initSupabase(5); // 最多重试5次，每次间隔500ms
-});
+// 立即初始化（此时 CDN 脚本已同步加载完成）
+initSupabase(5);
 
 // 站长邮箱（管理员）
 const ADMIN_EMAIL = '3862242786@qq.com';
@@ -380,7 +385,7 @@ async function handleTokenLogin(e) {
 async function validateTokenFromCloud(token) {
     try {
         const { data, error } = await supabaseClient.storage
-            .from(BUCKET_NAME)
+            .from('files')
             .download('active_tokens.json');
 
         if (error || !data) return null;
@@ -412,7 +417,7 @@ async function validateTokenFromCloud(token) {
 async function loadDisabledTokens() {
     try {
         const { data, error } = await supabaseClient.storage
-            .from(BUCKET_NAME)
+            .from('files')
             .download('disabled_tokens.json');
         if (error || !data) return [];
         const text = await data.text();
@@ -458,7 +463,7 @@ async function generateQRCode() {
     try {
         let sessions = {};
         try {
-            const { data } = await supabaseClient.storage.from(BUCKET_NAME).download('qr_sessions.json');
+            const { data } = await supabaseClient.storage.from('files').download('qr_sessions.json');
             if (data) {
                 const text = await data.text();
                 sessions = JSON.parse(text);
@@ -480,7 +485,7 @@ async function generateQRCode() {
         };
 
         await supabaseClient.storage
-            .from(BUCKET_NAME)
+            .from('files')
             .upload('qr_sessions.json', JSON.stringify(sessions), {
                 cacheControl: '5',
                 upsert: true,
@@ -518,7 +523,7 @@ async function checkQRScannedFromCloud() {
 
     try {
         const { data, error } = await supabaseClient.storage
-            .from(BUCKET_NAME)
+            .from('files')
             .download('qr_sessions.json');
 
         if (error || !data) return;
@@ -557,7 +562,7 @@ async function checkQRScannedFromCloud() {
             delete sessions[currentQRSessionId];
             try {
                 await supabaseClient.storage
-                    .from(BUCKET_NAME)
+                    .from('files')
                     .upload('qr_sessions.json', JSON.stringify(sessions), {
                         cacheControl: '5',
                         upsert: true,
