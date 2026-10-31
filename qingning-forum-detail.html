@@ -525,6 +525,7 @@
     <script src="site-check.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
     <script src="auth2.js"></script>
+    <script src="qn-cloud.js?v=20261101"></script>
 </head>
 <body>
     <!-- 导航栏 -->
@@ -658,14 +659,18 @@
             if (categoryMap[tag]) {
                 tag = categoryMap[tag];
             }
-            var initial = getInitial(post.author_name || '匿');
-            var color = getAvatarColor(post.author_name || '匿名');
+            // 作者信息统一取云端资料
+            var authorName = (window.QNCloud ? QNCloud.displayName(post.author_email, post.author_name) : post.author_name) || '匿名用户';
+            var color = getAvatarColor(authorName);
+            var avatarInner = window.QNCloud
+                ? QNCloud.avatarHtml(post.author_email, authorName, color)
+                : getInitial(authorName);
 
             return '<div class="detail-header">' +
                 '<div class="detail-post-header">' +
-                    '<div class="detail-avatar" style="background:' + color + '">' + initial + '</div>' +
+                    '<div class="detail-avatar" style="background:' + color + ';overflow:hidden;">' + avatarInner + '</div>' +
                     '<div class="detail-meta">' +
-                        '<div class="detail-author">' + renderAuthorName(post.author_name, post.author_email) + '</div>' +
+                        '<div class="detail-author">' + renderAuthorName(authorName, post.author_email) + '</div>' +
                         '<div class="detail-time">' + timeAgo(post.created_at) + ' · ' + tag + '</div>' +
                     '</div>' +
                     '<span class="detail-tag" style="' + getTagStyle(tag) + '">' + tag + '</span>' +
@@ -690,10 +695,16 @@
             '</div>';
         }
 
-        // ===== 格式化内容（换行转段落） =====
+        // ===== 格式化内容（换行转段落，支持云端图片链接） =====
         function formatContent(content) {
             if (!content) return '';
-            var escaped = escapeHtml(content);
+            // 先从正文中提取 Markdown 图片，避免图片 URL 被当成文字显示
+            var images = [];
+            var text = String(content).replace(/!\[[^\]]*\]\((https?:[^)\s]+)\)/g, function (m, url) {
+                images.push(url);
+                return '';
+            }).replace(/\n{3,}/g, '\n\n').trim();
+            var escaped = escapeHtml(text);
             // 将双换行分段，单换行转 <br>
             var paragraphs = escaped.split(/\n\n+/);
             var html = paragraphs.map(function(p) {
@@ -701,7 +712,15 @@
                 if (!p) return '';
                 return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
             }).join('');
-            return html || '<p>' + escaped + '</p>';
+            if (images.length > 0) {
+                html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">' +
+                    images.map(function(u) {
+                        return '<img src="' + escapeHtml(u) + '" style="max-width:100%;max-height:360px;object-fit:cover;border-radius:8px;cursor:pointer;" onclick="window.open(this.src)">';
+                    }).join('') +
+                    '</div>';
+            }
+            if (html) return html;
+            return escaped ? '<p>' + escaped + '</p>' : '';
         }
 
         // ===== HTML 转义 =====
@@ -720,7 +739,7 @@
 
             if (user.isLoggedIn) {
                 html += '<div class="comment-input-area">' +
-                    '<div class="comment-input-avatar" style="background:' + getAvatarColor(user.name) + '">' + getInitial(user.name) + '</div>' +
+                    '<div class="comment-input-avatar" style="background:' + getAvatarColor(user.name) + ';overflow:hidden;">' + (window.QNCloud ? QNCloud.avatarHtml(user.email, user.name) : getInitial(user.name)) + '</div>' +
                     '<div class="comment-input-wrapper">' +
                         '<textarea id="commentInput" class="comment-textarea" placeholder="写下你的评论..." maxlength="1000"></textarea>' +
                         '<button class="comment-submit-btn" onclick="submitComment()">发表评论</button>' +
@@ -747,13 +766,16 @@
 
         // ===== 渲染单条评论 =====
         function renderCommentItem(comment) {
-            var name = comment.author_name || '匿名用户';
+            var name = (window.QNCloud ? QNCloud.displayName(comment.author_email, comment.author_name) : comment.author_name) || '匿名用户';
             var initial = getInitial(name);
             var color = getAvatarColor(name);
+            var avatarInner = window.QNCloud
+                ? QNCloud.avatarHtml(comment.author_email, name, color)
+                : initial;
             var likes = comment.likes || 0;
 
             return '<div class="comment-item">' +
-                '<div class="comment-avatar" style="background:' + color + '">' + initial + '</div>' +
+                '<div class="comment-avatar" style="background:' + color + ';overflow:hidden;">' + avatarInner + '</div>' +
                 '<div class="comment-body">' +
                     '<div class="comment-author-row">' +
                         '<span class="comment-author">' + escapeHtml(name) + '</span>' +
@@ -786,7 +808,7 @@
             if (!posts || posts.length === 0) return '';
             var html = '<div class="related-posts"><div class="related-title">相关推荐</div>';
             posts.forEach(function(p) {
-                var authorName = p.author_name || '匿名用户';
+                var authorName = (window.QNCloud ? QNCloud.displayName(p.author_email, p.author_name) : p.author_name) || '匿名用户';
                 html += '<div class="related-item" onclick="location.href=\'qingning-forum-detail.html?id=' + p.id + '\'">' +
                     '<div class="related-item-title">' + escapeHtml(p.title) + '</div>' +
                     '<div class="related-item-meta">' + escapeHtml(authorName) + ' · ' + (p.likes || 0) + '赞 · ' + (p.comment_count || 0) + '评论</div>' +
@@ -873,7 +895,7 @@
             supabaseClient.from('forum_comments').insert({
                 post_id: currentPostId,
                 author_email: user.email,
-                author_name: user.name,
+                author_name: (window.QNCloud ? QNCloud.displayName(user.email, user.name) : user.name),
                 content: content
             }).then(function() {
                 input.value = '';
@@ -921,7 +943,7 @@
             supabaseClient.from('forum_comments').insert({
                 post_id: currentPostId,
                 author_email: user.email,
-                author_name: user.name,
+                author_name: (window.QNCloud ? QNCloud.displayName(user.email, user.name) : user.name),
                 content: finalContent
             }).then(function() {
                 textarea.value = '';
@@ -986,6 +1008,11 @@
             });
 
             try {
+                // 先同步云端用户资料，保证头像/昵称跨页面一致
+                if (window.QNCloud) {
+                    try { await QNCloud.getProfiles(); } catch (e) { }
+                }
+
                 var postResult = await postPromise;
                 if (postResult.error || !postResult.data) {
                     document.getElementById('postDetail').innerHTML = '<div style="text-align:center;padding:60px 20px;color:#94a3b8;">帖子不存在</div>';
@@ -1003,7 +1030,7 @@
                 // 加载相关推荐
                 var relatedHtml = '';
                 if (tag) {
-                    var relatedResult = await supabaseClient.from('forum_posts').select('id, title, author_name, likes, comment_count').eq('tag', tag).neq('id', id).limit(3);
+                    var relatedResult = await supabaseClient.from('forum_posts').select('id, title, author_email, author_name, likes, comment_count').eq('tag', tag).neq('id', id).limit(3);
                     if (relatedResult.data && relatedResult.data.length > 0) {
                         relatedHtml = renderRelatedPosts(relatedResult.data);
                     }
@@ -1011,7 +1038,7 @@
                 // 如果按 tag 没有找到，尝试 category 字段
                 if (!relatedHtml && tag) {
                     var cat = currentPost.category || tag;
-                    var relatedResult2 = await supabaseClient.from('forum_posts').select('id, title, author_name, likes, comment_count').eq('category', cat).neq('id', id).limit(3);
+                    var relatedResult2 = await supabaseClient.from('forum_posts').select('id, title, author_email, author_name, likes, comment_count').eq('category', cat).neq('id', id).limit(3);
                     if (relatedResult2.data && relatedResult2.data.length > 0) {
                         relatedHtml = renderRelatedPosts(relatedResult2.data);
                     }

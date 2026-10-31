@@ -297,6 +297,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
     <script src="auth2.js"></script>
+    <script src="qn-cloud.js?v=20261101"></script>
     <script>
         var selectedCategory = 'tech';
 
@@ -371,9 +372,18 @@
             if (title.length < 5) { alert('标题至少5个字'); return; }
             if (content.length < 10) { alert('内容至少10个字'); return; }
 
-            // 获取用户名
+            // 获取用户名：优先云端资料（跨设备同步），失败时回退本机缓存
             var profile = JSON.parse(localStorage.getItem('qn_profile_' + email) || '{}');
             var authorName = profile.username || email.split('@')[0];
+            if (window.QNCloud) {
+                try {
+                    var cloudProfile = await QNCloud.getProfile(email);
+                    if (cloudProfile && cloudProfile.username) {
+                        profile = cloudProfile;
+                        authorName = cloudProfile.username;
+                    }
+                } catch (e) { }
+            }
 
             // 随机头像颜色
             var colors = [

@@ -288,6 +288,26 @@
 
         renderProfile(profileData);
 
+        // 从云端拉取最新资料，保证跨页面、跨设备头像/昵称一致
+        if (window.QNCloud) {
+            (async function () {
+                try {
+                    var cloudProfile = await QNCloud.getProfile(viewEmail);
+                    if (!cloudProfile || (!cloudProfile.username && !cloudProfile.avatar_url)) return;
+                    if (cloudProfile.username) profileData.username = cloudProfile.username;
+                    if (cloudProfile.avatar_url) profileData.avatar_url = cloudProfile.avatar_url;
+                    if (cloudProfile.banner_url) profileData.banner_url = cloudProfile.banner_url;
+                    if (cloudProfile.bio) profileData.bio = cloudProfile.bio;
+                    if (isOwnProfile) saveProfileData(currentEmail, profileData);
+                    renderProfile(profileData);
+                    if (currentEmail && profileData.avatar_url) {
+                        navAvatar.innerHTML = '<img src="' + profileData.avatar_url + '" alt="头像">';
+                    }
+                    if (profileName) profileName.textContent = profileData.username || viewEmail.split('@')[0];
+                } catch (e) { }
+            })();
+        }
+
         // 控制按钮显示
         if (isOwnProfile) {
             editBtn.style.display = 'inline-flex';
@@ -437,6 +457,14 @@
         profileData.updated_at = new Date().toISOString();
         saveProfileData(currentEmail, profileData);
 
+        // 同步到云端，保证其他页面/设备看到同一份资料
+        if (window.QNCloud) {
+            var patch = { username: newName, bio: newBio };
+            if (/^https?:/.test(profileData.avatar_url || '')) patch.avatar_url = profileData.avatar_url;
+            if (/^https?:/.test(profileData.banner_url || '')) patch.banner_url = profileData.banner_url;
+            QNCloud.saveProfile(currentEmail, patch);
+        }
+
         profileName.textContent = newName;
         profileBio.textContent = newBio || '这个人很懒，什么都没写~';
 
@@ -461,15 +489,24 @@
         try {
             showToast('正在处理头像...', 'info');
             var base64 = await fileToBase64(file, 400, 0.6);
-            profileData.avatar_url = base64;
+            var avatarUrl = base64;
+            // 上传到云端存储，其他设备/页面共享同一张头像
+            if (window.QNCloud) {
+                var uploaded = await QNCloud.uploadAvatar(currentEmail, base64);
+                if (uploaded) avatarUrl = uploaded;
+            }
+            profileData.avatar_url = avatarUrl;
             // 检查 localStorage 容量是否足够
             if (!canSaveToLocalStorage(profileData)) {
                 showToast('图片过大，请选择更小的图片', 'error');
                 return;
             }
             saveProfileData(currentEmail, profileData);
-            profileAvatar.innerHTML = '<img src="' + base64 + '" alt="头像">';
-            navAvatar.innerHTML = '<img src="' + base64 + '" alt="头像">';
+            if (window.QNCloud) {
+                QNCloud.saveProfile(currentEmail, { username: profileData.username, avatar_url: avatarUrl });
+            }
+            profileAvatar.innerHTML = '<img src="' + avatarUrl + '" alt="头像">';
+            navAvatar.innerHTML = '<img src="' + avatarUrl + '" alt="头像">';
             localStorage.setItem('qn_profile_updated', Date.now().toString());
             showToast('头像已更新', 'success');
         } catch (e) {
@@ -490,9 +527,17 @@
         try {
             showToast('正在处理背景...', 'info');
             var base64 = await fileToBase64(file, 1200);
-            profileData.banner_url = base64;
+            var bannerUrl = base64;
+            if (window.QNCloud) {
+                var uploadedBanner = await QNCloud.uploadBanner(currentEmail, base64);
+                if (uploadedBanner) bannerUrl = uploadedBanner;
+            }
+            profileData.banner_url = bannerUrl;
             saveProfileData(currentEmail, profileData);
-            profileBanner.style.backgroundImage = 'url(' + base64 + ')';
+            if (window.QNCloud) {
+                QNCloud.saveProfile(currentEmail, { banner_url: bannerUrl });
+            }
+            profileBanner.style.backgroundImage = 'url(' + bannerUrl + ')';
             showToast('背景已更新', 'success');
         } catch (e) {
             console.error('背景处理失败:', e);
@@ -527,11 +572,18 @@
     };
 
     // ===== 加载作品 =====
-    function loadWorksList() {
+    async function loadWorksList() {
         worksLoading.style.display = 'none';
         worksGrid.style.display = 'none';
         worksEmpty.style.display = 'none';
         var works = loadWorks(viewEmail);
+        // 优先从云端读取作品，保证换设备/换页面也能看到同一批作品
+        if (window.QNCloud) {
+            try {
+                var cloudWorks = await QNCloud.getWorks(viewEmail);
+                if (cloudWorks && cloudWorks.length) works = cloudWorks;
+            } catch (e) { }
+        }
         if (!works || works.length === 0) {
             worksEmpty.style.display = 'block';
             return;
@@ -634,25 +686,53 @@
         input.value = '';
     };
 
-    window.publishWork = function () {
+    window.publishWork = async function () {
         var title = document.getElementById('workTitle').value.trim();
         if (!title) { showToast('请输入作品标题', 'error'); return; }
         var desc = document.getElementById('workDesc').value.trim();
         var images = window._workImages || [];
 
-        var works = loadWorks(currentEmail);
-        works.unshift({
-            id: generateId(),
-            title: title,
-            description: desc,
-            thumbnail_url: images.length > 0 ? images[0] : '',
-            images: images,
-            created_at: new Date().toISOString()
-        });
-        saveWorks(currentEmail, works);
-        loadWorksList();
-        closeAddWorkModal();
-        showToast('作品已发布', 'success');
+        var publishBtn = document.querySelector('#addWorkModal .btn-primary');
+        if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = '发布中...'; }
+
+        try {
+            // 图片先上传到云端，作品数据里只存 URL，保证换设备也能看到图片
+            var uploadedImages = [];
+            for (var i = 0; i < images.length; i++) {
+                var url = images[i];
+                if (window.QNCloud && /^data:/i.test(url)) {
+                    var uploaded = await QNCloud.uploadWorkImage(currentEmail, url);
+                    if (uploaded) url = uploaded;
+                }
+                uploadedImages.push(url);
+            }
+
+            var work = {
+                id: generateId(),
+                title: title,
+                description: desc,
+                thumbnail_url: uploadedImages.length > 0 ? uploadedImages[0] : '',
+                images: uploadedImages,
+                created_at: new Date().toISOString()
+            };
+
+            var works = loadWorks(currentEmail);
+            works.unshift(work);
+            saveWorks(currentEmail, works);
+
+            if (window.QNCloud) {
+                await QNCloud.addWork(currentEmail, work);
+            }
+
+            loadWorksList();
+            closeAddWorkModal();
+            showToast('作品已发布', 'success');
+        } catch (e) {
+            console.error('发布作品失败:', e);
+            showToast('发布失败，请稍后重试', 'error');
+        } finally {
+            if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = '发布'; }
+        }
     };
 
     function generateId() {

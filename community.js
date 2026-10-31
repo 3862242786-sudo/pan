@@ -79,6 +79,105 @@
         try { localStorage.setItem(POSTS_KEY, JSON.stringify(posts)); }
         catch (e) { showToast('存储空间不足，请清理数据', 'error'); }
     }
+
+    // ===== 云端数据（与青柠论坛共用 forum_posts / forum_comments） =====
+    function loadLiked(email) {
+        try { return JSON.parse(localStorage.getItem('qn_liked_' + email) || '{}') || {}; }
+        catch (e) { return {}; }
+    }
+    function saveLiked(email, data) {
+        try { localStorage.setItem('qn_liked_' + email, JSON.stringify(data)); } catch (e) { }
+    }
+    function isPostLiked(post) {
+        if (!currentUser) return false;
+        if (post._cloud) return !!loadLiked(currentUser.email)[post.id];
+        return !!(post.likes && post.likes.indexOf(currentUser.email) !== -1);
+    }
+    function postLikeCount(post) {
+        if (post._cloud) return post.likesCount || 0;
+        return post.likes ? post.likes.length : 0;
+    }
+    function postCommentCount(post) {
+        if (post.commentCount != null) return post.commentCount;
+        return post.comments ? post.comments.length : 0;
+    }
+    function isCommentLiked(comment) {
+        if (!currentUser) return false;
+        if (comment._cloud) return !!loadLiked(currentUser.email)['c' + comment.id];
+        return !!(comment.likes && comment.likes.indexOf(currentUser.email) !== -1);
+    }
+    function commentLikeCount(comment) {
+        if (comment._cloud) return comment.likesCount || 0;
+        return comment.likes ? comment.likes.length : 0;
+    }
+    function mapCloudPost(p, comments) {
+        var text = p.content || '';
+        var display = text;
+        if (p.title && text.indexOf(p.title) !== 0) {
+            display = p.title + '\n' + text;
+        }
+        // 从正文中提取图片链接，交给图片网格渲染
+        var images = [];
+        display = display.replace(/!\[[^\]]*\]\((https?:[^)]+)\)/g, function (m, url) {
+            images.push(url);
+            return '';
+        }).replace(/\n{3,}/g, '\n\n').trim();
+        return {
+            id: String(p.id),
+            author_email: p.author_email || '',
+            author_name: p.author_name || '',
+            title: p.title || '',
+            content: display,
+            images: images,
+            created_at: p.created_at,
+            likesCount: p.likes || 0,
+            commentCount: p.comment_count || 0,
+            comments: comments || [],
+            comments_enabled: true,
+            _cloud: true
+        };
+    }
+    function mapCloudComment(c) {
+        return {
+            id: String(c.id),
+            author_email: c.author_email || '',
+            author_name: c.author_name || '',
+            content: c.content || '',
+            created_at: c.created_at,
+            likesCount: c.likes || 0,
+            _cloud: true
+        };
+    }
+    // 从云端拉取帖子/评论/资料，写入本地缓存后重新渲染
+    async function syncPostsFromCloud() {
+        if (!window.QNCloud) return false;
+        try {
+            var ready = await QNCloud.waitClient();
+            if (!ready) return false;
+            try { await QNCloud.getProfiles(); } catch (e) { }
+
+            var postsRes = await supabaseClient.from('forum_posts').select('*').order('created_at', { ascending: false }).limit(50);
+            if (postsRes.error) {
+                console.warn('[社区] 加载帖子失败', postsRes.error);
+                return false;
+            }
+            var commentsRes = await supabaseClient.from('forum_comments').select('*').order('created_at', { ascending: true }).limit(500);
+            var byPost = {};
+            (commentsRes.data || []).forEach(function (c) {
+                var key = String(c.post_id);
+                if (!byPost[key]) byPost[key] = [];
+                byPost[key].push(mapCloudComment(c));
+            });
+            var mapped = (postsRes.data || []).map(function (p) {
+                return mapCloudPost(p, byPost[String(p.id)] || []);
+            });
+            savePosts(mapped);
+            return true;
+        } catch (e) {
+            console.warn('[社区] 云端同步异常', e);
+            return false;
+        }
+    }
     function loadFollows() {
         try { return JSON.parse(localStorage.getItem(FOLLOWS_KEY)) || []; }
         catch (e) { return []; }
@@ -129,15 +228,23 @@
 
     function getUserProfile(email) {
         var profile = loadProfile(email);
-        if (profile) return profile;
-        // 降级处理
-        return {
+        var fallback = {
             email: email,
             username: email.split('@')[0],
             bio: '',
             avatar_url: '',
             created_at: new Date().toISOString()
         };
+        var result = profile || fallback;
+        // 合并云端资料，保证社区与论坛头像/昵称一致
+        if (window.QNCloud) {
+            var cloud = QNCloud.cachedProfile(email);
+            if (cloud && (cloud.username || cloud.avatar_url)) {
+                result.username = cloud.username || result.username;
+                result.avatar_url = cloud.avatar_url || result.avatar_url;
+            }
+        }
+        return result;
     }
 
     // ===== 渲染头像 =====
@@ -332,7 +439,7 @@
     }
 
     // ===== 发帖 =====
-    window.publishPost = function () {
+    window.publishPost = async function () {
         if (!currentUser) {
             showToast('请先登录', 'error');
             return;
@@ -345,33 +452,89 @@
             return;
         }
 
-        var post = {
-            id: generateId(),
-            author_email: currentUser.email,
-            content: content,
-            images: composeImages.slice(0, 9),
-            created_at: new Date().toISOString(),
-            likes: [],
-            comments: [],
-            comments_enabled: window._composeCommentsEnabled !== false
-        };
+        var publishBtn = $('#composePublishBtn');
+        if (publishBtn) { publishBtn.disabled = true; publishBtn.textContent = '发布中...'; }
 
-        var posts = loadPosts();
-        posts.unshift(post);
-        savePosts(posts);
+        try {
+            // 图片上传到云端，正文以 Markdown 图片链接保存，换设备也能看到
+            var imageUrls = [];
+            for (var i = 0; i < composeImages.length; i++) {
+                var src = composeImages[i];
+                if (window.QNCloud && /^data:/i.test(src)) {
+                    var uploaded = await QNCloud.uploadWorkImage(currentUser.email, src);
+                    if (uploaded) src = uploaded;
+                }
+                imageUrls.push(src);
+            }
+            var finalContent = content;
+            if (imageUrls.length > 0) {
+                finalContent += (finalContent ? '\n\n' : '') + imageUrls.map(function (u) {
+                    return '![图片](' + u + ')';
+                }).join('\n');
+            }
 
-        // 清空输入
-        input.value = '';
-        composeImages = [];
-        window._composeCommentsEnabled = true;
-        var commentToggle = document.getElementById('composeCommentToggle');
-        if (commentToggle) { commentToggle.style.color = '#22c55e'; commentToggle.title = '允许评论'; }
-        $('#composeImagesPreview').innerHTML = '';
-        $('#composePublishBtn').disabled = true;
+            var authorName = currentUser.username || currentUser.email.split('@')[0];
+            if (window.QNCloud) {
+                try {
+                    var cp = await QNCloud.getProfile(currentUser.email);
+                    if (cp && cp.username) authorName = cp.username;
+                } catch (e) { }
+            }
 
-        showToast('发布成功', 'success');
-        renderFeed();
-        renderSidebar();
+            var firstLine = (content.split('\n')[0] || content || '社区动态').trim().substring(0, 60);
+            if (firstLine.length < 3) firstLine = '社区动态';
+
+            if (window.QNCloud && supabaseClient) {
+                var isAdmin = currentUser.email === ADMIN_EMAIL;
+                var insertRes = await supabaseClient.from('forum_posts').insert({
+                    title: firstLine,
+                    content: finalContent,
+                    category: 'discuss',
+                    author_email: currentUser.email,
+                    author_name: authorName,
+                    author_avatar_color: 'linear-gradient(135deg, #22c55e, #16a34a)',
+                    is_official: isAdmin,
+                    is_sticky: false,
+                    likes: 0,
+                    comment_count: 0
+                }).select();
+                if (insertRes.error) throw insertRes.error;
+            } else {
+                // 离线降级：仅存本机
+                var posts = loadPosts();
+                posts.unshift({
+                    id: generateId(),
+                    author_email: currentUser.email,
+                    content: finalContent,
+                    images: imageUrls,
+                    created_at: new Date().toISOString(),
+                    likes: [],
+                    comments: [],
+                    comments_enabled: true
+                });
+                savePosts(posts);
+            }
+
+            // 清空输入
+            input.value = '';
+            composeImages = [];
+            window._composeCommentsEnabled = true;
+            var commentToggle = document.getElementById('composeCommentToggle');
+            if (commentToggle) { commentToggle.style.color = '#22c55e'; commentToggle.title = '允许评论'; }
+            $('#composeImagesPreview').innerHTML = '';
+
+            showToast('发布成功', 'success');
+
+            // 从云端重新拉取，社区和论坛显示同一批帖子
+            if (window.QNCloud) await syncPostsFromCloud();
+            renderFeed();
+            renderSidebar();
+        } catch (err) {
+            console.error('发布失败:', err);
+            showToast('发布失败，请稍后重试', 'error');
+        } finally {
+            if (publishBtn) { publishBtn.disabled = false; publishBtn.textContent = '发布'; }
+        }
     };
 
     // 监听输入框变化
@@ -513,7 +676,7 @@
         var isFollowing = currentUser && follows.some(function (f) {
             return f.follower_email === currentUser.email && f.following_email === post.author_email;
         });
-        var isLiked = currentUser && post.likes && post.likes.indexOf(currentUser.email) !== -1;
+        var isLiked = isPostLiked(post);
 
         // 头部
         var headerHTML = '<div class="post-header">' +
@@ -558,8 +721,8 @@
         }
 
         // 操作栏
-        var likeCount = post.likes ? post.likes.length : 0;
-        var commentCount = post.comments ? post.comments.length : 0;
+        var likeCount = postLikeCount(post);
+        var commentCount = postCommentCount(post);
         var commentsEnabled = post.comments_enabled !== false;
         var actionsHTML = '<div class="post-actions">' +
             '<button class="post-action-btn ' + (isLiked ? 'liked' : '') + '" onclick="toggleLike(\'' + post.id + '\', this)">' +
@@ -604,6 +767,7 @@
             var previewText = '';
             for (var i = 0; i < previewCount; i++) {
                 var c = post.comments[i];
+                if (!c) break;
                 var cp = getUserProfile(c.author_email);
                 previewText += cp.username || c.author_email.split('@')[0];
                 previewText += '：' + c.content.substring(0, 30);
@@ -621,7 +785,7 @@
         if (commentsEnabled && post.comments) {
             post.comments.forEach(function (c) {
                 var cAuthor = getUserProfile(c.author_email);
-                var cLiked = currentUser && c.likes && c.likes.indexOf(currentUser.email) !== -1;
+                var cLiked = isCommentLiked(c);
                 commentsHTML += '<div class="comment-item">' +
                     '<div class="comment-avatar" data-email="' + c.author_email + '"></div>' +
                     '<div class="comment-body">' +
@@ -635,7 +799,7 @@
                     'onclick="toggleCommentLike(\'' + post.id + '\', \'' + c.id + '\', this)">' +
                     '<svg width="14" height="14" viewBox="0 0 24 24" fill="' + (cLiked ? 'currentColor' : 'none') + '" stroke="currentColor" stroke-width="2">' +
                     '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
-                    '<span>' + (c.likes ? c.likes.length : 0) + '</span></button>' +
+                    '<span>' + commentLikeCount(c) + '</span></button>' +
                     '</div></div>';
             });
         }
@@ -678,15 +842,38 @@
     }
 
     // ===== 点赞 =====
-    window.toggleLike = function (postId, btn) {
+    window.toggleLike = async function (postId, btn) {
         if (!currentUser) {
             showToast('请先登录', 'error');
             return;
         }
 
         var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
+        var post = posts.find(function (p) { return String(p.id) === String(postId); });
         if (!post) return;
+
+        var liked = loadLiked(currentUser.email);
+        var wasLiked = post._cloud ? !!liked[postId] : (post.likes && post.likes.indexOf(currentUser.email) !== -1);
+
+        if (post._cloud) {
+            var newCount = Math.max(0, (post.likesCount || 0) + (wasLiked ? -1 : 1));
+            if (wasLiked) delete liked[postId]; else liked[postId] = true;
+            saveLiked(currentUser.email, liked);
+            post.likesCount = newCount;
+            savePosts(posts);
+
+            btn.classList.toggle('liked', !wasLiked);
+            btn.querySelector('svg').setAttribute('fill', wasLiked ? 'none' : 'currentColor');
+            btn.querySelector('span').textContent = newCount;
+
+            try {
+                await supabaseClient.from('forum_posts').update({ likes: newCount }).eq('id', Number(postId));
+            } catch (e) {
+                console.warn('[社区] 点赞同步失败', e);
+                showToast('点赞已记录，云端同步失败', 'error');
+            }
+            return;
+        }
 
         if (!post.likes) post.likes = [];
         var idx = post.likes.indexOf(currentUser.email);
@@ -695,7 +882,6 @@
             post.likes.push(currentUser.email);
             btn.classList.add('liked');
             btn.querySelector('svg').setAttribute('fill', 'currentColor');
-            // 添加通知
             if (post.author_email !== currentUser.email) {
                 addNotification('like', currentUser.email, postId);
             }
@@ -718,7 +904,7 @@
 
         // 检查评论是否开启
         var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
+        var post = posts.find(function (p) { return String(p.id) === String(postId); });
         if (post && post.comments_enabled === false) {
             showToast('该帖子的评论已关闭', 'info');
             return;
@@ -755,14 +941,14 @@
         }
     };
 
-    window.submitComment = function (postId) {
+    window.submitComment = async function (postId) {
         if (!currentUser) {
             showToast('请先登录', 'error');
             return;
         }
 
         var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
+        var post = posts.find(function (p) { return String(p.id) === String(postId); });
         if (!post) return;
 
         if (post.comments_enabled === false) {
@@ -775,25 +961,67 @@
         var content = input.value.trim();
         if (!content) return;
 
-        if (!post.comments) post.comments = [];
-        var comment = {
-            id: generateId(),
-            author_email: currentUser.email,
-            content: content,
-            created_at: new Date().toISOString(),
-            likes: []
-        };
-        post.comments.push(comment);
-        savePosts(posts);
+        var authorName = currentUser.username || currentUser.email.split('@')[0];
+        if (window.QNCloud) {
+            try {
+                var cp = await QNCloud.getProfile(currentUser.email);
+                if (cp && cp.username) authorName = cp.username;
+            } catch (e) { }
+        }
+
+        if (post._cloud) {
+            try {
+                var insertRes = await supabaseClient.from('forum_comments').insert({
+                    post_id: Number(postId),
+                    author_email: currentUser.email,
+                    author_name: authorName,
+                    content: content,
+                    likes: 0
+                });
+                if (insertRes.error) throw insertRes.error;
+                var newCount = (post.commentCount || 0) + 1;
+                await supabaseClient.from('forum_posts').update({ comment_count: newCount }).eq('id', Number(postId));
+                post.commentCount = newCount;
+                savePosts(posts);
+            } catch (err) {
+                console.error('评论同步失败:', err);
+                showToast('评论失败，请稍后重试', 'error');
+                return;
+            }
+        } else {
+            if (!post.comments) post.comments = [];
+            post.comments.push({
+                id: generateId(),
+                author_email: currentUser.email,
+                content: content,
+                created_at: new Date().toISOString(),
+                likes: []
+            });
+            savePosts(posts);
+        }
 
         input.value = '';
 
-        // 添加通知
         if (post.author_email !== currentUser.email) {
             addNotification('comment', currentUser.email, postId);
         }
 
         showToast('评论成功', 'success');
+
+        // 云端评论写入后重新同步，保证论坛详情页也能看到
+        if (post._cloud && window.QNCloud) {
+            await syncPostsFromCloud();
+            renderFeed();
+            setTimeout(function () {
+                var section = document.getElementById('comments-' + postId);
+                var list = document.getElementById('commentsList-' + postId);
+                var inputRow = document.getElementById('commentInputRow-' + postId);
+                if (section) section.classList.add('open');
+                if (list) list.style.display = 'block';
+                if (inputRow) inputRow.style.display = 'flex';
+            }, 100);
+            return;
+        }
 
         // 重新渲染该帖子
         var card = document.getElementById('post-' + postId);
@@ -816,18 +1044,40 @@
     };
 
     // ===== 评论点赞 =====
-    window.toggleCommentLike = function (postId, commentId, btn) {
+    window.toggleCommentLike = async function (postId, commentId, btn) {
         if (!currentUser) {
             showToast('请先登录', 'error');
             return;
         }
 
         var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
+        var post = posts.find(function (p) { return String(p.id) === String(postId); });
         if (!post || !post.comments) return;
 
-        var comment = post.comments.find(function (c) { return c.id === commentId; });
+        var comment = post.comments.find(function (c) { return String(c.id) === String(commentId); });
         if (!comment) return;
+
+        if (comment._cloud) {
+            var liked = loadLiked(currentUser.email);
+            var key = 'c' + commentId;
+            var wasLiked = !!liked[key];
+            var newCount = Math.max(0, (comment.likesCount || 0) + (wasLiked ? -1 : 1));
+            if (wasLiked) delete liked[key]; else liked[key] = true;
+            saveLiked(currentUser.email, liked);
+            comment.likesCount = newCount;
+            savePosts(posts);
+
+            btn.classList.toggle('liked', !wasLiked);
+            btn.querySelector('svg').setAttribute('fill', wasLiked ? 'none' : 'currentColor');
+            btn.querySelector('span').textContent = newCount;
+
+            try {
+                await supabaseClient.from('forum_comments').update({ likes: newCount }).eq('id', Number(commentId));
+            } catch (e) {
+                console.warn('[社区] 评论点赞同步失败', e);
+            }
+            return;
+        }
 
         if (!comment.likes) comment.likes = [];
         var idx = comment.likes.indexOf(currentUser.email);
@@ -890,7 +1140,7 @@
 
     // ===== 分享 =====
     window.sharePost = function (postId) {
-        var url = window.location.href.split('?')[0] + '?post=' + postId;
+        var url = window.location.origin + window.location.pathname.replace(/[^/]+$/, '') + 'qingning-forum-detail.html?id=' + postId;
         if (navigator.clipboard) {
             navigator.clipboard.writeText(url).then(function () {
                 showToast('链接已复制到剪贴板', 'success');
@@ -907,7 +1157,7 @@
         if (!currentUser) return;
 
         var posts = loadPosts();
-        var post = posts.find(function (p) { return p.id === postId; });
+        var post = posts.find(function (p) { return String(p.id) === String(postId); });
         if (!post) return;
 
         post.comments_enabled = post.comments_enabled === false ? true : false;
@@ -1253,7 +1503,8 @@
             var indicator = $('#pullRefreshIndicator');
             if (indicator && indicator.classList.contains('visible')) {
                 indicator.textContent = '正在刷新...';
-                setTimeout(function () {
+                setTimeout(async function () {
+                    if (window.QNCloud) await syncPostsFromCloud();
                     renderFeed();
                     indicator.classList.remove('visible');
                     indicator.textContent = '下拉刷新...';
@@ -1283,20 +1534,39 @@
     });
 
     // ===== 初始化 =====
-    function init() {
+    async function init() {
         seedData();
         var loggedIn = checkAuth();
 
-        if (loggedIn) {
+        // 先用本地缓存渲染，避免白屏
+        renderFeed();
+        if (loggedIn) updateNotifBadge();
+        renderSidebar();
+
+        // 再从云端同步帖子/评论/资料，社区与论坛共用同一份数据
+        if (window.QNCloud) {
+            await syncPostsFromCloud();
+            // 用云端资料刷新当前登录用户的昵称/头像，保证与论坛、个人主页一致
+            if (loggedIn && currentUser) {
+                var fresh = getUserProfile(currentUser.email);
+                currentUser.username = fresh.username;
+                currentUser.avatar_url = fresh.avatar_url;
+                currentUser.bio = fresh.bio;
+                showLoggedInUI();
+            }
             renderFeed();
-            updateNotifBadge();
-        } else {
-            // 未登录也显示帖子（只读）
-            renderFeed();
+            renderSidebar();
         }
 
         initComposeListeners();
         initPullRefresh();
+
+        // 切回页面时自动从云端刷新，保证与论坛/其他设备内容一致
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'visible' && window.QNCloud) {
+                syncPostsFromCloud().then(function () { renderFeed(); });
+            }
+        });
     }
 
     // DOM 就绪后初始化

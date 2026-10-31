@@ -713,6 +713,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
     <script src="auth2.js"></script>
+    <script src="qn-cloud.js?v=20261101"></script>
     <script>
     // 论坛登录状态同步
     (async function() {
@@ -763,6 +764,15 @@
 
         updateForumNav();
 
+        // 云端资料就绪后刷新导航头像/昵称
+        if (window.QNCloud) {
+            var navEmail = localStorage.getItem('qn_user_email');
+            if (navEmail) {
+                QNCloud.getProfile(navEmail).then(function () { updateForumNav(); }).catch(function () { });
+            }
+            QNCloud.onProfileReady = function () { updateForumNav(); };
+        }
+
         // 监听 localStorage 变化（登录/退出时同步）
         window.addEventListener('storage', function(e) {
             if (e.key && (e.key.indexOf('qn_') === 0)) {
@@ -803,14 +813,19 @@
     // === 生成单个帖子卡片 HTML ===
     function buildPostCard(post) {
         var avatarColor = post.author_avatar_color || '#22c55e,#16a34a';
-        var authorName = post.author_name || '匿名用户';
-        var firstChar = authorName.charAt(0).toUpperCase();
+        // 作者名/头像统一取云端资料，资料变了所有帖子同步更新
+        var authorName = (window.QNCloud ? QNCloud.displayName(post.author_email, post.author_name) : post.author_name) || '匿名用户';
+        var avatarInner = window.QNCloud
+            ? QNCloud.avatarHtml(post.author_email, authorName, avatarColor)
+            : authorName.charAt(0).toUpperCase();
         var category = post.category || 'discuss';
         var categoryLabel = categoryMap[category] || '讨论';
         var summary = post.content || '';
-        // 去掉 HTML 标签，截取前 120 字符作为摘要
-        summary = summary.replace(/<[^>]+>/g, '').substring(0, 120);
-        if (post.content && post.content.replace(/<[^>]+>/g, '').length > 120) summary += '...';
+        // 去掉 Markdown 图片与 HTML 标签，截取前 120 字符作为摘要
+        summary = summary.replace(/!\[[^\]]*\]\((https?:[^)\s]+)\)/g, '').replace(/<[^>]+>/g, '').trim();
+        var summaryText = summary.substring(0, 120);
+        if (summary.length > 120) summaryText += '...';
+        summary = summaryText;
 
         var badgesHtml = '';
         if (post.is_official) {
@@ -822,7 +837,7 @@
 
         return '<div class="post-card" onclick="location.href=\'qingning-forum-detail.html?id=' + post.id + '\'">' +
             '<div class="post-header">' +
-                '<div class="post-avatar" style="background:linear-gradient(135deg,' + avatarColor + ');">' + firstChar + '</div>' +
+                '<div class="post-avatar" style="background:linear-gradient(135deg,' + avatarColor + ');overflow:hidden;">' + avatarInner + '</div>' +
                 '<div class="post-meta">' +
                     '<div class="post-author">' + authorName + '</div>' +
                     '<div class="post-time">' + timeAgo(post.created_at) + '</div>' +
@@ -902,6 +917,11 @@
         if (!(await waitSupabaseClient())) {
             postListEl.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Supabase 未加载，请检查网络后点击刷新</div>';
             return;
+        }
+
+        // 先拉取云端用户资料，保证作者头像/昵称与最新资料一致
+        if (window.QNCloud) {
+            try { await QNCloud.getProfiles(); } catch (e) { }
         }
 
         try {

@@ -323,6 +323,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
     <script src="auth2.js"></script>
+    <script src="qn-cloud.js?v=20261101"></script>
     <script src="script.js"></script>
     <script>
         // 检查登录状态，更新导航栏（云端 Session + 本机离线登录都支持）
@@ -374,6 +375,15 @@
 
             if (emailToShow) {
                 showLoggedIn(emailToShow);
+                // 云端资料就绪后重新渲染，保证头像/昵称与最新云端数据一致
+                if (window.QNCloud) {
+                    QNCloud.getProfile(emailToShow).then(function () {
+                        if (emailToShow) showLoggedIn(emailToShow);
+                    }).catch(function () { });
+                    QNCloud.onProfileReady = function (email) {
+                        if (email && emailToShow === email) showLoggedIn(email);
+                    };
+                }
             } else {
                 localStorage.removeItem('qn_logged_in');
                 localStorage.removeItem('qn_user_email');
