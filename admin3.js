@@ -220,6 +220,22 @@ async function loadUsers() {
     // 更新用户总数
     document.getElementById('totalUsers').textContent = users.length;
 
+    // 从云端资料合并封禁状态（与社区/论坛共用同一份封禁数据）
+    let cloudProfiles = {};
+    try {
+        if (window.QNCloud && typeof QNCloud.getProfiles === 'function') {
+            await QNCloud.waitClient();
+            cloudProfiles = await QNCloud.getProfiles(true) || {};
+        }
+    } catch (e) { console.warn('读取云端资料失败:', e); }
+
+    function isBannedUser(email) {
+        var p = cloudProfiles[email.toLowerCase()];
+        if (!p || p.banned !== true) return false;
+        if (!p.banned_until) return true;
+        return new Date(p.banned_until).getTime() > Date.now();
+    }
+
     if (users.length === 0) {
         userList.innerHTML = `
             <div class="admin-notice">
@@ -250,19 +266,73 @@ async function loadUsers() {
         const email = user.email;
         const created = user.created_at ? new Date(user.created_at).toLocaleString('zh-CN') : '未知';
         const lastLogin = user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleString('zh-CN') : '从未登录';
+        const banned = isBannedUser(email);
+        const cloud = cloudProfiles[email.toLowerCase()] || {};
+        const banReason = cloud.banned_reason || '';
+        const banUntil = cloud.banned_until
+            ? (new Date(cloud.banned_until).getTime() > Date.now()
+                ? '至 ' + new Date(cloud.banned_until).toLocaleString('zh-CN')
+                : '（已过期）')
+            : '永久';
+        const isSelf = email === localStorage.getItem('qn_user_email');
 
         html += `
             <div class="user-row" data-email="${email.toLowerCase()}">
                 <div class="user-info">
-                    <span class="user-email">👤 ${email}</span>
+                    <span class="user-email">👤 ${email}${banned ? ' <span style="color:#ef4444;">🔒 已封禁</span>' : ''}</span>
                     <span class="user-meta">注册：${created}</span>
                     <span class="user-meta">最后登录：${lastLogin}</span>
+                    ${banned ? '<span class="user-meta" style="color:#ef4444;">封禁原因：' + (banReason || '违反社区规则') + '；' + banUntil + '</span>' : ''}
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <a href="profile.html?user=${encodeURIComponent(email)}" target="_blank" class="admin-btn" style="padding:8px 12px;font-size:0.85rem;text-decoration:none;">主页</a>
+                    ${banned
+                        ? '<button class="admin-btn" onclick="unbanUserFromAdmin(\'' + email.replace(/'/g, "\\'") + '\')">解封</button>'
+                        : (isSelf ? '' : '<button class="admin-btn-danger" onclick="banUserFromAdmin(\'' + email.replace(/'/g, "\\'") + '\')">封禁</button>')}
                 </div>
             </div>
         `;
     });
 
     userList.innerHTML = html;
+}
+
+// ===== 从管理后台封禁/解封 =====
+async function banUserFromAdmin(email) {
+    if (!window.QNCloud) { alert('云端未就绪'); return; }
+    var reason = prompt('封禁 ' + email + ' 的原因：', '违反社区规则');
+    if (reason === null) return;
+    var daysStr = prompt('封禁天数（0 表示永久）：', '0');
+    if (daysStr === null) return;
+    var days = parseInt(daysStr, 10) || 0;
+    var until = days > 0 ? new Date(Date.now() + days * 86400000).toISOString() : null;
+    try {
+        var ok = await QNCloud.banUser(email, { reason: reason || '违反社区规则', until: until });
+        if (ok) {
+            alert('已封禁 ' + email + (days > 0 ? '，时长 ' + days + ' 天' : '，永久'));
+            loadUsers();
+        } else {
+            alert('封禁失败，请稍后重试');
+        }
+    } catch (e) {
+        alert('封禁失败：' + e.message);
+    }
+}
+
+async function unbanUserFromAdmin(email) {
+    if (!window.QNCloud) { alert('云端未就绪'); return; }
+    if (!confirm('确定要解封 ' + email + ' 吗？')) return;
+    try {
+        var ok = await QNCloud.unbanUser(email);
+        if (ok) {
+            alert('已解封 ' + email);
+            loadUsers();
+        } else {
+            alert('解封失败，请稍后重试');
+        }
+    } catch (e) {
+        alert('解封失败：' + e.message);
+    }
 }
 
 function searchUsers() {

@@ -889,6 +889,11 @@
                 showToast('请先登录');
                 return;
             }
+            // 封禁账号禁止评论
+            if (window.QNCloud && typeof QNCloud.banInfo === 'function' && QNCloud.banInfo(user.email)) {
+                showToast('你的账号已被封禁，无法评论');
+                return;
+            }
             var btn = document.querySelector('.comment-submit-btn');
             if (btn) { btn.disabled = true; btn.textContent = '提交中...'; }
 

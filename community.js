@@ -248,6 +248,15 @@
         return result;
     }
 
+    // 当前用户是否被封禁（基于云端资料缓存）
+    function isCurrentUserBanned() {
+        if (!currentUser) return false;
+        if (window.QNCloud && typeof QNCloud.banInfo === 'function') {
+            return !!QNCloud.banInfo(currentUser.email);
+        }
+        return false;
+    }
+
     // ===== 渲染头像 =====
     function renderAvatar(container, profile, size) {
         size = size || 42;
@@ -443,6 +452,10 @@
     window.publishPost = async function () {
         if (!currentUser) {
             showToast('请先登录', 'error');
+            return;
+        }
+        if (isCurrentUserBanned()) {
+            showToast('你的账号已被封禁，无法发布内容', 'error');
             return;
         }
 
@@ -947,6 +960,10 @@
             showToast('请先登录', 'error');
             return;
         }
+        if (isCurrentUserBanned()) {
+            showToast('你的账号已被封禁，无法评论', 'error');
+            return;
+        }
 
         var posts = loadPosts();
         var post = posts.find(function (p) { return String(p.id) === String(postId); });
@@ -1101,6 +1118,10 @@
     window.toggleFollow = function (targetEmail, btn) {
         if (!currentUser) {
             showToast('请先登录', 'error');
+            return;
+        }
+        if (isCurrentUserBanned()) {
+            showToast('你的账号已被封禁，无法关注用户', 'error');
             return;
         }
 

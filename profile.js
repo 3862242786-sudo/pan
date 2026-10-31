@@ -293,11 +293,20 @@
             (async function () {
                 try {
                     var cloudProfile = await QNCloud.getProfile(viewEmail);
-                    if (!cloudProfile || (!cloudProfile.username && !cloudProfile.avatar_url)) return;
+                    if (!cloudProfile) return;
+                    // 没有用户名也没有头像，但有封禁信息时仍要合并（封禁账号可能没建资料）
+                    var hasIdentity = cloudProfile.username || cloudProfile.avatar_url;
+                    var hasBanInfo = cloudProfile.banned === true;
+                    if (!hasIdentity && !hasBanInfo) return;
                     if (cloudProfile.username) profileData.username = cloudProfile.username;
                     if (cloudProfile.avatar_url) profileData.avatar_url = cloudProfile.avatar_url;
                     if (cloudProfile.banner_url) profileData.banner_url = cloudProfile.banner_url;
                     if (cloudProfile.bio) profileData.bio = cloudProfile.bio;
+                    // 合并封禁状态
+                    profileData.banned = cloudProfile.banned === true;
+                    profileData.banned_reason = cloudProfile.banned_reason || '';
+                    profileData.banned_until = cloudProfile.banned_until || null;
+                    profileData.banned_at = cloudProfile.banned_at || '';
                     if (isOwnProfile) saveProfileData(currentEmail, profileData);
                     renderProfile(profileData);
                     if (currentEmail && profileData.avatar_url) {
@@ -360,6 +369,17 @@
             if (tokenInfo2) tokenInfo2.style.display = 'none';
         }
 
+        // 管理员查看他人主页时显示封禁操作（不能封禁自己）
+        var adminActions = document.getElementById('adminActions');
+        if (adminActions) {
+            var isAdmin = currentEmail === ADMIN_EMAIL;
+            if (isAdmin && !isOwnProfile) {
+                adminActions.style.display = 'flex';
+            } else {
+                adminActions.style.display = 'none';
+            }
+        }
+
         loadWorksList();
         loadFavoritesList();
     }
@@ -398,6 +418,35 @@
         } else {
             favToggle.classList.remove('active');
             favPrivacyLabel.textContent = '私密';
+        }
+
+        // 封禁状态展示
+        var banBanner = document.getElementById('banBanner');
+        var banBtn = document.getElementById('banBtn');
+        var banned = data.banned === true;
+        if (banned) {
+            var untilText = data.banned_until
+                ? '解封时间：' + new Date(data.banned_until).toLocaleString('zh-CN')
+                : '永久封禁';
+            var reasonText = data.banned_reason ? '原因：' + data.banned_reason + '；' : '';
+            if (banBanner) {
+                banBanner.style.display = 'block';
+                banBanner.textContent = '该账号已被封禁。' + reasonText + untilText;
+            }
+            if (banBtn) {
+                banBtn.textContent = '解封账号';
+                banBtn.classList.remove('btn-danger');
+                banBtn.style.background = '#22c55e';
+                banBtn.style.color = '#fff';
+            }
+        } else {
+            if (banBanner) banBanner.style.display = 'none';
+            if (banBtn) {
+                banBtn.textContent = '封禁账号';
+                banBtn.classList.add('btn-danger');
+                banBtn.style.background = '';
+                banBtn.style.color = '';
+            }
         }
     }
 
@@ -476,6 +525,63 @@
         localStorage.setItem('qn_profile_updated', Date.now().toString());
         showToast('资料已保存', 'success');
         window.cancelEdit();
+    };
+
+    // ===== 管理员封禁/解封 =====
+    window.toggleBanUser = async function () {
+        if (currentEmail !== ADMIN_EMAIL) {
+            showToast('仅站长可执行此操作', 'error');
+            return;
+        }
+        if (isOwnProfile) {
+            showToast('不能封禁自己', 'error');
+            return;
+        }
+        if (!viewEmail || !window.QNCloud) {
+            showToast('无法执行操作', 'error');
+            return;
+        }
+
+        var isBanned = profileData && profileData.banned === true;
+
+        if (isBanned) {
+            if (!confirm('确定要解封该账号吗？')) return;
+            var ok = await QNCloud.unbanUser(viewEmail);
+            if (ok) {
+                profileData.banned = false;
+                profileData.banned_reason = '';
+                profileData.banned_until = null;
+                profileData.banned_at = '';
+                renderProfile(profileData);
+                showToast('账号已解封', 'success');
+            } else {
+                showToast('解封失败，请稍后重试', 'error');
+            }
+        } else {
+            var durationEl = document.getElementById('banDuration');
+            var reasonEl = document.getElementById('banReason');
+            var days = durationEl ? parseInt(durationEl.value, 10) : 0;
+            var reason = reasonEl ? reasonEl.value.trim() : '';
+            var until = null;
+            var label = '永久';
+            if (days > 0) {
+                until = new Date(Date.now() + days * 86400000).toISOString();
+                label = days + ' 天';
+            }
+            var reasonShow = reason || '违反社区规则';
+            if (!confirm('确定要封禁该账号吗？\n时长：' + label + '\n原因：' + reasonShow)) return;
+            var ok2 = await QNCloud.banUser(viewEmail, { reason: reasonShow, until: until });
+            if (ok2) {
+                profileData.banned = true;
+                profileData.banned_reason = reasonShow;
+                profileData.banned_until = until;
+                profileData.banned_at = new Date().toISOString();
+                renderProfile(profileData);
+                showToast('账号已封禁', 'success');
+            } else {
+                showToast('封禁失败，请稍后重试', 'error');
+            }
+        }
     };
 
     // ===== 头像上传 =====

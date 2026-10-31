@@ -141,6 +141,11 @@
                 avatar_url: patch.avatar_url !== undefined ? patch.avatar_url : (cur.avatar_url || ''),
                 bio: patch.bio !== undefined ? patch.bio : (cur.bio || ''),
                 banner_url: patch.banner_url !== undefined ? patch.banner_url : (cur.banner_url || ''),
+                // 保留封禁状态，避免普通资料编辑误改封禁字段
+                banned: patch.banned !== undefined ? patch.banned : !!cur.banned,
+                banned_reason: patch.banned_reason !== undefined ? patch.banned_reason : (cur.banned_reason || ''),
+                banned_at: patch.banned_at !== undefined ? patch.banned_at : (cur.banned_at || ''),
+                banned_until: patch.banned_until !== undefined ? patch.banned_until : (cur.banned_until || null),
                 updated_at: new Date().toISOString()
             };
             doc.profiles[e] = next;
@@ -308,6 +313,78 @@
         return ok;
     }
 
+    // ===== 账号封禁 =====
+    // 判断是否处于封禁期（banned=true 且 banned_until 未到期或为永久）
+    function isProfileBanned(p) {
+        if (!p || p.banned !== true) return false;
+        if (!p.banned_until) return true; // 永久封禁
+        return new Date(p.banned_until).getTime() > Date.now();
+    }
+
+    function banInfo(email) {
+        var e = norm(email);
+        var p = cachedProfile(e);
+        if (!isProfileBanned(p)) return null;
+        return {
+            banned: true,
+            reason: p.banned_reason || '违反社区规则',
+            banned_at: p.banned_at || '',
+            banned_until: p.banned_until || ''
+        };
+    }
+
+    async function isBanned(email) {
+        var e = norm(email);
+        if (!e) return false;
+        var p = await getProfile(e);
+        return isProfileBanned(p);
+    }
+
+    async function banUser(email, options) {
+        var e = norm(email);
+        if (!e || !(await waitClient())) return false;
+        options = options || {};
+        var patch = {
+            banned: true,
+            banned_reason: options.reason || '违反社区规则',
+            banned_at: new Date().toISOString(),
+            banned_until: options.until || null
+        };
+        return saveProfile(e, patch);
+    }
+
+    async function unbanUser(email) {
+        var e = norm(email);
+        if (!e || !(await waitClient())) return false;
+        return saveProfile(e, {
+            banned: false,
+            banned_reason: '',
+            banned_at: '',
+            banned_until: null
+        });
+    }
+
+    async function getBannedUsers() {
+        var profiles = await getProfiles(true) || {};
+        var list = [];
+        for (var k in profiles) {
+            if (Object.prototype.hasOwnProperty.call(profiles, k)) {
+                var p = profiles[k];
+                if (isProfileBanned(p)) {
+                    list.push({
+                        email: k,
+                        username: p.username || '',
+                        avatar_url: p.avatar_url || '',
+                        reason: p.banned_reason || '',
+                        banned_at: p.banned_at || '',
+                        banned_until: p.banned_until || null
+                    });
+                }
+            }
+        }
+        return list;
+    }
+
     // ===== 展示辅助 =====
     function displayName(email, fallbackName) {
         var p = cachedProfile(email);
@@ -332,10 +409,38 @@
             var email = localStorage.getItem('qn_user_email');
             if (!email) return;
             var cloud = await getProfile(email);
+
+            // 已被封禁：强制退出，阻止继续使用
+            if (cloud && isProfileBanned(cloud)) {
+                try {
+                    if (typeof window.handleLogout === 'function') {
+                        window.handleLogout();
+                    } else {
+                        localStorage.removeItem('qn_logged_in');
+                        localStorage.removeItem('qn_user_email');
+                        localStorage.removeItem('qn_is_admin');
+                    }
+                } catch (e) { }
+                var reason = cloud.banned_reason || '违反社区规则';
+                var until = cloud.banned_until
+                    ? '，解封时间：' + new Date(cloud.banned_until).toLocaleString('zh-CN')
+                    : '（永久）';
+                if (localStorage.getItem('qn_ban_notified') !== email + ':' + (cloud.banned_at || '')) {
+                    localStorage.setItem('qn_ban_notified', email + ':' + (cloud.banned_at || ''));
+                    alert('账号已被封禁：' + reason + until + '\n如有疑问请联系站长。');
+                }
+                // 跳转到登录页，并带上封禁标记
+                if (!/auth\.html|banned\.html/.test(window.location.pathname)) {
+                    window.location.href = 'auth.html?banned=1&reason=' + encodeURIComponent(reason);
+                }
+                return;
+            }
+
             if (cloud && cloud.username) {
                 setLocalProfile(email, {
                     username: cloud.username,
-                    avatar_url: cloud.avatar_url || localProfile(email).avatar_url || ''
+                    avatar_url: cloud.avatar_url || localProfile(email).avatar_url || '',
+                    banned: !!cloud.banned
                 });
                 if (window.QNCloud && typeof window.QNCloud.onProfileReady === 'function') {
                     window.QNCloud.onProfileReady(email);
@@ -357,6 +462,11 @@
         addWork: addWork,
         getRelations: getRelations,
         saveRelations: saveRelations,
+        isBanned: isBanned,
+        banUser: banUser,
+        unbanUser: unbanUser,
+        getBannedUsers: getBannedUsers,
+        banInfo: banInfo,
         displayName: displayName,
         avatarHtml: avatarHtml,
         onProfileReady: null

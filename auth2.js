@@ -155,6 +155,34 @@ function qnFindLocalTokenEmail(token) {
 
 // 统一的登录完成处理（云端 / 本机共用）
 async function finishLogin(email, isLocal, method) {
+    // 登录前检查云端封禁状态：被封禁账号不允许登录
+    try {
+        if (window.QNCloud && typeof QNCloud.waitClient === 'function') {
+            await QNCloud.waitClient();
+            if (typeof QNCloud.isBanned === 'function') {
+                var banned = await QNCloud.isBanned(email);
+                if (banned) {
+                    var info = (typeof QNCloud.banInfo === 'function') ? QNCloud.banInfo(email) : null;
+                    var reason = (info && info.reason) || '违反社区规则';
+                    var until = '';
+                    if (info && info.banned_until) {
+                        until = '，解封时间：' + new Date(info.banned_until).toLocaleString('zh-CN');
+                    } else {
+                        until = '（永久封禁）';
+                    }
+                    // 清理可能残留的登录态
+                    try { localStorage.removeItem('qn_logged_in'); } catch (e) {}
+                    try { localStorage.removeItem('qn_user_email'); } catch (e) {}
+                    try { localStorage.removeItem('qn_is_admin'); } catch (e) {}
+                    showMessage('loginMessage', '该账号已被封禁：' + reason + until + '，如有疑问请联系站长。', true);
+                    return;
+                }
+            }
+        }
+    } catch (be) {
+        console.warn('Ban check failed:', be);
+    }
+
     saveLoginState(email, isLocal);
     if (isLocal) {
         qnSaveLocalSession(email);
@@ -741,3 +769,18 @@ async function checkQRScannedFromCloud() {
 
 // 页面加载时异步验证Session
 checkLoginState();
+
+// 若从其他页面因被封禁跳转到登录页，显示封禁提示
+(function () {
+    try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('banned') === '1') {
+            var reason = params.get('reason') || '违反社区规则';
+            var el = document.getElementById('loginMessage');
+            if (el) {
+                el.textContent = '该账号已被封禁：' + reason + '，如有疑问请联系站长。';
+                el.className = 'message error';
+            }
+        }
+    } catch (e) { }
+})();

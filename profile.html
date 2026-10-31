@@ -378,6 +378,42 @@
         .anim-delay-1 { animation-delay: 0.1s; }
         .anim-delay-2 { animation-delay: 0.2s; }
         .anim-delay-3 { animation-delay: 0.3s; }
+
+        /* ===== 管理员封禁功能 ===== */
+        .ban-banner {
+            margin: 12px auto 0;
+            max-width: 500px;
+            padding: 10px 16px;
+            background: rgba(239, 68, 68, 0.12);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            border-radius: 8px;
+            font-size: 13px;
+            text-align: center;
+        }
+        .admin-actions {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .btn-danger {
+            background: #ef4444 !important;
+            border-color: #ef4444 !important;
+            color: #fff !important;
+        }
+        .btn-danger:hover { background: #dc2626 !important; }
+        .ban-select, .ban-reason-input {
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .ban-reason-input { flex: 1; min-width: 140px; max-width: 260px; }
     </style>
     <script src="site-check.js"></script>
 </head>
@@ -451,6 +487,22 @@
                 <button class="btn btn-secondary" id="cancelBtn" style="display:none;" onclick="cancelEdit()">
                     取消
                 </button>
+            </div>
+
+            <!-- 封禁提示条 -->
+            <div id="banBanner" class="ban-banner" style="display:none;"></div>
+
+            <!-- 管理员操作（仅站长查看他人主页时显示） -->
+            <div class="admin-actions" id="adminActions" style="display:none; margin-top:12px;">
+                <button class="btn btn-danger" id="banBtn" onclick="toggleBanUser()">封禁账号</button>
+                <select id="banDuration" class="ban-select">
+                    <option value="0">永久</option>
+                    <option value="1">1 天</option>
+                    <option value="7">7 天</option>
+                    <option value="30">30 天</option>
+                    <option value="90">90 天</option>
+                </select>
+                <input type="text" id="banReason" class="ban-reason-input" placeholder="封禁原因（可选）" maxlength="100">
             </div>
 
             <!-- 账户信息（仅自己的主页显示） -->

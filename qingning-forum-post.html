@@ -366,6 +366,12 @@
                 return;
             }
 
+            // 封禁账号禁止发帖
+            if (window.QNCloud && typeof QNCloud.banInfo === 'function' && QNCloud.banInfo(email)) {
+                alert('你的账号已被封禁，无法发布内容。');
+                return;
+            }
+
             var title = document.querySelector('.post-form-input').value.trim();
             var content = document.querySelector('.post-form-textarea').value.trim();
 
