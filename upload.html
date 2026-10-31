@@ -313,9 +313,10 @@
     <script src="auth2.js"></script>
     <script src="upload3.js"></script>
     <script>
-        // 登录状态同步：检查并恢复 Supabase Session
+        // 登录状态同步：检查并恢复 Supabase Session（本机离线登录同样有效）
         (async function() {
             try {
+                if (!supabaseClient) return;
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     localStorage.setItem('qn_logged_in', 'true');
@@ -324,7 +325,7 @@
                     if (session.user.email === '3862242786@qq.com') {
                         localStorage.setItem('qn_is_admin', 'true');
                     }
-                } else {
+                } else if (typeof qnGetLocalSession !== 'function' || !qnGetLocalSession()) {
                     // Session 过期，清除登录状态
                     localStorage.removeItem('qn_logged_in');
                     localStorage.removeItem('qn_is_admin');

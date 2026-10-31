@@ -195,7 +195,13 @@
                 localStorage.setItem('qn_is_admin', (currentEmail === ADMIN_EMAIL) ? 'true' : 'false');
                 setupProfile();
             } else {
-                // Session 过期或未登录
+                // 无云端 Session：若存在本机离线登录会话则继续
+                var localSession = (typeof qnGetLocalSession === 'function') ? qnGetLocalSession() : null;
+                if (localSession && localSession.email) {
+                    currentEmail = localSession.email;
+                    setupProfile();
+                    return;
+                }
                 localStorage.removeItem('qn_logged_in');
                 localStorage.removeItem('qn_user_email');
                 localStorage.removeItem('qn_is_admin');
@@ -310,11 +316,28 @@
                     accountType.style.color = (profileData.role === 'admin') ? '#f59e0b' : '#e2e8f0';
                 }
             }
+
+            // 本机账户显示今日令牌
+            var tokenInfo = document.getElementById('localTokenInfo');
+            if (tokenInfo) {
+                var localSession = (typeof qnGetLocalSession === 'function') ? qnGetLocalSession() : null;
+                if (localSession && localSession.email) {
+                    tokenInfo.style.display = 'block';
+                    var tokenValue = document.getElementById('localTokenValue');
+                    if (tokenValue && typeof qnGenerateLocalToken === 'function') {
+                        tokenValue.textContent = qnGenerateLocalToken(localSession.email, 0);
+                    }
+                } else {
+                    tokenInfo.style.display = 'none';
+                }
+            }
         } else {
             editBtn.style.display = 'none';
             privacyToggle.style.display = 'none';
             var accountInfo = document.getElementById('accountInfo');
             if (accountInfo) accountInfo.style.display = 'none';
+            var tokenInfo2 = document.getElementById('localTokenInfo');
+            if (tokenInfo2) tokenInfo2.style.display = 'none';
         }
 
         loadWorksList();
@@ -696,6 +719,19 @@
     window.closeWorkImageOverlay = function () {
         var overlay = document.getElementById('workImageOverlay');
         if (overlay) overlay.style.display = 'none';
+    };
+
+    window.copyLocalToken = function () {
+        var el = document.getElementById('localTokenValue');
+        if (!el) return;
+        var text = el.textContent.trim();
+        if (!text || text === '--------') return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                el.style.color = '#fff';
+                setTimeout(function() { el.style.color = '#22c55e'; }, 800);
+            }).catch(function() {});
+        }
     };
 
     // ===== 启动 =====

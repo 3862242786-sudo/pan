@@ -731,7 +731,7 @@
                 if (result.data.session && result.data.session.user) {
                     localStorage.setItem('qn_logged_in', 'true');
                     localStorage.setItem('qn_user_email', result.data.session.user.email);
-                } else {
+                } else if (typeof qnGetLocalSession !== 'function' || !qnGetLocalSession()) {
                     localStorage.removeItem('qn_logged_in');
                     localStorage.removeItem('qn_user_email');
                 }

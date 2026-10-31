@@ -325,7 +325,7 @@
     <script src="auth2.js"></script>
     <script src="script.js"></script>
     <script>
-        // 检查登录状态，更新导航栏（异步验证Session）
+        // 检查登录状态，更新导航栏（云端 Session + 本机离线登录都支持）
         (async function() {
             const loginBtn = document.getElementById('navLoginBtn');
             const adminBtn = document.getElementById('navAdminBtn');
@@ -333,51 +333,51 @@
             const profileArea = document.getElementById('navProfileArea');
             const navAvatar = document.getElementById('navAvatar');
             const navUsername = document.getElementById('navUsername');
-            
-            if (typeof supabaseClient === 'undefined') return;
-            
-            try {
-                // 验证真实的Supabase Session
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                
-                if (session) {
-                    // Session有效，显示已登录状态
-                    const email = session.user.email;
-                    const isAdmin = email === '3862242786@qq.com';
-                    loginBtn.style.display = 'none';
-                    logoutBtn.style.display = 'block';
-                    profileArea.style.display = 'block';
-                    if (isAdmin) {
-                        adminBtn.style.display = 'block';
-                    }
-                    // 显示用户头像首字母
-                    const letter = email ? email.charAt(0).toUpperCase() : '?';
-                    navAvatar.textContent = letter;
-                    // 从 localStorage 加载用户名和头像
-                    try {
-                        const profileKey = 'qn_profile_' + email;
-                        const profileData = localStorage.getItem(profileKey);
-                        if (profileData) {
-                            const profile = JSON.parse(profileData);
-                            navUsername.textContent = profile.username || '我的';
-                            if (profile.avatar_url) {
-                                navAvatar.innerHTML = '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
-                            }
+
+            function showLoggedIn(email) {
+                const isAdmin = email === '3862242786@qq.com';
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'block';
+                profileArea.style.display = 'block';
+                adminBtn.style.display = isAdmin ? 'block' : 'none';
+                navAvatar.textContent = email ? email.charAt(0).toUpperCase() : '?';
+                try {
+                    const profileData = localStorage.getItem('qn_profile_' + email);
+                    if (profileData) {
+                        const profile = JSON.parse(profileData);
+                        navUsername.textContent = profile.username || '我的';
+                        if (profile.avatar_url) {
+                            navAvatar.innerHTML = '<img src="' + profile.avatar_url + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
                         }
-                    } catch(pe) {}
-                    // 同步localStorage
-                    localStorage.setItem('qn_logged_in', 'true');
-                    localStorage.setItem('qn_user_email', email);
-                    localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
-                } else {
-                    // Session无效，清除本地状态
-                    localStorage.removeItem('qn_logged_in');
-                    localStorage.removeItem('qn_user_email');
-                    localStorage.removeItem('qn_is_admin');
+                    }
+                } catch (pe) {}
+                localStorage.setItem('qn_logged_in', 'true');
+                localStorage.setItem('qn_user_email', email);
+                localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+            }
+
+            var emailToShow = null;
+
+            try {
+                if (supabaseClient) {
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session && session.user) emailToShow = session.user.email;
                 }
             } catch (e) {
-                // 出错时保守处理，显示未登录
                 console.warn('Session check failed:', e);
+            }
+
+            // 云端不可用/无 Session 时，使用本机离线登录状态
+            if (!emailToShow && localStorage.getItem('qn_logged_in') === 'true') {
+                emailToShow = localStorage.getItem('qn_user_email');
+            }
+
+            if (emailToShow) {
+                showLoggedIn(emailToShow);
+            } else {
+                localStorage.removeItem('qn_logged_in');
+                localStorage.removeItem('qn_user_email');
+                localStorage.removeItem('qn_is_admin');
             }
         })();
 
@@ -584,9 +584,10 @@
     </a>
 </div>
 <script>
-    // 登录状态同步：检查并恢复 Supabase Session
+    // 登录状态同步：检查并恢复 Supabase Session（本机离线登录同样有效）
     (async function() {
         try {
+            if (!supabaseClient) return;
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
                 localStorage.setItem('qn_logged_in', 'true');
@@ -595,7 +596,7 @@
                 if (session.user.email === '3862242786@qq.com') {
                     localStorage.setItem('qn_is_admin', 'true');
                 }
-            } else {
+            } else if (typeof qnGetLocalSession !== 'function' || !qnGetLocalSession()) {
                 localStorage.removeItem('qn_logged_in');
                 localStorage.removeItem('qn_is_admin');
             }

@@ -37,6 +37,150 @@ initSupabase(5);
 // 站长邮箱（管理员）
 const ADMIN_EMAIL = '3862242786@qq.com';
 
+// ===== 本地账户兜底（Supabase 不可达时使用）=====
+// 账户与令牌保存在本机 localStorage，仅同一浏览器有效，不做跨设备同步。
+var LOCAL_ACCOUNTS_KEY = 'qn_local_accounts';
+var LOCAL_SESSION_KEY = 'qn_local_session';
+var LOCAL_TOKEN_SECRET = 'QINGNING_TOKEN_V2';
+
+function qnNormalizeEmail(email) {
+    return String(email || '').trim().toLowerCase();
+}
+
+function qnLocalHash(password, salt) {
+    var str = String(salt) + '|' + String(password) + '|qn-local';
+    var h1 = 2166136261;
+    for (var i = 0; i < str.length; i++) {
+        h1 = ((h1 ^ str.charCodeAt(i)) * 16777619) >>> 0;
+    }
+    var h2 = 5381;
+    for (var j = str.length - 1; j >= 0; j--) {
+        h2 = ((h2 * 33) ^ str.charCodeAt(j)) >>> 0;
+    }
+    return h1.toString(36) + '-' + h2.toString(36);
+}
+
+function qnReadLocalAccounts() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_ACCOUNTS_KEY) || '{}') || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function qnWriteLocalAccounts(accounts) {
+    try { localStorage.setItem(LOCAL_ACCOUNTS_KEY, JSON.stringify(accounts)); } catch (e) {}
+}
+
+function qnRegisterLocal(email, password) {
+    email = qnNormalizeEmail(email);
+    if (!email || !password) return { ok: false, reason: '请输入邮箱和密码！' };
+    if (password.length < 6) return { ok: false, reason: '密码长度至少为6位！' };
+    var accounts = qnReadLocalAccounts();
+    if (accounts[email]) return { ok: false, reason: '该邮箱已在本机注册，请直接登录' };
+    var salt = 'qn' + Date.now() + Math.random().toString(36).slice(2, 8);
+    accounts[email] = {
+        salt: salt,
+        hash: qnLocalHash(password, salt),
+        username: email.split('@')[0],
+        createdAt: Date.now()
+    };
+    qnWriteLocalAccounts(accounts);
+    return { ok: true };
+}
+
+function qnLoginLocal(email, password) {
+    email = qnNormalizeEmail(email);
+    var accounts = qnReadLocalAccounts();
+    var acc = accounts[email];
+    if (!acc) return false;
+    return acc.hash === qnLocalHash(password, acc.salt);
+}
+
+function qnSaveLocalSession(email) {
+    try {
+        localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify({ email: qnNormalizeEmail(email), loginAt: Date.now() }));
+    } catch (e) {}
+}
+
+function qnGetLocalSession() {
+    try {
+        return JSON.parse(localStorage.getItem(LOCAL_SESSION_KEY) || 'null');
+    } catch (e) {
+        return null;
+    }
+}
+
+function qnClearLocalSession() {
+    try { localStorage.removeItem(LOCAL_SESSION_KEY); } catch (e) {}
+}
+
+function qnIsNetworkError(err) {
+    if (!err) return false;
+    var msg = String(err.message || err.name || err.error_description || err || '');
+    if (err.name === 'TypeError') return true;
+    return /network|fetch|timeout|timed ?out|failed to|load failed|abort|econn|unreachable|connection/i.test(msg);
+}
+
+// 生成当日令牌（与令牌 APP 的算法一致：邮箱 + 日期 + 版本 + 密钥）
+function qnGenerateLocalToken(email, version) {
+    var now = new Date();
+    var dateStr = '' + now.getFullYear() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+    var seed = qnNormalizeEmail(email) + dateStr + (version || 0) + LOCAL_TOKEN_SECRET;
+    var primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47];
+    var hash = 0;
+    for (var i = 0; i < seed.length; i++) {
+        hash = (hash * 31 + seed.charCodeAt(i) * primes[i % primes.length]) % 10000000000;
+    }
+    return hash.toString().padStart(10, '0');
+}
+
+// 令牌对应本机哪个账户（只匹配本机已注册账户）
+function qnFindLocalTokenEmail(token) {
+    var accounts = qnReadLocalAccounts();
+    for (var email in accounts) {
+        if (qnGenerateLocalToken(email, 0) === token) return email;
+    }
+    return null;
+}
+
+// 统一的登录完成处理（云端 / 本机共用）
+async function finishLogin(email, isLocal, method) {
+    saveLoginState(email, isLocal);
+    if (isLocal) {
+        qnSaveLocalSession(email);
+    } else {
+        qnClearLocalSession();
+    }
+    if (method) localStorage.setItem('qn_login_method', method);
+
+    // 初始化用户档案
+    try {
+        var profileKey = 'qn_profile_' + email;
+        if (!localStorage.getItem(profileKey)) {
+            localStorage.setItem(profileKey, JSON.stringify({
+                email: email,
+                username: email.split('@')[0],
+                bio: '',
+                avatar_url: '',
+                banner_url: '',
+                verified: false,
+                role: email === ADMIN_EMAIL ? 'admin' : 'user',
+                favorites_public: false,
+                created_at: new Date().toISOString()
+            }));
+        }
+    } catch (pe) { console.warn('Profile init:', pe); }
+
+    if (email === ADMIN_EMAIL) {
+        setTimeout(function() { window.location.href = 'admin.html'; }, 1000);
+    } else {
+        setTimeout(function() { window.location.href = 'index.html'; }, 1000);
+    }
+}
+
 // ===== 页面切换 =====
 function switchTab(tab) {
     const loginForm = document.getElementById('loginForm');
@@ -107,28 +251,50 @@ async function handleRegister(e) {
         return;
     }
 
+    var cloudError = null;
+    var cloudRegistered = false;
     try {
-        // 第一步：注册
+        if (!supabaseClient) throw new Error('Failed to fetch');
         const { data, error } = await supabaseClient.auth.signUp({
             email: email,
             password: password,
         });
-
         if (error) {
-            if (error.message.includes('already registered') || error.message.includes('already been registered')) {
-                showMessage('registerMessage', '该邮箱已被注册，请直接登录', true);
-            } else {
-                showMessage('registerMessage', '注册失败：' + error.message, true);
+            cloudError = error;
+        } else {
+            cloudRegistered = true;
+        }
+    } catch (err) {
+        cloudError = err;
+    }
+
+    if (!cloudRegistered) {
+        // 云端不可达 → 使用本机账户兜底
+        if (qnIsNetworkError(cloudError) || !supabaseClient) {
+            var localReg = qnRegisterLocal(email, password);
+            if (!localReg.ok) {
+                showMessage('registerMessage', localReg.reason, true);
+                return;
             }
+            showMessage('registerMessage', '云端暂不可用，已在本机注册并登录', false);
+            await finishLogin(qnNormalizeEmail(email), true);
             return;
         }
 
-        // 第二步：无论是否需要邮箱确认，都尝试直接登录
-        showMessage('registerMessage', '注册成功，正在自动登录...');
+        var errMsg = String((cloudError && cloudError.message) || '');
+        if (errMsg.indexOf('already registered') !== -1 || errMsg.indexOf('already been registered') !== -1) {
+            showMessage('registerMessage', '该邮箱已被注册，请直接登录', true);
+        } else {
+            showMessage('registerMessage', '注册失败：' + errMsg, true);
+        }
+        return;
+    }
 
-        // 等待一下让 Supabase 处理注册
-        await new Promise(resolve => setTimeout(resolve, 1500));
+    // 云端注册成功，自动登录
+    showMessage('registerMessage', '注册成功，正在自动登录...');
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
+    try {
         const { data: loginData, error: loginError } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
@@ -140,35 +306,11 @@ async function handleRegister(e) {
             return;
         }
 
-        // 登录成功
         showMessage('registerMessage', '登录成功！正在跳转...');
-        saveLoginState(email);
-
-        // 初始化用户主页数据（localStorage）
-        try {
-            var profileKey = 'qn_profile_' + email;
-            if (!localStorage.getItem(profileKey)) {
-                localStorage.setItem(profileKey, JSON.stringify({
-                    email: email,
-                    username: email.split('@')[0],
-                    bio: '',
-                    avatar_url: '',
-                    banner_url: '',
-                    verified: false,
-                    role: email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false,
-                    created_at: new Date().toISOString()
-                }));
-            }
-        } catch (pe) { console.warn('Profile init:', pe); }
-
-        if (email === ADMIN_EMAIL) {
-            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
-        } else {
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-        }
-    } catch (err) {
-        showMessage('registerMessage', '注册失败，请稍后重试', true);
+        await finishLogin(email, false);
+    } catch (err2) {
+        showMessage('registerMessage', '注册成功！请返回登录页面手动登录', false);
+        setTimeout(() => { switchTab('login'); }, 2000);
     }
 }
 
@@ -183,75 +325,69 @@ async function handleLogin(e) {
         return;
     }
 
+    var cloudError = null;
+    var cloudSession = null;
     try {
+        if (!supabaseClient) throw new Error('Failed to fetch');
         const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
         });
-
         if (error) {
-            if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
-                showMessage('loginMessage', '邮箱或密码错误！', true);
-            } else if (error.message.includes('Email not confirmed')) {
-                showMessage('loginMessage', '邮箱未确认，正在重新发送确认邮件...', false);
-                try {
-                    await supabaseClient.auth.resend({
-                        type: 'signup',
-                        email: email,
-                    });
-                    showMessage('loginMessage', '确认邮件已发送，请查收邮箱', false);
-                } catch (resendErr) {
-                    showMessage('loginMessage', '邮箱未确认，请检查邮箱或联系站长', true);
-                }
-            } else if (error.message.includes('Too many requests')) {
-                showMessage('loginMessage', '请求过于频繁，请稍后再试', true);
-            } else if (error.message.includes('Network') || error.message.includes('fetch')) {
-                showMessage('loginMessage', '网络连接失败，请检查网络后重试', true);
-            } else {
-                showMessage('loginMessage', '登录失败：' + error.message, true);
-            }
-            return;
-        }
-
-        showMessage('loginMessage', '登录成功！正在跳转...');
-        saveLoginState(email);
-
-        // 初始化用户主页数据（localStorage）
-        try {
-            var profileKey = 'qn_profile_' + email;
-            if (!localStorage.getItem(profileKey)) {
-                localStorage.setItem(profileKey, JSON.stringify({
-                    email: email,
-                    username: email.split('@')[0],
-                    bio: '',
-                    avatar_url: '',
-                    banner_url: '',
-                    verified: false,
-                    role: email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false,
-                    created_at: new Date().toISOString()
-                }));
-            }
-        } catch (pe) { console.warn('Profile init:', pe); }
-
-        // 管理员跳转到管理后台，普通用户跳转到首页
-        if (email === ADMIN_EMAIL) {
-            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
+            cloudError = error;
         } else {
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
+            cloudSession = data;
         }
     } catch (err) {
-        console.error('Login error:', err);
-        showMessage('loginMessage', '登录失败，请检查网络后重试', true);
+        cloudError = err;
+    }
+
+    if (cloudSession) {
+        showMessage('loginMessage', '登录成功！正在跳转...');
+        await finishLogin(email, false);
+        return;
+    }
+
+    // 云端不可达 → 本机账户兜底
+    if (qnIsNetworkError(cloudError) || !supabaseClient) {
+        if (qnLoginLocal(email, password)) {
+            showMessage('loginMessage', '云端暂不可用，已使用本机账户登录', false);
+            await finishLogin(qnNormalizeEmail(email), true);
+        } else {
+            showMessage('loginMessage', '云端暂不可用；本机没有该账户，请先注册本机账户或稍后重试', true);
+        }
+        return;
+    }
+
+    // 云端业务错误
+    var errMsg = String((cloudError && cloudError.message) || '');
+    if (errMsg.indexOf('Invalid login') !== -1 || errMsg.indexOf('Invalid credentials') !== -1) {
+        showMessage('loginMessage', '邮箱或密码错误！', true);
+    } else if (errMsg.indexOf('Email not confirmed') !== -1) {
+        showMessage('loginMessage', '邮箱未确认，正在重新发送确认邮件...', false);
+        try {
+            await supabaseClient.auth.resend({
+                type: 'signup',
+                email: email,
+            });
+            showMessage('loginMessage', '确认邮件已发送，请查收邮箱', false);
+        } catch (resendErr) {
+            showMessage('loginMessage', '邮箱未确认，请检查邮箱或联系站长', true);
+        }
+    } else if (errMsg.indexOf('Too many requests') !== -1) {
+        showMessage('loginMessage', '请求过于频繁，请稍后再试', true);
+    } else {
+        showMessage('loginMessage', '登录失败：' + errMsg, true);
     }
 }
 
 // ===== 保存登录状态 =====
-function saveLoginState(email) {
+function saveLoginState(email, isLocal) {
     const isAdmin = email === ADMIN_EMAIL;
     localStorage.setItem('qn_logged_in', 'true');
     localStorage.setItem('qn_user_email', email);
     localStorage.setItem('qn_is_admin', isAdmin ? 'true' : 'false');
+    localStorage.setItem('qn_login_source', isLocal ? 'local' : 'cloud');
     // 生成档案室访问密钥（仅管理员）
     if (isAdmin) {
         localStorage.setItem('qn_archive_key', 'QINGNING_ADMIN_' + Date.now());
@@ -296,26 +432,35 @@ async function handleLogout() {
     localStorage.removeItem('qn_logged_in');
     localStorage.removeItem('qn_user_email');
     localStorage.removeItem('qn_is_admin');
+    localStorage.removeItem('qn_login_source');
+    qnClearLocalSession();
     sessionStorage.removeItem('qn_logged_in');
     sessionStorage.removeItem('qn_user_email');
     sessionStorage.removeItem('qn_is_admin');
     window.location.href = 'auth.html';
 }
 
-// ===== 验证登录状态（异步检查Session） =====
+// ===== 验证登录状态（异步检查Session，支持本机离线会话） =====
 async function checkLoginState() {
+    var localSession = qnGetLocalSession();
     try {
+        if (!supabaseClient) throw new Error('offline');
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) {
-            // Session 已过期，清除本地状态
+            if (localSession && localSession.email) {
+                return true;
+            }
+            // Session 已过期且无本机会话，清除本地状态
             localStorage.removeItem('qn_logged_in');
             localStorage.removeItem('qn_user_email');
             localStorage.removeItem('qn_is_admin');
+            localStorage.removeItem('qn_login_source');
             return false;
         }
         return true;
     } catch (e) {
-        return false;
+        // 云端不可达时，只要存在本机会话就视为已登录
+        return !!(localSession && localSession.email);
     }
 }
 
@@ -329,15 +474,23 @@ async function handleTokenLogin(e) {
         return;
     }
 
+    // 1. 本机账户的当日令牌（云端不可达时也能登录）
+    var localEmail = qnFindLocalTokenEmail(token);
+    if (localEmail) {
+        showMessage('tokenMessage', '令牌验证成功（本机账户）！正在登录...', false);
+        await finishLogin(localEmail, true, 'token');
+        return;
+    }
+
     try {
-        // 1. 先检查令牌是否被禁用
+        // 2. 再检查云端禁用列表
         const disabledTokens = await loadDisabledTokens();
         if (disabledTokens.includes(token)) {
             showMessage('tokenMessage', '登录失败，此令牌已失效', true);
             return;
         }
 
-        // 2. 从 Supabase 下载活跃令牌列表验证
+        // 3. 从 Supabase 下载活跃令牌列表验证
         const validUser = await validateTokenFromCloud(token);
 
         if (!validUser) {
@@ -345,36 +498,9 @@ async function handleTokenLogin(e) {
             return;
         }
 
-        // 3. 令牌有效，执行登录
+        // 4. 令牌有效，执行登录
         showMessage('tokenMessage', '令牌验证成功！正在登录...', false);
-
-        saveLoginState(validUser.email);
-        localStorage.setItem('qn_login_method', 'token');
-
-        // 初始化用户档案
-        try {
-            var profileKey = 'qn_profile_' + validUser.email;
-            if (!localStorage.getItem(profileKey)) {
-                localStorage.setItem(profileKey, JSON.stringify({
-                    email: validUser.email,
-                    username: validUser.email.split('@')[0],
-                    bio: '',
-                    avatar_url: '',
-                    banner_url: '',
-                    verified: false,
-                    role: validUser.email === ADMIN_EMAIL ? 'admin' : 'user',
-                    favorites_public: false,
-                    created_at: new Date().toISOString()
-                }));
-            }
-        } catch (pe) { console.warn('Profile init:', pe); }
-
-        // 跳转
-        if (validUser.email === ADMIN_EMAIL) {
-            setTimeout(() => { window.location.href = 'admin.html'; }, 1000);
-        } else {
-            setTimeout(() => { window.location.href = 'index.html'; }, 1000);
-        }
+        await finishLogin(validUser.email, false, 'token');
     } catch (err) {
         console.error('Token login error:', err);
         showMessage('tokenMessage', '登录失败，请稍后重试', true);
@@ -537,7 +663,7 @@ async function checkQRScannedFromCloud() {
             stopQRCheck();
             showMessage('qrMessage', '扫码成功！正在登录...', false);
 
-            saveLoginState(session.email);
+            saveLoginState(session.email, false);
             localStorage.setItem('qn_login_method', 'qr');
 
             // 初始化用户档案

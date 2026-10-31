@@ -462,6 +462,16 @@
                 </div>
             </div>
 
+            <!-- 本机登录令牌（仅本机账户显示） -->
+            <div class="account-info" id="localTokenInfo" style="display:none; margin-top:12px; padding:12px 20px; background:#1e293b; border-radius:10px; border:1px solid #334155; max-width:500px; margin-left:auto; margin-right:auto;">
+                <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;">今日登录令牌（本机账户，仅本机有效）</div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
+                    <span id="localTokenValue" style="font-family:'Courier New',monospace;font-size:22px;letter-spacing:4px;color:#22c55e;font-weight:700;">--------</span>
+                    <button onclick="copyLocalToken()" style="background:#334155;color:#e2e8f0;border:none;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">复制</button>
+                </div>
+                <div style="font-size:11px;color:#64748b;margin-top:6px;">在登录页选择「使用令牌登录」，输入此令牌即可登录</div>
+            </div>
+
             <!-- 收藏隐私切换（仅自己的主页显示） -->
             <div class="privacy-toggle" id="privacyToggle" style="display:none;">
                 <span>收藏列表</span>
