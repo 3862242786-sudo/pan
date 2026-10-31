@@ -154,7 +154,8 @@
         try {
             var ready = await QNCloud.waitClient();
             if (!ready) return false;
-            try { await QNCloud.getProfiles(); } catch (e) { }
+            // 每次同步都强制刷新资料，别人改了头像/昵称这里也能马上看到
+            try { await QNCloud.getProfiles(true); } catch (e) { }
 
             var postsRes = await supabaseClient.from('forum_posts').select('*').order('created_at', { ascending: false }).limit(50);
             if (postsRes.error) {
