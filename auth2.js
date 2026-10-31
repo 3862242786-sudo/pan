@@ -493,6 +493,11 @@ async function handleTokenLogin(e) {
         // 3. 从 Supabase 下载活跃令牌列表验证
         const validUser = await validateTokenFromCloud(token);
 
+        if (validUser === 'network') {
+            showMessage('tokenMessage', '云端暂不可用，本机也没有该令牌；请稍后重试，或使用本机账户登录', true);
+            return;
+        }
+
         if (!validUser) {
             showMessage('tokenMessage', '登录失败，此令牌已失效', true);
             return;
@@ -503,18 +508,23 @@ async function handleTokenLogin(e) {
         await finishLogin(validUser.email, false, 'token');
     } catch (err) {
         console.error('Token login error:', err);
-        showMessage('tokenMessage', '登录失败，请稍后重试', true);
+        if (qnIsNetworkError(err)) {
+            showMessage('tokenMessage', '云端暂不可用，本机也没有该令牌；请稍后重试，或使用本机账户登录', true);
+        } else {
+            showMessage('tokenMessage', '登录失败，请稍后重试', true);
+        }
     }
 }
 
 // 从云端验证令牌（APP上传的令牌列表）
 async function validateTokenFromCloud(token) {
     try {
+        if (!supabaseClient) return 'network';
         const { data, error } = await supabaseClient.storage
             .from('files')
             .download('active_tokens.json');
 
-        if (error || !data) return null;
+        if (error || !data) return qnIsNetworkError(error) ? 'network' : null;
 
         const text = await data.text();
         const obj = JSON.parse(text);
@@ -535,7 +545,7 @@ async function validateTokenFromCloud(token) {
         return null;
     } catch (e) {
         console.error('Cloud token validation error:', e);
-        return null;
+        return qnIsNetworkError(e) ? 'network' : null;
     }
 }
 
