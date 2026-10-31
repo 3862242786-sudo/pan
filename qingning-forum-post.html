@@ -366,7 +366,12 @@
                 alert('发布成功！');
                 location.href = 'qingning-forum-detail.html?id=' + data[0].id;
             } catch(err) {
-                alert('发布失败：' + (err.message || '网络错误'));
+                var postErr = String(err.message || '网络错误');
+                if (/rate ?limit|too many requests|429/i.test(postErr)) {
+                    alert('请求过于频繁，请稍后再试');
+                } else {
+                    alert('发布失败，请稍后重试');
+                }
                 submitBtn.textContent = '发布帖子';
                 submitBtn.disabled = false;
             }

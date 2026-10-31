@@ -29,7 +29,7 @@ async function loadAdminFiles() {
             .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
         if (error) {
-            fileList.innerHTML = '<div class="empty-text">加载失败: ' + error.message + '</div>';
+            fileList.innerHTML = '<div class="empty-text">加载失败，请稍后重试</div>';
             return;
         }
 
@@ -133,7 +133,7 @@ async function adminDeleteFile(fileName) {
             .remove([fileName]);
 
         if (error) {
-            alert('删除失败: ' + error.message);
+            alert('删除失败，请稍后重试');
             return;
         }
         alert('✅ 文件已删除');
@@ -545,7 +545,7 @@ async function disableToken() {
 
         loadDisabledTokensAdmin();
     } catch (err) {
-        msgEl.textContent = '禁用失败：' + err.message;
+        msgEl.textContent = '禁用失败，请稍后重试';
         msgEl.style.color = '#ef4444';
         setTimeout(() => { msgEl.textContent = ''; }, 3000);
     }
@@ -587,7 +587,7 @@ async function enableToken(token) {
 
         loadDisabledTokensAdmin();
     } catch (err) {
-        alert('恢复失败：' + err.message);
+        alert('恢复失败，请稍后重试');
     }
 }
 

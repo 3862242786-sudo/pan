@@ -595,14 +595,15 @@
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) {
-                    if (error.message.includes('Invalid login') || error.message.includes('Invalid credentials')) {
+                    var errMsg = String(error.message || '');
+                    if (errMsg.includes('Invalid login') || errMsg.includes('Invalid credentials')) {
                         showFormMsg(msgEl, '邮箱或密码错误', true);
-                    } else if (error.message.includes('Email not confirmed')) {
+                    } else if (errMsg.includes('Email not confirmed')) {
                         showFormMsg(msgEl, '邮箱未确认，请查收确认邮件', true);
-                    } else if (error.message.includes('Too many requests')) {
+                    } else if (/rate ?limit|too many requests|429|over ?rate/i.test(errMsg)) {
                         showFormMsg(msgEl, '请求过于频繁，请稍后再试', true);
                     } else {
-                        showFormMsg(msgEl, '登录失败：' + error.message, true);
+                        showFormMsg(msgEl, '登录失败，请稍后重试', true);
                     }
                     btn.disabled = false;
                     btn.textContent = '登 录';
